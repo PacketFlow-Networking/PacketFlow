@@ -1,32 +1,62 @@
 version: '3.8'
 
 services:
-  # Backend service
-  backend:
+  # AINetUI App (Frontend + Backend in one container)
+  app:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
-    container_name: ainetui-backend
+    container_name: ainetui-app
     ports:
-      - "8000:8000"
+      - "80:80"        # Frontend (Nginx)
+      - "5173:80"      # Alternative frontend port for dev compatibility
+      - "8000:8000"    # Backend API
     environment:
+      # Capture settings - MOCK MODE ONLY
       - CAPTURE_INTERFACE=eth0
       - MOCK_MODE=true
-      - WINDOW_SIZE=10
-      - ANOMALY_THRESHOLD=5.0
+      - PCAP_FILE=
+      - BUFFER_SIZE=1000
+      
+      # Condenser settings
+      - WINDOW_SIZE=5
+      - ANOMALY_THRESHOLD=2.5
+      - MIN_FLOWS_FOR_ALERT=10
+      - HISTORY_WINDOWS=12
+      
+      # AI settings - Local Ollama
+      - AI_MODE=local
       - OLLAMA_URL=http://ollama:11434
-      - AI_MODEL=llama2
+      - LOCAL_AI_MODEL=mistral:7b
       - AI_TIMEOUT=30
+      - AI_TEMPERATURE=0.7
+      - AI_MAX_TOKENS=250
+      
+      # Server settings
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8000
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:5173
+      
+      # WebSocket settings
+      - ENABLE_WEBSOCKET=true
+      - WS_PING_INTERVAL=20
+      - MAX_EVENTS_IN_MEMORY=1000
     volumes:
-      - ./backend:/app
       - ./logs:/app/logs
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     networks:
       - ainetui-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health", "&&", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
   # Ollama service for local LLM
   ollama:
@@ -39,25 +69,16 @@ services:
     networks:
       - ainetui-network
     restart: unless-stopped
-
-  # Optional: Frontend service (to be implemented)
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: ainetui-frontend
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - NEXT_PUBLIC_WS_URL=ws://localhost:8000
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - ainetui-network
-  #   restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
 volumes:
   ollama-data:
+    driver: local
 
 networks:
   ainetui-network:
