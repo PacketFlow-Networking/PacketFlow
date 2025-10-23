@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useApi } from './hooks/useApi';
 import { useStore } from './context/store';
@@ -13,6 +13,8 @@ import StatsDashboard from './components/StatsDashboard';
 import IncidentPanel from './components/IncidentPanel';
 import TopologyView from './components/TopologyView';
 import AlertConfigModal from './components/alerts/AlertConfigModal';
+import ProactiveSuggestions from './components/ProactiveSuggestions';
+import GlossaryPanel from './components/GlossaryPanel';
 import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network } from 'lucide-react';
 
 function App() {
@@ -24,12 +26,8 @@ function App() {
   
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showAlertConfig, setShowAlertConfig] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [selectedEventIndex, setSelectedEventIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'events' | 'stats' | 'topology'>('events');
   const [leftPanelTab, setLeftPanelTab] = useState<'chat' | 'incidents'>('chat');
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const exportButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -68,12 +66,10 @@ function App() {
       showInfo('Filters reset', 'Filters restored to default');
     },
     onNextEvent: () => {
-      setSelectedEventIndex(prev => prev + 1);
-      showInfo('Next event', 'Use Enter to open details');
+      showInfo('Next event', 'Use arrow keys to navigate events');
     },
     onPreviousEvent: () => {
-      setSelectedEventIndex(prev => Math.max(0, prev - 1));
-      showInfo('Previous event', 'Use Enter to open details');
+      showInfo('Previous event', 'Use arrow keys to navigate events');
     },
     onOpenEvent: () => {
       // This will be handled by EventStream
@@ -167,6 +163,11 @@ function App() {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0">
+          {/* Proactive Suggestions - IUI Enhancement */}
+          <div className="border-b border-border p-3 bg-panel">
+            <ProactiveSuggestions />
+          </div>
+          
           <div className="h-1/2 border-b border-border">
             <GraphView />
           </div>
@@ -245,6 +246,9 @@ function App() {
         isOpen={showAlertConfig}
         onClose={() => setShowAlertConfig(false)}
       />
+
+      {/* Glossary Panel - IUI Feature */}
+      <GlossaryPanel />
       
       {/* Floating hint */}
       {!showShortcutsHelp && !showAlertConfig && (

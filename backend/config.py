@@ -15,6 +15,7 @@ class Config:
         self.condenser = CondenserConfig()
         self.ai = AIConfig()
         self.server = ServerConfig()
+        self.database = DatabaseConfig()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary."""
@@ -22,7 +23,8 @@ class Config:
             'capture': self.capture.__dict__,
             'condenser': self.condenser.__dict__,
             'ai': self.ai.__dict__,
-            'server': self.server.__dict__
+            'server': self.server.__dict__,
+            'database': self.database.__dict__
         }
     
     def validate(self) -> List[str]:
@@ -195,6 +197,28 @@ class ServerConfig:
                 f"log_level={self.log_level})")
 
 
+class DatabaseConfig:
+    """Database configuration."""
+    
+    def __init__(self):
+        self.enabled = os.getenv('DB_ENABLED', 'true').lower() == 'true'
+        self.path = os.getenv('DB_PATH', 'ainetui.db')
+        self.retention_days = int(os.getenv('DB_RETENTION_DAYS', '7'))
+        self.batch_size = int(os.getenv('DB_BATCH_SIZE', '100'))
+        self.cleanup_interval_hours = int(os.getenv('DB_CLEANUP_INTERVAL_HOURS', '24'))
+        
+        # What to store
+        self.store_events = os.getenv('DB_STORE_EVENTS', 'true').lower() == 'true'
+        self.store_incidents = os.getenv('DB_STORE_INCIDENTS', 'true').lower() == 'true'
+        self.store_queries = os.getenv('DB_STORE_QUERIES', 'true').lower() == 'true'
+        self.store_metrics = os.getenv('DB_STORE_METRICS', 'false').lower() == 'true'
+    
+    def __repr__(self):
+        return (f"DatabaseConfig(enabled={self.enabled}, "
+                f"path={self.path}, "
+                f"retention={self.retention_days}d)")
+
+
 # Global configuration instance
 config = Config.load_from_env()
 
@@ -215,6 +239,7 @@ def validate_config():
     print(f"  Condenser: {config.condenser}")
     print(f"  AI: {config.ai}")
     print(f"  Server: {config.server}")
+    print(f"  Database: {config.database}")
     return True
 
 

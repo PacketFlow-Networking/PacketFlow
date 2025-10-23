@@ -103,6 +103,7 @@ class WebSocketServer:
         self.packet_queue = None
         self.event_queue = None
         self.output_queue = None
+        self.database = None  # Database instance
         
         # Setup routes
         self._setup_routes()
@@ -274,14 +275,68 @@ class WebSocketServer:
                 "message": "Test event broadcast to all connected clients"
             }
         
-        @self.app.post("/query-event")
+        @self.app.post("/query")
         @self.limiter.limit("10/minute")
-        async def query_event(request: Request, query_req: QueryEventRequest):
+        async def query_chat(request: Request):
             """
-            Ask AI about a specific event (rate limited).
+            Process user chat query through AI agent with full event context.
+            
+            This endpoint now routes through the AI agent, providing:
+            - Recent network event context
+            - Linked event IDs
+            - Structured response with confidence
             
             Rate limit: 10 requests per minute per IP
             """
+            try:
+                data = await request.json()
+                query = data.get("query", data.get("question", "")).strip()
+                
+                if not query:
+                    return JSONResponse(
+                        status_code=400,
+                        content={"error": "Empty query. Please provide a 'query' or 'question' field."}
+                    )
+                
+                if not self.ai_agent:
+                    return JSONResponse(
+                        status_code=503,
+                        content={
+                            "error": "AI agent not available",
+                            "response": "AI service is currently unavailable. Please try again later.",
+                            "query": query
+                        }
+                    )
+                
+                # Use AI agent's unified chat query processor
+                result = await self.ai_agent.process_chat_query(
+                    query=query,
+                    include_events=True  # ← Include event context
+                )
+                
+                # Broadcast to all WebSocket clients
+                await self.broadcast_event({
+                    "type": "ai_chat_response",
+                    "data": result
+                })
+                
+                # Also return to HTTP caller
+                return JSONResponse(content=result)
+                
+            except Exception as e:
+                logger.error(f"Query endpoint error: {e}")
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "error": str(e),
+                        "response": f"Error processing query: {str(e)[:200]}",
+                        "query": query if 'query' in locals() else ""
+                    }
+                )
+        
+        @self.app.post("/query-event")
+        @self.limiter.limit("10/minute")
+        async def query_event(request: Request, query_req: QueryEventRequest):
             try:
                 if not self.ai_agent:
                     raise HTTPException(status_code=503, detail="AI agent not available")
@@ -300,6 +355,99 @@ class WebSocketServer:
                 raise
             except Exception as e:
                 logger.error(f"Query event error: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        # ==================== Database API Endpoints ====================
+        
+        @self.app.get("/api/events")
+        async def get_stored_events(
+            limit: int = 100,
+            offset: int = 0,
+            anomaly_only: bool = False,
+            severity: Optional[str] = None,
+            src: Optional[str] = None,
+            dst: Optional[str] = None,
+            proto: Optional[str] = None,
+            start_time: Optional[str] = None,
+            end_time: Optional[str] = None
+        ):
+            """Get stored events from database with filtering."""
+            if not self.database or not self.database.enabled:
+                raise HTTPException(status_code=501, detail="Database not enabled")
+            
+            try:
+                events = await self.database.get_events(
+                    limit=limit,
+                    offset=offset,
+                    anomaly_only=anomaly_only,
+                    severity=severity,
+                    src=src,
+                    dst=dst,
+                    proto=proto,
+                    start_time=start_time,
+                    end_time=end_time
+                )
+                
+                total_count = await self.database.get_event_count(anomaly_only=anomaly_only)
+                
+                return {
+                    "events": events,
+                    "total": total_count,
+                    "limit": limit,
+                    "offset": offset,
+                    "returned": len(events)
+                }
+            
+            except Exception as e:
+                logger.error(f"Error fetching events: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/api/incidents")
+        async def get_stored_incidents(status: Optional[str] = None):
+            """Get stored incidents from database."""
+            if not self.database or not self.database.enabled:
+                raise HTTPException(status_code=501, detail="Database not enabled")
+            
+            try:
+                incidents = await self.database.get_incidents(status=status)
+                return {
+                    "incidents": incidents,
+                    "count": len(incidents)
+                }
+            
+            except Exception as e:
+                logger.error(f"Error fetching incidents: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/api/query-history")
+        async def get_query_history(limit: int = 50):
+            """Get AI query history from database."""
+            if not self.database or not self.database.enabled:
+                raise HTTPException(status_code=501, detail="Database not enabled")
+            
+            try:
+                history = await self.database.get_query_history(limit=limit)
+                return {
+                    "history": history,
+                    "count": len(history)
+                }
+            
+            except Exception as e:
+                logger.error(f"Error fetching query history: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/api/database/stats")
+        async def get_database_stats():
+            """Get database statistics."""
+            if not self.database or not self.database.enabled:
+                raise HTTPException(status_code=501, detail="Database not enabled")
+            
+            try:
+                stats = await self.database.get_database_stats()
+                return stats
+            
+            except Exception as e:
+                logger.error(f"Error fetching database stats: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.websocket("/ws/updates")
@@ -384,10 +532,21 @@ class WebSocketServer:
         """Stream events from output queue to WebSocket clients."""
         logger.info("WebSocket event streaming started...")
         
+        from config import config
+        
         while True:
             try:
                 # Get event from queue
                 event = await output_queue.get()
+                
+                # Save to database if enabled
+                if self.database and self.database.enabled and config.database.store_events:
+                    await self.database.save_event(event)
+                
+                # Update internal stats
+                self.stats["total_events"] = self.stats.get("total_events", 0) + 1
+                if event.get("is_anomaly"):
+                    self.stats["total_anomalies"] = self.stats.get("total_anomalies", 0) + 1
                 
                 # Broadcast to all connected clients
                 await self.broadcast_event(event)

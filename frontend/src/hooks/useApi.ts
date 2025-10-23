@@ -55,7 +55,7 @@ export const useApi = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question })
+        body: JSON.stringify({ query: question })  // Changed 'question' to 'query'
       });
       
       if (!response.ok) {
@@ -63,11 +63,16 @@ export const useApi = () => {
           // Query endpoint not implemented
           return `[INFO] Query endpoint not available yet. Backend is running in monitoring mode.`;
         }
+        if (response.status === 503) {
+          // AI agent not available
+          return `[INFO] AI agent is currently unavailable. Please make sure Ollama is running or remote AI is configured.`;
+        }
         throw new Error(`Query failed: ${response.status}`);
       }
       
       const data = await response.json();
-      return data.answer || data.response || null;
+      // The new unified response includes 'response' field
+      return data.response || data.answer || null;
     } catch (error) {
       console.error('[API] Query error:', error);
       return `[INFO] Could not reach backend. Make sure backend is running on ${API_BASE}`;

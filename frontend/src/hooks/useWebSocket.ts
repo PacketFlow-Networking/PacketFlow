@@ -94,6 +94,23 @@ export const useWebSocket = () => {
               addAIMessage(aiMessage);
             }
           }
+          else if (message.type === 'ai_chat_response' && message.data) {
+            // NEW: Handle unified AI chat responses with event context
+            const responseData = message.data;
+            
+            const aiMessage: AIMessage = {
+              id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              timestamp: responseData.timestamp || new Date().toISOString(),
+              content: responseData.response || 'No response',
+              event_ids: responseData.event_ids || [],  // ← Now has linked events!
+              type: responseData.error ? 'warning' : 'insight',
+              confidence: responseData.confidence || 'medium'
+            };
+            
+            addAIMessage(aiMessage);
+            
+            console.log(`[WebSocket] AI response linked to ${aiMessage.event_ids.length} events`);
+          }
         } catch (error) {
           console.error('[WebSocket] Message parsing error:', error);
         }

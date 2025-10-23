@@ -188,3 +188,154 @@ export const DEFAULT_ALERT_CONFIG: AlertConfiguration = {
     autoIncident: false,
   },
 };
+
+// ============================================================================
+// Intelligent User Interface (IUI) Types
+// ============================================================================
+
+// 1. Explainable AI Types
+export interface AIReasoningStep {
+  step: number;
+  description: string;
+  evidence: string[];
+  confidence: number;
+  metric?: string;
+  value?: number;
+}
+
+export interface DecisionFactor {
+  factor: string;
+  weight: number;
+  value: number;
+  impact: 'positive' | 'negative' | 'neutral';
+}
+
+export interface AlternativeHypothesis {
+  hypothesis: string;
+  probability: number;
+  why_rejected: string;
+}
+
+export interface AIExplanation {
+  event_id: string;
+  reasoning_chain: AIReasoningStep[];
+  decision_factors: DecisionFactor[];
+  alternative_hypotheses: AlternativeHypothesis[];
+  confidence_breakdown: {
+    data_quality: number;
+    pattern_match: number;
+    historical_context: number;
+    overall: number;
+  };
+}
+
+// 2. Proactive Suggestions Types
+export type SuggestionType = 'investigation' | 'action' | 'filter' | 'insight' | 'learning';
+export type SuggestionPriority = 'high' | 'medium' | 'low';
+
+export interface ProactiveSuggestion {
+  id: string;
+  type: SuggestionType;
+  priority: SuggestionPriority;
+  title: string;
+  description: string;
+  action?: {
+    label: string;
+    handler: () => void;
+  };
+  dismissible: boolean;
+  timestamp: string;
+  expires_at?: string;
+}
+
+// 3. User Profile & Learning Types
+export type ExpertiseLevel = 'novice' | 'intermediate' | 'expert';
+
+export interface UserProfile {
+  expertise_level: ExpertiseLevel;
+  interaction_count: number;
+  preferred_views: string[];
+  alert_history: {
+    true_positives: number;
+    false_positives: number;
+    accuracy_rate: number;
+  };
+  learning_progress: {
+    concepts_seen: string[];
+    tooltips_dismissed: string[];
+    tutorials_completed: string[];
+  };
+  created_at: string;
+  last_interaction: string;
+}
+
+export const DEFAULT_USER_PROFILE: UserProfile = {
+  expertise_level: 'novice',
+  interaction_count: 0,
+  preferred_views: ['events'],
+  alert_history: {
+    true_positives: 0,
+    false_positives: 0,
+    accuracy_rate: 0,
+  },
+  learning_progress: {
+    concepts_seen: [],
+    tooltips_dismissed: [],
+    tutorials_completed: [],
+  },
+  created_at: new Date().toISOString(),
+  last_interaction: new Date().toISOString(),
+};
+
+// 4. Interactive Teaching Types
+export type FeedbackLabel = 'true_positive' | 'false_positive' | 'missed_detection';
+
+export interface EventFeedback {
+  event_id: string;
+  user_label: FeedbackLabel;
+  corrected_severity?: SeverityLevel;
+  user_explanation?: string;
+  timestamp: string;
+  incorporated: boolean;
+}
+
+// 5. Predictive Analytics Types
+export type PredictionType = 'traffic_spike' | 'attack_escalation' | 'resource_exhaustion' | 'anomaly_burst';
+
+export interface Prediction {
+  id: string;
+  type: PredictionType;
+  probability: number;
+  timeframe: string;
+  reasoning: string;
+  preventive_actions: string[];
+  confidence: number;
+  based_on_events: string[];
+  timestamp: string;
+}
+
+// 6. Contextual Help Types
+export interface ConceptDefinition {
+  term: string;
+  definition: string;
+  category: 'security' | 'network' | 'statistics' | 'protocol';
+  learn_more_url?: string;
+  related_terms?: string[];
+}
+
+export interface ContextualTip {
+  id: string;
+  context: 'event_view' | 'chat' | 'topology' | 'stats' | 'alerts';
+  trigger: string;
+  content: string;
+  shown_count: number;
+  max_show_count: number;
+}
+
+// Extended NetworkEvent with IUI metadata
+export interface EnhancedNetworkEvent extends NetworkEvent {
+  ai_explanation?: AIExplanation;
+  user_feedback?: EventFeedback;
+  predictions?: Prediction[];
+  related_suggestions?: string[]; // IDs of related suggestions
+}

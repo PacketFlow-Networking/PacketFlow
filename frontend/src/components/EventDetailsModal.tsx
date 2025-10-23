@@ -1,6 +1,9 @@
 import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target } from 'lucide-react';
 import { NetworkEvent } from '../types';
 import { useToast } from '../context/ToastContext';
+import AIExplanationPanel from './AIExplanationPanel';
+import ExpandableText from './ExpandableText';
+import FeedbackPanel from './FeedbackPanel';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
@@ -76,9 +79,13 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
                 <Activity className="w-4 h-4 text-info" />
                 <h3 className="font-semibold text-text">Summary</h3>
               </div>
-              <p className="text-text-dim bg-panel-hover p-4 rounded-lg border border-border">
-                {event.summary}
-              </p>
+              <div className="bg-panel-hover p-4 rounded-lg border border-border">
+                <ExpandableText 
+                  text={event.summary} 
+                  maxLength={200}
+                  className="text-text-dim"
+                />
+              </div>
             </section>
 
             {/* Connection Details */}
@@ -266,6 +273,13 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
               )}
             </section>
 
+            {/* AI Explanation - IUI Enhancement */}
+            {event.anomaly_score > 0.5 && (
+              <section>
+                <AIExplanationPanel event={event} />
+              </section>
+            )}
+
             {/* Tags */}
             {event.tags && event.tags.length > 0 && (
               <section>
@@ -321,6 +335,13 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
                     </p>
                   )}
                 </div>
+              </section>
+            )}
+
+            {/* User Feedback - IUI Feature */}
+            {event.anomaly_score > 0.3 && (
+              <section>
+                <FeedbackPanel event={event} />
               </section>
             )}
 

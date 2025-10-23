@@ -17,6 +17,7 @@ from websocket_server import WebSocketServer
 from config import config, validate_config
 from task_manager import run_with_restart, task_monitor
 from metrics import packets_captured, packets_dropped, active_flows, warmup_complete
+from database import initialize_database, get_db
 
 
 # Configure logging
@@ -43,6 +44,9 @@ class AINetUIBackend:
         self.packet_queue = asyncio.Queue(maxsize=1000)
         self.event_queue = asyncio.Queue(maxsize=100)
         self.output_queue = asyncio.Queue(maxsize=100)
+        
+        # Database will be initialized in start()
+        self.database = None
         
         # Initialize components
         self.capture = PacketCapture(
@@ -73,6 +77,7 @@ class AINetUIBackend:
             remote_client_rag=config.ai.remote_client_rag,
             # Common settings
             timeout=config.ai.timeout,
+            max_tokens=config.ai.max_tokens,
             system_prompt=config.ai.system_prompt
         )
         
@@ -128,7 +133,19 @@ class AINetUIBackend:
         logger.info(f" AI URL: {config.ai.current_url}")
         logger.info(f"  Server: http://{config.server.host}:{config.server.port}")
         logger.info(f" Metrics: http://{config.server.host}:{config.server.port}/metrics")
+        logger.info(f" Database: {config.database}")
         logger.info("=" * 80)
+        
+        # Initialize database
+        self.database = await initialize_database(
+            db_path=config.database.path,
+            enabled=config.database.enabled,
+            retention_days=config.database.retention_days,
+            batch_size=config.database.batch_size
+        )
+        
+        # Link database to WebSocket server for API access
+        self.websocket_server.database = self.database
         
         # Initialize AI agent
         await self.ai_agent.initialize()
@@ -206,6 +223,17 @@ class AINetUIBackend:
         tasks.append(task)
         task_monitor.register("metrics_updater", task)
         
+        # Database cleanup task
+        if config.database.enabled:
+            task = asyncio.create_task(
+                self.database.start_cleanup_task(
+                    interval_hours=config.database.cleanup_interval_hours
+                ),
+                name="db_cleanup"
+            )
+            tasks.append(task)
+            task_monitor.register("db_cleanup", task)
+        
         # Task health monitor
         task = asyncio.create_task(
             task_monitor.monitor(check_interval=30),
@@ -243,6 +271,10 @@ class AINetUIBackend:
             
             await self.capture.stop()
             await self.ai_agent.close()
+            
+            if self.database:
+                await self.database.close()
+            
             logger.info(" Backend stopped gracefully")
 
 

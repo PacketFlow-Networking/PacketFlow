@@ -11,7 +11,7 @@ Features:
 
 import asyncio
 import logging
-from typing import Dict, Optional, Literal, List
+from typing import Dict, Optional, Literal, List, Any
 from collections import deque
 from datetime import datetime
 import aiohttp
@@ -36,6 +36,7 @@ class AIAgent:
         remote_client_rag: bool = False,
         # Common settings
         timeout: int = 30,
+        max_tokens: int = 800,
         system_prompt: str = None,
         # Correlation settings
         correlation_window: int = 300,  # 5 minutes
@@ -63,6 +64,7 @@ class AIAgent:
         
         # Common settings
         self.timeout = timeout
+        self.max_tokens = max_tokens
         self.system_prompt = system_prompt or self._default_system_prompt()
         
         # Event memory for correlation
@@ -277,7 +279,7 @@ Be direct and actionable. Avoid unnecessary hedging."""
             }
     
     def _build_structured_prompt(self, event: Dict, correlated: List[Dict]) -> str:
-        """Build enhanced prompt with correlation context."""
+        """Build enhanced prompt with correlation context and related events analysis."""
         src = event.get("src", "unknown")
         dst = event.get("dst", "unknown")
         proto = event.get("proto", "unknown")
@@ -286,41 +288,142 @@ Be direct and actionable. Avoid unnecessary hedging."""
         anomaly_score = event.get("anomaly_score", 0.0)
         baseline_avg = event.get("baseline_avg", 0)
         summary = event.get("summary", "")
+        detection_methods = event.get("detection_methods", [])
+        threat_indicators = event.get("threat_indicators", [])
         
         prompt = f"""Network Security Analysis Request
 
-PRIMARY ANOMALY:
-- Source: {src}
-- Destination: {dst}  
-- Protocol: {proto}
-- Packets: {flows} (expected: ~{int(baseline_avg)})
-- Severity: {severity.upper()}
-- Anomaly Score: {anomaly_score:.2f}
-- Summary: {summary}"""
+=== CURRENT EVENT ===
+Timestamp: {event.get('timestamp', 'N/A')}
+Source: {src}  Destination: {dst}
+Protocol: {proto}
+Volume: {flows} flows (expected: ~{int(baseline_avg)})
+Total Bytes: {event.get('total_bytes', 0):,}
+Anomaly Score: {anomaly_score:.2f} ({severity.upper()})
+Detection Methods: {', '.join(detection_methods) if detection_methods else 'None'}"""
+        
+        if threat_indicators:
+            prompt += f"\n Threat Indicators: {', '.join(threat_indicators)}"
+        
+        prompt += f"\nSummary: {summary}"
+        
+        # Enhanced related events analysis
+        if self.recent_events:
+            prompt += f"\n\n=== RELATED EVENTS (Last {self.correlation_window}s) ==="
+            
+            # Analyze patterns from recent events
+            events_list = list(self.recent_events)[-20:]  # Last 20 events
+            
+            # Group by source IP
+            events_by_source = {}
+            events_by_threat = {}
+            
+            for prev_event in events_list:
+                prev_src = prev_event.get('src', 'unknown')
+                
+                # Group by source
+                if prev_src not in events_by_source:
+                    events_by_source[prev_src] = []
+                events_by_source[prev_src].append(prev_event)
+                
+                # Group by threat type
+                for threat in prev_event.get('threat_indicators', []):
+                    if threat not in events_by_threat:
+                        events_by_threat[threat] = []
+                    events_by_threat[threat].append(prev_event)
+            
+            # Analyze current source's activity
+            if src in events_by_source and len(events_by_source[src]) > 1:
+                src_events = events_by_source[src]
+                unique_dests = set(e.get('dst', 'N/A') for e in src_events[-5:])
+                unique_protos = set(e.get('proto', 'N/A') for e in src_events[-5:])
+                
+                prompt += f"\n\n Activity from {src}:"
+                prompt += f"\n  - Total events: {len(src_events)}"
+                prompt += f"\n  - Destinations: {', '.join(list(unique_dests)[:5])}"
+                prompt += f"\n  - Protocols: {', '.join(unique_protos)}"
+                
+                # Check for escalation
+                scores = [e.get('anomaly_score', 0) for e in src_events[-5:]]
+                if len(scores) >= 2 and scores[-1] > scores[0]:
+                    prompt += f"\n  -  ESCALATING: Score increased from {scores[0]:.2f}  {scores[-1]:.2f}"
+            
+            # Analyze threat patterns
+            for threat in threat_indicators:
+                if threat in events_by_threat and len(events_by_threat[threat]) > 1:
+                    threat_events = events_by_threat[threat]
+                    unique_sources = set(e.get('src') for e in threat_events)
+                    
+                    prompt += f"\n\n {threat} Pattern:"
+                    prompt += f"\n  - Seen {len(threat_events)} times from {len(unique_sources)} sources"
+                    prompt += f"\n  - Sources: {', '.join(list(unique_sources)[:5])}"
+                    
+                    if len(unique_sources) >= 3:
+                        prompt += f"\n  -  MULTI-SOURCE ATTACK: Possible botnet or coordinated effort"
+            
+            # Show recent timeline
+            prompt += f"\n\n Recent Timeline (last 5 events):"
+            for prev_event in events_list[-5:]:
+                timestamp = prev_event.get('timestamp', 'N/A')
+                # Extract time only (HH:MM:SS)
+                time_only = timestamp[-12:-4] if len(timestamp) > 12 else timestamp
+                prev_src = prev_event.get('src', 'N/A')
+                prev_dst = prev_event.get('dst', 'N/A')
+                prev_proto = prev_event.get('proto', 'N/A')
+                prev_score = prev_event.get('anomaly_score', 0)
+                prev_threats = ', '.join(prev_event.get('threat_indicators', [])) or 'None'
+                
+                prompt += f"\n  [{time_only}] {prev_src}  {prev_dst} ({prev_proto}) "
+                prompt += f"Score: {prev_score:.2f} | Threats: {prev_threats}"
         
         if correlated:
-            prompt += f"\n\nCORRELATED ANOMALIES (last {self.correlation_window}s):"
+            prompt += f"\n\n=== CORRELATED ANOMALIES ({len(correlated)} events) ==="
             for i, ce in enumerate(correlated[:3], 1):
                 prompt += f"\n{i}. {ce.get('src')}  {ce.get('dst')} [{ce.get('proto')}] " \
                          f"({ce.get('severity')} severity, {ce.get('flows')} pkts)"
+                ce_threats = ', '.join(ce.get('threat_indicators', []))
+                if ce_threats:
+                    prompt += f" | Threats: {ce_threats}"
         
+        # Protocol-specific analysis
         if "protocol_stats" in event:
             stats = event["protocol_stats"]
+            
             if "dns" in stats:
                 dns = stats["dns"]
                 unique_queries = len(dns.get("query_names", []))
                 if unique_queries > 0:
-                    prompt += f"\n\nDNS Analysis: {unique_queries} unique domains queried"
+                    prompt += f"\n\n DNS Analysis: {unique_queries} unique domains queried"
+                    # Show sample queries if available
+                    sample_queries = dns.get("query_names", [])[:3]
+                    if sample_queries:
+                        prompt += f"\n  Sample queries: {', '.join(sample_queries)}"
             
             if "http" in stats:
                 http = stats["http"]
                 methods = http.get("methods", {})
                 if methods:
-                    prompt += f"\n\nHTTP Analysis: Methods used: {dict(methods)}"
+                    prompt += f"\n\n HTTP Analysis: Methods used: {dict(methods)}"
+                hosts = http.get("hosts", [])
+                if hosts:
+                    prompt += f"\n  Target hosts: {', '.join(hosts[:3])}"
         
-        prompt += """\n\nProvide your analysis in this format:
+        # Add context for specific attack types
+        if 'DNS_TUNNELING' in threat_indicators:
+            prompt += "\n\n Context: DNS tunneling uses DNS queries to exfiltrate data or establish C2 channels. Look for long domain names, high entropy, or unusual query patterns."
+        elif 'PORT_SCAN' in threat_indicators:
+            prompt += "\n\n Context: Port scanning is reconnaissance activity, often precedes targeted attacks. Multiple destination ports from single source indicate scanning."
+        elif 'BRUTE_FORCE' in threat_indicators:
+            prompt += "\n\n Context: Brute force attacks attempt to guess credentials through repeated login attempts. High frequency of authentication requests is suspicious."
+        elif 'SQL_INJECTION' in threat_indicators or 'XSS_ATTEMPT' in threat_indicators:
+            prompt += "\n\n Context: Web application attack detected. Payload contains suspicious patterns targeting application vulnerabilities."
+        elif 'C2_BEACON' in threat_indicators:
+            prompt += "\n\n Context: Command & Control beacon traffic shows regular periodic communication patterns typical of compromised systems."
+        
+        prompt += """\n\n=== ANALYSIS REQUEST ===
+Provide your analysis in this format:
 
-EXPLANATION: [2-3 sentence explanation of what's happening]
+EXPLANATION: [2-3 sentence explanation of what's happening and why it's significant]
 
 THREAT ASSESSMENT: [low/medium/high/critical]
 
@@ -330,7 +433,7 @@ RECOMMENDATIONS:
 1. [Immediate action to take]
 2. [Follow-up investigation step]
 
-Keep it concise and actionable."""
+Keep it concise and actionable. Focus on the most important findings."""
         
         return prompt
     
@@ -494,7 +597,7 @@ Keep it concise and actionable."""
             "stream": False,
             "options": {
                 "temperature": 0.7,
-                "num_predict": 200,
+                "num_predict": self.max_tokens,  # Use configured max_tokens
             }
         }
         
@@ -567,13 +670,120 @@ Keep it concise and actionable."""
         
         explanation = explanation.replace("**", "").replace("*", "")
         
-        if len(explanation) > 500:
-            explanation = explanation[:497] + "..."
+        # No hard truncation - let full response through
+        # The frontend can handle display truncation if needed
         
         return explanation
     
+    async def process_chat_query(self, query: str, include_events: bool = True) -> Dict[str, Any]:
+        """
+        NEW: Process user chat query with full event context.
+        
+        This is the unified entry point for all chat-based AI queries,
+        providing event context, linked events, and structured responses.
+        
+        Args:
+            query: User's natural language question
+            include_events: Whether to include recent network events as context
+            
+        Returns:
+            Dict with response, linked event_ids, confidence, timestamp, etc.
+        """
+        try:
+            # Build context from recent events
+            recent_events = []
+            if include_events and self.recent_events:
+                # Get last 50 events, filter for anomalies
+                all_events = list(self.recent_events)
+                recent_events = [
+                    e for e in all_events[-50:] 
+                    if e.get('anomaly_score', 0) > 0.3
+                ][:20]  # Keep top 20 anomalous events
+            
+            # Build enhanced chat context
+            context_parts = [
+                "=== USER QUERY ===",
+                query,
+                "",
+                "=== RECENT NETWORK ACTIVITY ===",
+            ]
+            
+            if recent_events:
+                context_parts.append(f"Last {len(recent_events)} anomalous events:")
+                for event in recent_events[-10:]:  # Show last 10
+                    timestamp = event.get('timestamp', 'N/A')
+                    # Extract time only
+                    time_only = timestamp[-12:-4] if len(timestamp) > 12 else timestamp
+                    src = event.get('src', 'N/A')
+                    dst = event.get('dst', 'N/A')
+                    proto = event.get('proto', 'N/A')
+                    score = event.get('anomaly_score', 0)
+                    threats = ', '.join(event.get('threat_indicators', [])) or 'None'
+                    
+                    context_parts.append(
+                        f"  [{time_only}] {src} → {dst} ({proto}) "
+                        f"Score: {score:.2f} | Threats: {threats}"
+                    )
+            else:
+                context_parts.append("(No recent anomalies detected)")
+            
+            # Add instructions for AI
+            context_parts.extend([
+                "",
+                "=== INSTRUCTIONS ===",
+                "Provide a concise, actionable answer based on the network activity above.",
+                "Reference specific events if relevant. Be direct and helpful."
+            ])
+            
+            context = "\n".join(context_parts)
+            
+            # Query AI
+            if self.mode == 'local':
+                response = await self._query_local(context)
+            else:
+                response = await self._query_remote(context)
+            
+            response = self._clean_explanation(response)
+            
+            # Extract event IDs/timestamps mentioned in context
+            event_ids = [e.get('timestamp', e.get('id')) for e in recent_events if e.get('timestamp') or e.get('id')]
+            
+            # Determine confidence based on available context
+            confidence = 'high' if len(recent_events) >= 5 else \
+                        'medium' if len(recent_events) > 0 else 'low'
+            
+            self.query_count += 1
+            
+            return {
+                'type': 'chat_response',
+                'query': query,
+                'response': response,
+                'event_ids': event_ids[:20],  # Link to relevant events (max 20)
+                'timestamp': datetime.now().isoformat(),
+                'model': self.remote_model if self.mode == 'remote' else self.local_model,
+                'ai_mode': self.mode,
+                'confidence': confidence,
+                'events_analyzed': len(recent_events)
+            }
+            
+        except Exception as e:
+            logger.error(f"Chat query error: {e}")
+            return {
+                'type': 'chat_response',
+                'query': query,
+                'response': f"Error processing query: {str(e)[:200]}",
+                'event_ids': [],
+                'timestamp': datetime.now().isoformat(),
+                'error': True,
+                'confidence': 'low'
+            }
+    
     async def query_chat(self, user_message: str, context_events: List[Dict] = None) -> str:
-        """Chat interface for interactive queries."""
+        """
+        DEPRECATED: Use process_chat_query() instead.
+        Kept for backward compatibility.
+        """
+        logger.warning("query_chat() is deprecated. Use process_chat_query() instead.")
         try:
             context = "Recent network activity:\n"
             events_to_use = context_events if context_events else list(self.recent_events)[-10:]

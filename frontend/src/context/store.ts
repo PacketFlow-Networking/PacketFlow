@@ -5,17 +5,20 @@ import type {
   AIMessage, 
   UserMessage, 
   SystemStatus, 
-  MessageFeedback, 
   EventFilters, 
-  DEFAULT_FILTERS, 
   Incident, 
   IncidentStatus, 
   IncidentNote,
   AlertConfiguration,
   AlertRule,
-  IPListEntry
+  IPListEntry,
+  UserProfile,
+  ProactiveSuggestion,
+  EventFeedback,
+  Prediction,
+  ContextualTip
 } from '../types';
-import { DEFAULT_FILTERS as FILTERS, DEFAULT_ALERT_CONFIG } from '../types';
+import { DEFAULT_FILTERS as FILTERS, DEFAULT_ALERT_CONFIG, DEFAULT_USER_PROFILE } from '../types';
 
 interface UIState {
   // Data
@@ -33,6 +36,14 @@ interface UIState {
   feedback: Record<string, 'up' | 'down'>;
   filters: EventFilters;
   alertConfig: AlertConfiguration;
+  
+  // IUI State
+  userProfile: UserProfile;
+  suggestions: ProactiveSuggestion[];
+  eventFeedback: Record<string, EventFeedback>; // event_id -> feedback
+  predictions: Prediction[];
+  contextualTips: ContextualTip[];
+  dismissedSuggestions: string[];
   
   // Actions
   addEvent: (event: NetworkEvent) => void;
@@ -68,9 +79,21 @@ interface UIState {
   deleteAlertRule: (id: string) => void;
   toggleAlertRule: (id: string) => void;
   resetAlertConfig: () => void;
+  
+  // IUI Actions
+  updateUserProfile: (updates: Partial<UserProfile>) => void;
+  trackInteraction: (interactionType: string) => void;
+  addSuggestion: (suggestion: ProactiveSuggestion) => void;
+  dismissSuggestion: (id: string) => void;
+  clearExpiredSuggestions: () => void;
+  addEventFeedback: (feedback: EventFeedback) => void;
+  addPrediction: (prediction: Prediction) => void;
+  clearOldPredictions: (maxAge: number) => void;
+  markConceptSeen: (concept: string) => void;
+  dismissTooltip: (tooltipId: string) => void;
 }
 
-export const useStore = create<UIState>(
+export const useStore = create<UIState>()(
   persist(
     (set) => ({
   // Initial state
@@ -86,6 +109,14 @@ export const useStore = create<UIState>(
   feedback: {},
   filters: FILTERS,
   alertConfig: DEFAULT_ALERT_CONFIG,
+  
+  // IUI Initial state
+  userProfile: DEFAULT_USER_PROFILE,
+  suggestions: [],
+  eventFeedback: {},
+  predictions: [],
+  contextualTips: [],
+  dismissedSuggestions: [],
   
   // Actions
   addEvent: (event) => set((state) => ({
@@ -262,13 +293,105 @@ export const useStore = create<UIState>(
     }
   })),
   
-  resetAlertConfig: () => set({ alertConfig: DEFAULT_ALERT_CONFIG })
+  resetAlertConfig: () => set({ alertConfig: DEFAULT_ALERT_CONFIG }),
+  
+  // IUI Action implementations
+  updateUserProfile: (updates) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      ...updates,
+      last_interaction: new Date().toISOString()
+    }
+  })),
+  
+  trackInteraction: (_interactionType: string) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      interaction_count: state.userProfile.interaction_count + 1,
+      last_interaction: new Date().toISOString()
+    }
+  })),
+  
+  addSuggestion: (suggestion) => set((state) => ({
+    suggestions: [suggestion, ...state.suggestions].slice(0, 10) // Keep last 10
+  })),
+  
+  dismissSuggestion: (id) => set((state) => ({
+    suggestions: state.suggestions.filter(s => s.id !== id),
+    dismissedSuggestions: [...state.dismissedSuggestions, id]
+  })),
+  
+  clearExpiredSuggestions: () => set((state) => {
+    const now = new Date().getTime();
+    return {
+      suggestions: state.suggestions.filter(s => 
+        !s.expires_at || new Date(s.expires_at).getTime() > now
+      )
+    };
+  }),
+  
+  addEventFeedback: (feedback) => set((state) => ({
+    eventFeedback: {
+      ...state.eventFeedback,
+      [feedback.event_id]: feedback
+    },
+    userProfile: {
+      ...state.userProfile,
+      alert_history: {
+        ...state.userProfile.alert_history,
+        true_positives: feedback.user_label === 'true_positive' 
+          ? state.userProfile.alert_history.true_positives + 1 
+          : state.userProfile.alert_history.true_positives,
+        false_positives: feedback.user_label === 'false_positive' 
+          ? state.userProfile.alert_history.false_positives + 1 
+          : state.userProfile.alert_history.false_positives,
+        accuracy_rate: ((state.userProfile.alert_history.true_positives + (feedback.user_label === 'true_positive' ? 1 : 0)) / 
+          (state.userProfile.alert_history.true_positives + state.userProfile.alert_history.false_positives + 1)) * 100
+      }
+    }
+  })),
+  
+  addPrediction: (prediction) => set((state) => ({
+    predictions: [prediction, ...state.predictions].slice(0, 5) // Keep last 5
+  })),
+  
+  clearOldPredictions: (maxAge) => set((state) => {
+    const now = Date.now();
+    return {
+      predictions: state.predictions.filter(p => 
+        now - new Date(p.timestamp).getTime() < maxAge
+      )
+    };
+  }),
+  
+  markConceptSeen: (concept) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      learning_progress: {
+        ...state.userProfile.learning_progress,
+        concepts_seen: [...new Set([...state.userProfile.learning_progress.concepts_seen, concept])]
+      }
+    }
+  })),
+  
+  dismissTooltip: (tooltipId) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      learning_progress: {
+        ...state.userProfile.learning_progress,
+        tooltips_dismissed: [...new Set([...state.userProfile.learning_progress.tooltips_dismissed, tooltipId])]
+      }
+    }
+  }))
     }),
     {
-      name: 'ainetui-alert-config',
+      name: 'ainetui-store',
       partialize: (state) => ({ 
         alertConfig: state.alertConfig,
-        mockMode: state.mockMode
+        mockMode: state.mockMode,
+        userProfile: state.userProfile,
+        dismissedSuggestions: state.dismissedSuggestions,
+        eventFeedback: state.eventFeedback
       })
     }
   )

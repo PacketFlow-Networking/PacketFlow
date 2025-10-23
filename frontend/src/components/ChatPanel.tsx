@@ -4,13 +4,16 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useStore, getAllMessages } from '../context/store';
 import { useApi } from '../hooks/useApi';
-import type { AIMessage, UserMessage } from '../types';
+import ExpandableText from './ExpandableText';
+import AIDetailsModal from './AIDetailsModal';
+import type { AIMessage, UserMessage, NetworkEvent } from '../types';
 
 dayjs.extend(relativeTime);
 
 const ChatPanel = () => {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<AIMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -25,6 +28,16 @@ const ChatPanel = () => {
   
   const { queryAI } = useApi();
   const messages = useStore(getAllMessages);
+
+  // Get related events for a message
+  // The backend now sends event timestamps in event_ids, so we match by timestamp first
+  const getRelatedEvents = (message: AIMessage): NetworkEvent[] => {
+    if (message.event_ids.length === 0) return [];
+    return events.filter(event => 
+      message.event_ids.includes(event.timestamp) || 
+      message.event_ids.includes(event.id)
+    ).slice(0, 10); // Limit to 10 most recent
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,19 +72,20 @@ const ChatPanel = () => {
     setIsSubmitting(true);
 
     try {
+      // Query AI via REST endpoint
+      // The backend will:
+      // 1. Process query through AI agent with event context
+      // 2. Broadcast response via WebSocket (handled by useWebSocket)
+      // 3. Also return to us here
       const response = await queryAI(input.trim());
       
-      if (response) {
-        const aiMessage: AIMessage = {
-          id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          timestamp: new Date().toISOString(),
-          content: response,
-          event_ids: [],
-          type: response.includes('[MOCK]') ? 'response' : 'insight',
-          confidence: 'medium'
-        };
-        
-        addAIMessage(aiMessage);
+      // Note: The WebSocket will receive the full structured response
+      // with linked event_ids automatically. This fallback is only
+      // for HTTP-only clients or when WebSocket is disconnected.
+      if (response && !response.startsWith('[MOCK]') && !response.startsWith('[INFO]')) {
+        // Response received via HTTP but not yet via WebSocket
+        // This is rare but can happen during network issues
+        console.log('[Chat] HTTP response received, WebSocket should also deliver it');
       }
     } catch (error) {
       console.error('Query error:', error);
@@ -123,9 +137,12 @@ const ChatPanel = () => {
             )}
           </div>
 
-          <p className="text-text text-sm leading-relaxed whitespace-pre-wrap">
-            {message.content}
-          </p>
+          <ExpandableText 
+            text={message.content}
+            maxLength={200}
+            className="text-text text-sm leading-relaxed"
+            onShowMore={aiMessage ? () => setSelectedMessage(aiMessage) : undefined}
+          />
 
           {aiMessage && (
             <div className="mt-3 flex items-center gap-3">
@@ -217,10 +234,19 @@ const ChatPanel = () => {
             disabled={!input.trim() || isSubmitting}
             className="btn-primary px-4"
           >
-            {isSubmitting ? <span></span> : <Send className="w-5 h-5" />}
+            {isSubmitting ? <span>⏳</span> : <Send className="w-5 h-5" />}
           </button>
         </form>
       </div>
+
+      {/* AI Details Modal */}
+      {selectedMessage && (
+        <AIDetailsModal
+          message={selectedMessage}
+          relatedEvents={getRelatedEvents(selectedMessage)}
+          onClose={() => setSelectedMessage(null)}
+        />
+      )}
     </div>
   );
 };
