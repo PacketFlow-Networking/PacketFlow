@@ -250,9 +250,9 @@ function App() {
       {/* Glossary Panel - IUI Feature */}
       <GlossaryPanel />
       
-      {/* Floating hint */}
+      {/* Floating hint - positioned bottom-right to avoid chat panel interference */}
       {!showShortcutsHelp && !showAlertConfig && (
-        <div className="fixed bottom-6 left-6 text-xs text-text-dim">
+        <div className="fixed bottom-6 right-6 text-xs text-text-dim">
           Press <kbd className="px-2 py-1 bg-panel border border-border rounded text-text">?</kbd> for shortcuts
           {' | '}
           <kbd className="px-2 py-1 bg-panel border border-border rounded text-text">Ctrl+,</kbd> for alerts
