@@ -57,10 +57,15 @@ python backend/simple_pcap_test.py
 
 ### Frontend State Flow (Zustand)
 - **`useWebSocket.ts`**: Auto-reconnecting WebSocket with exponential backoff (20s  40s  60s max)
-- **`store.ts`**: Single source of truth, persisted to localStorage (filters, alerts, incidents)
+- **`store.ts`**: Single source of truth, persisted to localStorage (filters, alerts, incidents, selectedIncidentId)
 - **`App.tsx`**: Orchestrates 6 main views (events/stats/topology + chat/incidents)
 
 **Critical Detail**: Events are deduplicated by `timestamp + src + dst + proto` composite key to avoid duplicates during reconnects.
+
+**State Management Patterns**:
+- `selectedEventId` - Tracks active event for details modal
+- `selectedIncidentId` - Tracks active incident, auto-set on creation, auto-cleared on deletion
+- All selections persist to localStorage for session continuity
 
 ## Project-Specific Conventions
 
@@ -84,16 +89,18 @@ python backend/simple_pcap_test.py
 ### Frontend Patterns
 1. **TypeScript Strictness**: All network data types are in `frontend/src/types/index.ts`. Never use `any` for event/message types.
 
-2. **Zustand Actions**: State mutations only through store actions (`addEvent`, `setFilters`), never direct assignment.
+2. **Zustand Actions**: State mutations only through store actions (`addEvent`, `setFilters`, `selectIncident`), never direct assignment.
 
 3. **Component Organization**:
    - `components/`  UI components (alerts/, incidents/, topology/ subdirs for features)
    - `hooks/`  Side effects (useWebSocket, useApi)
    - `context/`  Global state (store.ts, ToastContext.tsx)
 
-4. **Tailwind CSS**: Custom color palette in `globals.css` (`--color-base`, `--color-panel`, etc.). Don't use arbitrary values like `bg-[#111827]`.
+4. **Tailwind CSS**: Custom color palette in `globals.css` (`--color-base`, `--color-panel`, etc.). Don't use arbitrary values.
 
 5. **Memory Management**: `clearOldEvents(10 * 60 * 1000)` runs every 60s to prevent memory leaks (keeps last 200 events).
+
+6. **UI Positioning**: Floating elements (keyboard shortcuts, tooltips) positioned at `bottom-center` (`left-1/2 -translate-x-1/2`) to avoid panel interference.
 
 ## The "Flow Condenser" Brain
 
@@ -220,12 +227,74 @@ The `dns-remoteshell.pcap` file contains DNS tunneling attack trafficgreat for l
 - Add rate limiting: Use `@limiter.limit("10/minute")` decorator
 - Add Prometheus metrics: Import from `metrics.py`
 
+### Modify incident management
+- State management: `frontend/src/context/store.ts`
+- Main panel: `frontend/src/components/IncidentPanel.tsx`
+- Create modal: `frontend/src/components/incidents/CreateIncidentModal.tsx`
+- Details modal: `frontend/src/components/incidents/IncidentDetailsModal.tsx`
+- Pattern: Use `selectIncident(id)` for state changes, `addIncident()` auto-selects new incidents
+
 ## Documentation Index
 - **Architecture**: `NEW_ARCHITECTURE.md`, `CONDENSER_EXPLAINED.md`
 - **Data sources**: `DATA_SOURCE_ANALYSIS.md` (mock vs PCAP vs live)
 - **Backend details**: `backend/README.md`
 - **Frontend details**: `frontend/README.md`
 - **Deployment**: `docker-compose.yml`, `backend/Dockerfile`
+- **Features**: `frontend/FEATURE_*_COMPLETE.md` (6 features), `frontend/IUI_PHASE1_COMPLETE.md`
+
+## Intelligent User Interface (IUI) Features
+
+### Phase 1 Completed Features:
+1. **Proactive Suggestions** (`ProactiveSuggestions.tsx`)
+   - Context-aware recommendations based on current events
+   - Priority levels (high/medium/low)
+   - Types: investigation, action, filter, insight, learning
+   - Auto-dismissal and expiration
+
+2. **Event Feedback System** (`FeedbackPanel.tsx`)
+   - Users can label events: true_positive, false_positive, missed_detection
+   - Tracks accuracy rate in user profile
+   - Correctable severity levels
+   - Used to improve future detections
+
+3. **User Profile & Adaptive Learning**
+   - Expertise levels: novice, intermediate, expert
+   - Tracks interaction count and alert history
+   - Learning progress (concepts seen, tooltips dismissed)
+   - Stored in `store.ts` and persisted to localStorage
+
+4. **Glossary & Contextual Help** (`GlossaryPanel.tsx`)
+   - Searchable security/network term definitions
+   - Categories: security, network, statistics, protocol
+   - Context-sensitive tooltips throughout UI
+   - Keyboard shortcut: `?` for help, displayed at bottom-center
+
+5. **Keyboard Shortcuts** (`KeyboardShortcuts.tsx`)
+   - Global shortcuts for common actions
+   - `?` - Show shortcuts help
+   - `Ctrl+,` - Alert configuration
+   - `Ctrl+K` - Focus search
+   - `Ctrl+N` - New incident
+   - Tab navigation and panel toggling
+   - Hint displayed at bottom-center to avoid panel interference
+
+### Alert Configuration System (Feature 4):
+- **Sensitivity slider**: Adjusts global anomaly threshold (0-100)
+- **Custom thresholds**: anomaly_score, flow_rate, packet_rate, byte_rate
+- **IP Lists**: Whitelist and blacklist with comments
+- **Custom Rules**: Field-based conditions with actions (notify, create_incident, log, sound)
+- **Notifications**: Toggle sound, toast, auto-incident creation
+- Accessible via `Ctrl+,` shortcut
+
+### Incident Management (Feature 7):
+- **State Pattern**: Centralized `selectedIncidentId` in Zustand store
+- **Auto-Selection**: Creating incident automatically opens details modal
+- **Immediate Updates**: All mutations trigger instant UI refresh
+- **Features**: Create, view, edit, delete, add notes, change status, assign, tag
+- **Statuses**: open, investigating, resolved, false_positive
+- **Severities**: critical, high, medium, low
+- **Search & Filter**: By title, description, tags, status
+- Left panel toggle between Chat and Incidents
 
 ## Development Guidelines
 - **Python**: Use type hints, async/await, structured logging
