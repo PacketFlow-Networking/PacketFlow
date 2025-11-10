@@ -13,7 +13,8 @@ import {
   Pause,
   Play,
   Lock,
-  Unlock
+  Unlock,
+  Layers
 } from 'lucide-react';
 
 export interface TopologyNode {
@@ -442,6 +443,15 @@ export default function TopologyView() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* 3D View Button */}
+          <button
+            onClick={() => window.open('/3d-topology', '_blank')}
+            className="p-2 hover:bg-panel-hover rounded transition-colors text-info"
+            title="Open 3D Network Topology (New Tab)"
+          >
+            <Layers className="w-4 h-4" />
+          </button>
+
           {/* Lock/Unlock */}
           <button
             onClick={() => {

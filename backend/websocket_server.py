@@ -450,6 +450,163 @@ class WebSocketServer:
                 logger.error(f"Error fetching database stats: {e}")
                 raise HTTPException(status_code=500, detail=str(e))
         
+        @self.app.get("/api/network_graph")
+        async def get_network_graph():
+            """
+            Get network topology graph data for 3D visualization.
+            Returns nodes with semantic vectors and geographical data for external IPs.
+            """
+            try:
+                # Get recent events from database or cache
+                if self.database and self.database.enabled:
+                    events = await self.database.get_events(limit=500)
+                else:
+                    # Fallback: return empty if no data available
+                    return {"nodes": [], "links": []}
+                
+                # Build graph from events
+                from collections import defaultdict
+                import numpy as np
+                
+                node_map = {}
+                link_map = defaultdict(lambda: {"value": 0, "anomalies": 0, "semanticDistance": 0.5})
+                
+                # Helper to determine if IP is internal
+                def is_internal(ip: str) -> bool:
+                    return (
+                        ip.startswith('10.') or
+                        ip.startswith('192.168.') or
+                        ip.startswith('127.') or
+                        (ip.startswith('172.') and 16 <= int(ip.split('.')[1]) <= 31) or
+                        ip == 'localhost'
+                    )
+                
+                # Process events to build nodes
+                for event in events:
+                    src = event.get('src', '')
+                    dst = event.get('dst', '')
+                    
+                    # Process source node
+                    if src and src not in node_map:
+                        node_map[src] = {
+                            "id": src,
+                            "ip": src,
+                            "type": "internal" if is_internal(src) else "external",
+                            "anomalyScore": 0,
+                            "eventCount": 0,
+                            "totalBytes": 0,
+                            "semanticVector": []
+                        }
+                    
+                    if src in node_map:
+                        node_map[src]["anomalyScore"] = max(
+                            node_map[src]["anomalyScore"],
+                            event.get("anomaly_score", 0)
+                        )
+                        node_map[src]["eventCount"] += 1
+                        node_map[src]["totalBytes"] += event.get("total_bytes", 0)
+                    
+                    # Process destination node
+                    if dst and dst not in node_map:
+                        node_map[dst] = {
+                            "id": dst,
+                            "ip": dst,
+                            "type": "internal" if is_internal(dst) else "external",
+                            "anomalyScore": 0,
+                            "eventCount": 0,
+                            "totalBytes": 0,
+                            "semanticVector": []
+                        }
+                    
+                    if dst in node_map:
+                        node_map[dst]["anomalyScore"] = max(
+                            node_map[dst]["anomalyScore"],
+                            event.get("anomaly_score", 0)
+                        )
+                        node_map[dst]["eventCount"] += 1
+                        node_map[dst]["totalBytes"] += event.get("total_bytes", 0)
+                    
+                    # Process link
+                    if src and dst:
+                        link_key = f"{src}-{dst}"
+                        link_map[link_key]["value"] += event.get("flows", 1)
+                        if event.get("anomaly_score", 0) > 0.5:
+                            link_map[link_key]["anomalies"] += 1
+                
+                # Generate semantic vectors for nodes (normalized features)
+                for node_id, node in node_map.items():
+                    # Create feature vector: [anomaly_score, normalized_events, normalized_bytes]
+                    max_events = max((n["eventCount"] for n in node_map.values()), default=1)
+                    max_bytes = max((n["totalBytes"] for n in node_map.values()), default=1)
+                    
+                    node["semanticVector"] = [
+                        node["anomalyScore"],
+                        node["eventCount"] / max_events if max_events > 0 else 0,
+                        node["totalBytes"] / max_bytes if max_bytes > 0 else 0
+                    ]
+                
+                # Try to add geographical data for external IPs
+                import aiohttp
+                external_nodes = [n for n in node_map.values() if n["type"] == "external"]
+                
+                # Limit API calls (don't overwhelm free service)
+                for node in external_nodes[:20]:  # Only first 20 external IPs
+                    try:
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(
+                                f"https://ipapi.co/{node['ip']}/json/",
+                                timeout=aiohttp.ClientTimeout(total=2)
+                            ) as response:
+                                if response.status == 200:
+                                    data = await response.json()
+                                    node["lat"] = data.get("latitude")
+                                    node["lon"] = data.get("longitude")
+                    except Exception as e:
+                        logger.debug(f"Could not fetch geo data for {node['ip']}: {e}")
+                        # Continue without geo data
+                        pass
+                
+                # Calculate semantic distances for links
+                def cosine_distance(v1, v2):
+                    """Calculate cosine distance between two vectors."""
+                    if not v1 or not v2:
+                        return 0.5
+                    v1_arr = np.array(v1)
+                    v2_arr = np.array(v2)
+                    norm1 = np.linalg.norm(v1_arr)
+                    norm2 = np.linalg.norm(v2_arr)
+                    if norm1 == 0 or norm2 == 0:
+                        return 0.5
+                    similarity = np.dot(v1_arr, v2_arr) / (norm1 * norm2)
+                    return 1 - similarity  # Convert similarity to distance
+                
+                # Build links with semantic distances
+                links = []
+                for link_key, link_data in link_map.items():
+                    src_id, dst_id = link_key.split('-')
+                    if src_id in node_map and dst_id in node_map:
+                        src_vec = node_map[src_id]["semanticVector"]
+                        dst_vec = node_map[dst_id]["semanticVector"]
+                        semantic_dist = cosine_distance(src_vec, dst_vec)
+                        
+                        links.append({
+                            "source": src_id,
+                            "target": dst_id,
+                            "value": link_data["value"],
+                            "anomalies": link_data["anomalies"],
+                            "semanticDistance": float(semantic_dist)
+                        })
+                
+                return {
+                    "nodes": list(node_map.values()),
+                    "links": links,
+                    "timestamp": datetime.now().isoformat()
+                }
+            
+            except Exception as e:
+                logger.error(f"Error generating network graph: {e}", exc_info=True)
+                raise HTTPException(status_code=500, detail=str(e))
+        
         @self.app.websocket("/ws/updates")
         async def websocket_endpoint(websocket: WebSocket):
             """WebSocket endpoint for streaming updates."""
