@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, Filter, X, Clock } from 'lucide-react';
 import { useStore } from '../context/store';
+import FilterPresetsMenu from './FilterPresetsMenu';
 import type { SeverityLevel } from '../types';
 
 const FilterBar = () => {
@@ -103,6 +104,9 @@ const FilterBar = () => {
             </option>
           ))}
         </select>
+
+        {/* Filter Presets Menu (H7-02) */}
+        <FilterPresetsMenu />
 
         {/* Advanced Filters Toggle */}
         <button

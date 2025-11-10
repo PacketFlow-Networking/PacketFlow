@@ -64,13 +64,37 @@ export const useApi = () => {
           return `[INFO] Query endpoint not available yet. Backend is running in monitoring mode.`;
         }
         if (response.status === 503) {
-          // AI agent not available
+          // AI agent not available - parse detailed error
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.error || '';
+          
+          if (errorMsg.includes('OLLAMA_CONNECTION_REFUSED')) {
+            return `[ERROR_OLLAMA_CONNECTION] Cannot connect to Ollama at localhost:11434. Make sure Ollama is running:\n\n1. Open a terminal\n2. Run: ollama serve\n3. Try your query again`;
+          }
+          if (errorMsg.includes('OLLAMA_TIMEOUT')) {
+            return `[ERROR_OLLAMA_TIMEOUT] Ollama connection timed out. Check if Ollama is responsive:\n\n1. Run: curl http://localhost:11434/api/tags\n2. If it hangs, restart Ollama\n3. Try your query again`;
+          }
           return `[INFO] AI agent is currently unavailable. Please make sure Ollama is running or remote AI is configured.`;
         }
         throw new Error(`Query failed: ${response.status}`);
       }
       
       const data = await response.json();
+      
+      // Check if the response contains an error from the AI agent
+      if (data.error) {
+        const errorMsg = data.error || '';
+        
+        if (errorMsg.includes('OLLAMA_CONNECTION_REFUSED')) {
+          return `[ERROR_OLLAMA_CONNECTION] Cannot connect to Ollama at localhost:11434. Make sure Ollama is running:\n\n1. Open a terminal\n2. Run: ollama serve\n3. Try your query again`;
+        }
+        if (errorMsg.includes('OLLAMA_TIMEOUT')) {
+          return `[ERROR_OLLAMA_TIMEOUT] Ollama connection timed out. Check if Ollama is responsive:\n\n1. Run: curl http://localhost:11434/api/tags\n2. If it hangs, restart Ollama\n3. Try your query again`;
+        }
+        
+        return `[ERROR] ${errorMsg}`;
+      }
+      
       // The new unified response includes 'response' field
       return data.response || data.answer || null;
     } catch (error) {

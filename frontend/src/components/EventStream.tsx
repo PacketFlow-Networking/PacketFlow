@@ -157,7 +157,7 @@ const EventStream = () => {
                   <div
                     key={event.id}
                     onClick={() => handleEventClick(event)}
-                    className={`panel p-4 cursor-pointer panel-hover transition-all ${
+                    className={`panel p-4 cursor-pointer panel-hover transition-all relative group ${
                       hasAnomalyScore && event.anomaly_score >= 0.8 
                         ? 'border-critical animate-pulse-critical' 
                         : ''
@@ -171,8 +171,8 @@ const EventStream = () => {
                     }}
                     aria-label={`Event: ${event.summary}`}
                   >
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-2">
+                    {/* Header with severity and time */}
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {hasAnomalyScore && (
                           <AlertTriangle 
@@ -194,29 +194,48 @@ const EventStream = () => {
                       </span>
                     </div>
 
-                    {/* Summary */}
-                    <p className="text-sm text-text mb-2 line-clamp-2">
-                      {event.summary}
-                    </p>
-
-                    {/* Connection Info */}
-                    <div className="flex items-center gap-2 text-xs font-mono text-text-dim">
-                      <span className="truncate max-w-[45%]">{event.src}</span>
-                      <span></span>
-                      <span className="truncate max-w-[45%]">{event.dst}</span>
+                    {/* Connection: src → dst (simplified, prominent) */}
+                    <div className="flex items-center gap-2 mb-2 text-sm font-mono">
+                      <span className="text-blue-400 truncate max-w-[42%]">{event.src}</span>
+                      <span className="text-text-dim">→</span>
+                      <span className="text-purple-400 truncate max-w-[42%]">{event.dst}</span>
                     </div>
 
-                    {/* Metrics */}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-text-dim">
-                      <span>{event.flows} flows</span>
-                      {event.anomaly_score > 0 && (
-                        <span className={`font-semibold ${
+                    {/* Anomaly Score (prominent if high) */}
+                    {event.anomaly_score > 0.3 && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-text-dim">Anomaly Score:</span>
+                        <span className={`text-sm font-bold ${
                           event.anomaly_score >= 0.8 ? 'text-critical' :
                           event.anomaly_score >= 0.5 ? 'text-warn' : 'text-info'
                         }`}>
-                          Score: {(event.anomaly_score * 100).toFixed(0)}%
+                          {(event.anomaly_score * 100).toFixed(0)}%
                         </span>
-                      )}
+                      </div>
+                    )}
+
+                    {/* Threat Indicators (max 2 visible) */}
+                    {event.detection_methods && event.detection_methods.length > 0 && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {event.detection_methods.slice(0, 2).map((method, idx) => (
+                          <span 
+                            key={idx}
+                            className="text-xs px-2 py-0.5 bg-red-500/20 text-red-300 rounded border border-red-500/30"
+                          >
+                            {method}
+                          </span>
+                        ))}
+                        {event.detection_methods.length > 2 && (
+                          <span className="text-xs text-text-dim">
+                            +{event.detection_methods.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* View Details hover hint */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-xs text-blue-400">View Details →</span>
                     </div>
                   </div>
                 );

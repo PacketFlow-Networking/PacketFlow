@@ -15,9 +15,22 @@ import TopologyView from './components/TopologyView';
 import AlertConfigModal from './components/alerts/AlertConfigModal';
 import GlossaryPanel from './components/GlossaryPanel';
 import OnboardingModal from './components/OnboardingModal';
+import PacketFlowIntro from './components/PacketFlowIntro';
 import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network } from 'lucide-react';
 
 function App() {
+  // Startup animation state (shown on first load only)
+  const [showIntro, setShowIntro] = useState(() => {
+    // Check if intro has been shown in this session
+    const introShown = sessionStorage.getItem('intro-shown');
+    return !introShown;
+  });
+  
+  const handleIntroComplete = () => {
+    sessionStorage.setItem('intro-shown', 'true');
+    setShowIntro(false);
+  };
+  
   useWebSocket();
   useApi();
   
@@ -199,6 +212,11 @@ function App() {
     },
     isModalOpen: showShortcutsHelp || showAlertConfig,
   });
+
+  // Show intro animation on first load
+  if (showIntro) {
+    return <PacketFlowIntro onComplete={handleIntroComplete} />;
+  }
 
   return (
     <div className="h-screen flex flex-col bg-base">

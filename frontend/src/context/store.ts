@@ -83,6 +83,11 @@ interface UIState {
   toggleAlertRule: (id: string) => void;
   resetAlertConfig: () => void;
   
+  // Filter preset actions (H7-02)
+  saveFilterPreset: (name: string, filters: import('../types').EventFilters) => void;
+  applyFilterPreset: (id: string) => void;
+  deleteFilterPreset: (id: string) => void;
+  
   // IUI Actions
   updateUserProfile: (updates: Partial<UserProfile>) => void;
   trackInteraction: (interactionType: string) => void;
@@ -101,6 +106,13 @@ interface UIState {
   dismissTooltip: (tooltipId: string) => void;
   setPreferredDefaultView: (view: PreferredView) => void;
   completeOnboarding: () => void;
+  
+  // Usability Metrics Actions
+  startTask: (taskName: string) => void;
+  completeTask: (taskName: string, errors?: number) => void;
+  logError: (action: string, errorType: 'click_error' | 'navigation_error' | 'input_error' | 'confusion', description: string, recovered?: boolean) => void;
+  logConfusion: (context: string, durationMs: number) => void;
+  exportUsabilityMetrics: () => any;
 }
 
 export const useStore = create<UIState>()(
@@ -309,6 +321,48 @@ export const useStore = create<UIState>()(
   })),
   
   resetAlertConfig: () => set({ alertConfig: DEFAULT_ALERT_CONFIG }),
+  
+  // Filter preset actions (H7-02)
+  saveFilterPreset: (name: string, filters: import('../types').EventFilters) => set((state) => {
+    const newPreset: import('../types').FilterPreset = {
+      id: `preset-${Date.now()}`,
+      name,
+      filters,
+      created_at: new Date().toISOString(),
+    };
+    
+    return {
+      alertConfig: {
+        ...state.alertConfig,
+        filter_presets: [...state.alertConfig.filter_presets, newPreset]
+      }
+    };
+  }),
+
+  applyFilterPreset: (id: string) => set((state) => {
+    const preset = state.alertConfig.filter_presets.find(p => p.id === id);
+    if (!preset) return state;
+    
+    // Update preset's last_used timestamp
+    const updatedPresets = state.alertConfig.filter_presets.map(p =>
+      p.id === id ? { ...p, last_used: new Date().toISOString() } : p
+    );
+    
+    return {
+      filters: preset.filters,
+      alertConfig: {
+        ...state.alertConfig,
+        filter_presets: updatedPresets
+      }
+    };
+  }),
+
+  deleteFilterPreset: (id: string) => set((state) => ({
+    alertConfig: {
+      ...state.alertConfig,
+      filter_presets: state.alertConfig.filter_presets.filter(p => p.id !== id)
+    }
+  })),
   
   // IUI Action implementations
   updateUserProfile: (updates) => set((state) => ({
@@ -551,7 +605,135 @@ export const useStore = create<UIState>()(
         tutorials_completed: [...new Set([...state.userProfile.learning_progress.tutorials_completed, 'initial_onboarding'])]
       }
     }
-  }))
+  })),
+
+  // Usability Metrics Actions
+  startTask: (taskName: string) => set((state) => {
+    const metrics = state.userProfile.usability_metrics || DEFAULT_USER_PROFILE.usability_metrics!;
+    return {
+      userProfile: {
+        ...state.userProfile,
+        usability_metrics: {
+          ...metrics,
+          task_timings: [
+            ...metrics.task_timings,
+            {
+              task_name: taskName,
+              start_time: new Date().toISOString(),
+              completed: false,
+              errors: 0,
+            }
+          ]
+        }
+      }
+    };
+  }),
+
+  completeTask: (taskName: string, errors: number = 0) => set((state) => {
+    const metrics = state.userProfile.usability_metrics || DEFAULT_USER_PROFILE.usability_metrics!;
+    const taskIndex = metrics.task_timings.findIndex(t => t.task_name === taskName && !t.completed);
+    
+    if (taskIndex === -1) return state;
+
+    const updatedTimings = [...metrics.task_timings];
+    const task = updatedTimings[taskIndex];
+    const endTime = new Date().toISOString();
+    const startTime = new Date(task.start_time).getTime();
+    const endTimeMs = new Date(endTime).getTime();
+    
+    updatedTimings[taskIndex] = {
+      ...task,
+      end_time: endTime,
+      duration_ms: endTimeMs - startTime,
+      completed: true,
+      errors,
+    };
+
+    return {
+      userProfile: {
+        ...state.userProfile,
+        usability_metrics: {
+          ...metrics,
+          task_timings: updatedTimings
+        }
+      }
+    };
+  }),
+
+  logError: (action: string, errorType: 'click_error' | 'navigation_error' | 'input_error' | 'confusion', description: string, recovered: boolean = false) => set((state) => {
+    const metrics = state.userProfile.usability_metrics || DEFAULT_USER_PROFILE.usability_metrics!;
+    return {
+      userProfile: {
+        ...state.userProfile,
+        usability_metrics: {
+          ...metrics,
+          error_log: [
+            ...metrics.error_log,
+            {
+              timestamp: new Date().toISOString(),
+              action,
+              error_type: errorType,
+              description,
+              recovered,
+            }
+          ]
+        }
+      }
+    };
+  }),
+
+  logConfusion: (context: string, durationMs: number) => set((state) => {
+    const metrics = state.userProfile.usability_metrics || DEFAULT_USER_PROFILE.usability_metrics!;
+    return {
+      userProfile: {
+        ...state.userProfile,
+        usability_metrics: {
+          ...metrics,
+          confusion_points: [
+            ...metrics.confusion_points,
+            {
+              timestamp: new Date().toISOString(),
+              context,
+              duration_ms: durationMs,
+            }
+          ]
+        }
+      }
+    };
+  }),
+
+  exportUsabilityMetrics: () => {
+    const state = get();
+    const metrics = state.userProfile.usability_metrics;
+    
+    if (!metrics) return null;
+
+    const exportData = {
+      user_profile: {
+        expertise_level: state.userProfile.expertise_level,
+        cognitive_style: state.userProfile.cognitive_style,
+        interaction_count: state.userProfile.interaction_count,
+      },
+      metrics: {
+        task_timings: metrics.task_timings,
+        sus_surveys: metrics.sus_surveys,
+        error_log: metrics.error_log,
+        confusion_points: metrics.confusion_points,
+      },
+      exported_at: new Date().toISOString(),
+    };
+
+    // Create downloadable JSON
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ainetui-usability-metrics-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    return exportData;
+  },
     }),
     {
       name: 'ainetui-store',
@@ -584,6 +766,15 @@ export const useStore = create<UIState>()(
             },
             // Add preferred_default_view if missing
             preferred_default_view: persistedState.userProfile.preferred_default_view || 'auto',
+          };
+        }
+        
+        // Ensure alertConfig has all required fields (including filter_presets)
+        if (persistedState.alertConfig) {
+          persistedState.alertConfig = {
+            ...DEFAULT_ALERT_CONFIG,
+            ...persistedState.alertConfig,
+            filter_presets: persistedState.alertConfig.filter_presets || [],
           };
         }
         

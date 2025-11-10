@@ -22,7 +22,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
     const newToast: ToastData = {
       id,
-      duration: 5000,
+      duration: 1000,
       dismissible: true,
       playSound: false,
       ...options,

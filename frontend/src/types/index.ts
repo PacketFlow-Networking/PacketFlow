@@ -143,6 +143,14 @@ export interface IPListEntry {
   added_at: string;
 }
 
+export interface FilterPreset {
+  id: string;
+  name: string;
+  filters: EventFilters;
+  created_at: string;
+  last_used?: string;
+}
+
 export interface AlertConfiguration {
   // Global sensitivity (0-100, affects anomaly score threshold)
   sensitivity: number;
@@ -161,6 +169,9 @@ export interface AlertConfiguration {
   
   // Alert rules
   rules: AlertRule[];
+  
+  // Filter presets (H7-02)
+  filter_presets: FilterPreset[];
   
   // Notification settings
   notifications: {
@@ -182,6 +193,7 @@ export const DEFAULT_ALERT_CONFIG: AlertConfiguration = {
   whitelist: [],
   blacklist: [],
   rules: [],
+  filter_presets: [],
   notifications: {
     enabled: true,
     sound: true,
@@ -270,6 +282,48 @@ export interface InteractionHistory {
   session_start: string;
 }
 
+// Usability Metrics Types
+export interface TaskTiming {
+  task_name: string;
+  start_time: string;
+  end_time?: string;
+  duration_ms?: number;
+  completed: boolean;
+  errors: number;
+}
+
+export interface SUSResponse {
+  q1: number; // Like to use frequently
+  q2: number; // Unnecessarily complex
+  q3: number; // Easy to use
+  q4: number; // Need technical support
+  q5: number; // Functions well integrated
+  q6: number; // Too much inconsistency
+  q7: number; // Learn quickly
+  q8: number; // Cumbersome to use
+  q9: number; // Felt confident
+  q10: number; // Learn a lot first
+  score?: number; // Calculated SUS score (0-100)
+  timestamp: string;
+}
+
+export interface UsabilityMetrics {
+  task_timings: TaskTiming[];
+  sus_surveys: SUSResponse[];
+  error_log: Array<{
+    timestamp: string;
+    action: string;
+    error_type: 'click_error' | 'navigation_error' | 'input_error' | 'confusion';
+    description: string;
+    recovered: boolean;
+  }>;
+  confusion_points: Array<{
+    timestamp: string;
+    context: string;
+    duration_ms: number;
+  }>;
+}
+
 export interface UserProfile {
   expertise_level: ExpertiseLevel;
   cognitive_style: CognitiveStyle;
@@ -288,6 +342,7 @@ export interface UserProfile {
     onboarding_completed: boolean; // NEW: Track if 3-step onboarding shown
   };
   interaction_history: InteractionHistory;
+  usability_metrics?: UsabilityMetrics; // NEW: Evaluation data collection
   created_at: string;
   last_interaction: string;
 }
@@ -307,7 +362,7 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
     concepts_seen: [],
     tooltips_dismissed: [],
     tutorials_completed: [],
-    onboarding_completed: false, // NEW: Track if 3-step onboarding shown
+    onboarding_completed: false, // NEW: Show onboarding on first launch
   },
   interaction_history: {
     view_switches: [],
@@ -318,6 +373,12 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
     list_views: 0,
     avg_click_depth: 0,
     session_start: new Date().toISOString(),
+  },
+  usability_metrics: {
+    task_timings: [],
+    sus_surveys: [],
+    error_log: [],
+    confusion_points: [],
   },
   created_at: new Date().toISOString(),
   last_interaction: new Date().toISOString(),

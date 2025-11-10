@@ -634,7 +634,7 @@ Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the t
             return "unknown"
     
     async def _query_local(self, prompt: str) -> str:
-        """Query local Ollama instance."""
+        """Query local Ollama instance with enhanced error handling."""
         payload = {
             "model": self.local_model,
             "prompt": f"{self.system_prompt}\n\n{prompt}",
@@ -645,17 +645,27 @@ Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the t
             }
         }
         
-        async with self.session.post(
-            f"{self.ollama_url}/api/generate",
-            json=payload
-        ) as response:
-            if response.status == 200:
-                data = await response.json()
-                return data.get("response", "").strip()
-            else:
-                error_text = await response.text()
-                logger.error(f"Ollama API error: {response.status} - {error_text}")
-                return "AI analysis failed"
+        try:
+            async with self.session.post(
+                f"{self.ollama_url}/api/generate",
+                json=payload
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get("response", "").strip()
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Ollama API error: {response.status} - {error_text}")
+                    return f"Ollama API returned status {response.status}. Check if the model '{self.local_model}' is available."
+        except asyncio.TimeoutError:
+            logger.error(f"Ollama connection timeout after {self.timeout}s")
+            raise Exception(f"OLLAMA_TIMEOUT: Connection to Ollama at {self.ollama_url} timed out. Check if Ollama is running and responsive.")
+        except aiohttp.ClientConnectorError as e:
+            logger.error(f"Cannot connect to Ollama: {e}")
+            raise Exception(f"OLLAMA_CONNECTION_REFUSED: Cannot connect to Ollama at {self.ollama_url}. Make sure Ollama is running (try: ollama serve)")
+        except aiohttp.ClientError as e:
+            logger.error(f"Ollama client error: {e}")
+            raise Exception(f"OLLAMA_CLIENT_ERROR: {str(e)}")
     
     async def _query_remote(self, prompt: str) -> str:
         """Query remote UCY server."""

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, ThumbsUp, ThumbsDown, Bot, User, HelpCircle } from 'lucide-react';
+import { Send, ThumbsUp, ThumbsDown, Bot, User, HelpCircle, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useStore, getAllMessages } from '../context/store';
@@ -15,6 +15,8 @@ const ChatPanel = () => {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<AIMessage | null>(null);
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnosticResult, setDiagnosticResult] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -28,6 +30,36 @@ const ChatPanel = () => {
   
   const { queryAI } = useApi();
   const messages = useStore(getAllMessages);
+
+  // H9-02: Diagnostic function to test Ollama connection
+  const testOllamaConnection = async () => {
+    setIsDiagnosing(true);
+    setDiagnosticResult(null);
+    
+    try {
+      // Test if Ollama is reachable
+      const response = await fetch('http://localhost:11434/api/tags', {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const modelCount = data.models?.length || 0;
+        setDiagnosticResult(`✓ Ollama is running! Found ${modelCount} model(s). Try your query again.`);
+      } else {
+        setDiagnosticResult(`✗ Ollama responded with status ${response.status}. Try restarting Ollama.`);
+      }
+    } catch (error: any) {
+      if (error.name === 'TimeoutError') {
+        setDiagnosticResult(`✗ Connection timed out. Ollama may be frozen. Try:\n1. Stop Ollama (Ctrl+C in terminal)\n2. Run: ollama serve\n3. Wait 5 seconds and test again`);
+      } else {
+        setDiagnosticResult(`✗ Cannot connect to Ollama at localhost:11434.\n\nNext steps:\n1. Open a terminal\n2. Run: ollama serve\n3. Wait for "Ollama is running" message\n4. Click "Test Connection" again`);
+      }
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
 
   // Get related events for a message
   // The backend now sends event timestamps in event_ids, so we match by timestamp first
@@ -104,25 +136,35 @@ const ChatPanel = () => {
     const isUser = message.type === 'user';
     const isAI = !isUser;
     const aiMessage = isAI ? (message as AIMessage) : null;
+    
+    // H9-02: Detect Ollama error messages
+    const isOllamaError = aiMessage && (
+      message.content.includes('[ERROR_OLLAMA_CONNECTION]') ||
+      message.content.includes('[ERROR_OLLAMA_TIMEOUT]')
+    );
+    const errorType = message.content.includes('[ERROR_OLLAMA_CONNECTION]') ? 'connection' : 
+                      message.content.includes('[ERROR_OLLAMA_TIMEOUT]') ? 'timeout' : null;
 
     return (
       <div
         key={message.id}
         id={`message-${message.id}`}
         className={`flex gap-3 p-4 rounded-lg transition-all ${
-          isUser ? 'bg-panel' : 'bg-panel-hover'
+          isUser ? 'bg-panel' : isOllamaError ? 'bg-critical/10 border border-critical/30' : 'bg-panel-hover'
         }`}
       >
         <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-          isUser ? 'bg-info/20' : 'bg-ok/20'
+          isUser ? 'bg-info/20' : isOllamaError ? 'bg-critical/20' : 'bg-ok/20'
         }`}>
-          {isUser ? <User className="w-5 h-5 text-info" /> : <Bot className="w-5 h-5 text-ok" />}
+          {isUser ? <User className="w-5 h-5 text-info" /> : 
+           isOllamaError ? <AlertTriangle className="w-5 h-5 text-critical" /> :
+           <Bot className="w-5 h-5 text-ok" />}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold text-text">
-              {isUser ? 'You' : 'AI Assistant'}
+              {isUser ? 'You' : isOllamaError ? 'AI Assistant (Error)' : 'AI Assistant'}
             </span>
             <span className="text-xs text-text-dim">
               {dayjs(message.timestamp).format('HH:mm:ss')}
@@ -138,13 +180,68 @@ const ChatPanel = () => {
           </div>
 
           <ExpandableText 
-            text={message.content}
+            text={message.content.replace(/\[ERROR_OLLAMA_CONNECTION\]|ERROR_OLLAMA_TIMEOUT\]/g, '')}
             maxLength={200}
-            className="text-text text-sm leading-relaxed"
-            onShowMore={aiMessage ? () => setSelectedMessage(aiMessage) : undefined}
+            className="text-text text-sm leading-relaxed whitespace-pre-wrap"
+            onShowMore={aiMessage && !isOllamaError ? () => setSelectedMessage(aiMessage) : undefined}
           />
 
-          {aiMessage && (
+          {/* H9-02: Diagnostic button for Ollama errors */}
+          {isOllamaError && (
+            <div className="mt-3 p-3 bg-base rounded border border-border">
+              <div className="flex items-start gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-warn flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-text mb-1">
+                    {errorType === 'connection' ? 'Connection Issue' : 'Timeout Issue'}
+                  </p>
+                  <p className="text-xs text-text-dim">
+                    {errorType === 'connection' 
+                      ? 'Cannot reach Ollama. It may not be running.'
+                      : 'Ollama is not responding. It may be frozen or overloaded.'}
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={testOllamaConnection}
+                disabled={isDiagnosing}
+                className="btn-secondary w-full text-sm py-2 flex items-center justify-center gap-2"
+              >
+                {isDiagnosing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Testing Connection...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    Test Ollama Connection
+                  </>
+                )}
+              </button>
+              
+              {/* Show diagnostic result */}
+              {diagnosticResult && (
+                <div className={`mt-2 p-2 rounded text-xs ${
+                  diagnosticResult.startsWith('✓') 
+                    ? 'bg-ok/20 text-ok border border-ok/30' 
+                    : 'bg-critical/20 text-critical border border-critical/30'
+                }`}>
+                  <div className="flex items-start gap-2">
+                    {diagnosticResult.startsWith('✓') ? (
+                      <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    )}
+                    <span className="whitespace-pre-wrap">{diagnosticResult}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {aiMessage && !isOllamaError && (
             <div className="mt-3 flex items-center gap-3">
               {aiMessage.event_ids.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, User, Settings, Brain, TrendingUp, Eye, Target, RotateCcw } from 'lucide-react';
+import { X, User, Settings, Brain, TrendingUp, Eye, Target, RotateCcw, List, Network as NetworkIcon, BarChart3 } from 'lucide-react';
 import { useStore } from '../context/store';
 import { useToast } from '../context/ToastContext';
 import type { PreferredView, ExpertiseLevel } from '../types';
@@ -154,7 +154,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                           : 'border-border hover:border-info/50 text-text-dim'
                       }`}
                     >
-                      <TrendingUp className="w-6 h-6 mx-auto mb-2" />
+                      <List className="w-6 h-6 mx-auto mb-2" />
                       <p className="font-semibold text-sm">Events</p>
                       <p className="text-xs mt-1 opacity-80">Detailed list view</p>
                     </button>
@@ -166,7 +166,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                           : 'border-border hover:border-info/50 text-text-dim'
                       }`}
                     >
-                      <Eye className="w-6 h-6 mx-auto mb-2" />
+                      <NetworkIcon className="w-6 h-6 mx-auto mb-2" />
                       <p className="font-semibold text-sm">Topology</p>
                       <p className="text-xs mt-1 opacity-80">Network visualization</p>
                     </button>
@@ -178,7 +178,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                           : 'border-border hover:border-info/50 text-text-dim'
                       }`}
                     >
-                      <Target className="w-6 h-6 mx-auto mb-2" />
+                      <BarChart3 className="w-6 h-6 mx-auto mb-2" />
                       <p className="font-semibold text-sm">Statistics</p>
                       <p className="text-xs mt-1 opacity-80">Metrics dashboard</p>
                     </button>

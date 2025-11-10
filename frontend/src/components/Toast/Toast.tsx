@@ -19,7 +19,7 @@ export const Toast = ({
   type,
   title,
   message,
-  duration = 5000,
+  duration = 2000,
   dismissible = true,
   onDismiss,
   playSound = false,
