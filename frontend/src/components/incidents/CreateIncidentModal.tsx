@@ -43,6 +43,7 @@ export const CreateIncidentModal = ({ isOpen, onClose, preselectedEventIds = [] 
       assigned_to: assignedTo.trim() || undefined,
     };
 
+    // addIncident will automatically set selectedIncidentId to the new incident's ID
     addIncident(incident);
     showSuccess('Incident created', `"${title}" has been created successfully`);
 

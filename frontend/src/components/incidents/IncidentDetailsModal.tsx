@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Clock, User, MessageSquare, Plus, Trash2, Edit2, Check } from 'lucide-react';
+import { X, User, MessageSquare, Plus, Trash2, Edit2, Check } from 'lucide-react';
 import { useStore } from '../../context/store';
 import { useToast } from '../../context/ToastContext';
 import type { Incident, IncidentStatus, IncidentNote } from '../../types';
@@ -49,6 +49,7 @@ export const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDeta
     if (confirm('Are you sure you want to delete this incident?')) {
       deleteIncident(incident.id);
       showWarning('Incident deleted', `"${incident.title}" has been deleted`);
+      // deleteIncident already clears selectedIncidentId, but close modal explicitly
       onClose();
     }
   };
