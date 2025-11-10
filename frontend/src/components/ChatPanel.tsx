@@ -19,7 +19,6 @@ const ChatPanel = () => {
   
   const { 
     addUserMessage, 
-    addAIMessage, 
     feedback, 
     setFeedback,
     focusedMessageId,

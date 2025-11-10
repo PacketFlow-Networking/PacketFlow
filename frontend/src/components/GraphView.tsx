@@ -4,7 +4,7 @@ import { TrendingUp } from 'lucide-react';
 import dayjs from 'dayjs';
 import { useStore } from '../context/store';
 import { GRAPH_CONFIG } from '../config/graph.config';
-import type { AnomalyMarker } from '../types';
+import type { AnomalyMarker, SeverityLevel } from '../types';
 
 interface DataPoint {
   timestamp: number;
@@ -87,15 +87,17 @@ const GraphView = () => {
         // Find the corresponding data point
         const dataPoint = historyRef.current.get(bucketKey);
         
+        const severity: SeverityLevel = e.anomaly_score >= GRAPH_CONFIG.CRITICAL_THRESHOLD ? 'critical' : 'warn';
+        
         return {
           timestamp: bucketKey,
-          severity: e.anomaly_score >= GRAPH_CONFIG.CRITICAL_THRESHOLD ? 'critical' : 'warn' as const,
+          severity,
           eventId: e.id,
           score: e.anomaly_score,
           yValue: dataPoint?.count || 0
         };
       })
-      .filter(m => m.yValue > 0); // Only show markers with valid y values
+      .filter(m => m.yValue && m.yValue > 0); // Only show markers with valid y values
   }, [events]);
 
   const handleMarkerClick = (marker: AnomalyMarker) => {

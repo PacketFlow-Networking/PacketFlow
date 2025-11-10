@@ -4,7 +4,7 @@ import { useStore } from '../context/store';
 import type { SeverityLevel } from '../types';
 
 const FilterBar = () => {
-  const { filters, setFilters, resetFilters } = useStore();
+  const { filters, setFilters, resetFilters, trackFilterApplication } = useStore();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const severityOptions: SeverityLevel[] = ['critical', 'high', 'medium', 'low', 'normal'];
@@ -18,6 +18,7 @@ const FilterBar = () => {
   ];
 
   const toggleSeverity = (severity: SeverityLevel) => {
+    trackFilterApplication(); // Track for cognitive style
     const newSeverities = filters.severities.includes(severity)
       ? filters.severities.filter(s => s !== severity)
       : [...filters.severities, severity];
@@ -25,6 +26,7 @@ const FilterBar = () => {
   };
 
   const toggleProtocol = (protocol: string) => {
+    trackFilterApplication(); // Track for cognitive style
     const newProtocols = filters.protocols.includes(protocol)
       ? filters.protocols.filter(p => p !== protocol)
       : [...filters.protocols, protocol];
@@ -39,12 +41,15 @@ const FilterBar = () => {
     filters.timeRange !== 'all';
 
   const getSeverityColor = (severity: SeverityLevel) => {
-    const colors = {
+    const colors: Record<SeverityLevel, string> = {
       critical: 'bg-critical text-white',
       high: 'bg-warn text-base',
       medium: 'bg-info/70 text-base',
       low: 'bg-ok/70 text-base',
       normal: 'bg-text-dim text-base',
+      warn: 'bg-warn text-base',
+      ok: 'bg-ok/70 text-base',
+      info: 'bg-info/70 text-base',
     };
     return colors[severity] || colors.normal;
   };

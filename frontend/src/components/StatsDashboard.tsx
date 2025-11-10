@@ -1,8 +1,7 @@
 import { useMemo, useCallback } from 'react';
-import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Network, Shield, Activity, Clock } from 'lucide-react';
 import { useStore } from '../context/store';
-import type { NetworkEvent } from '../types';
 
 const StatsDashboard = () => {
   const { events } = useStore();
@@ -136,7 +135,6 @@ const StatsDashboard = () => {
       .slice(0, 10); // Top 10 application protocols
 
     // Anomaly rate over time (last 10 time buckets)
-    const now = Date.now();
     const bucketSize = 5 * 60 * 1000; // 5 minutes
     const buckets: Record<number, { total: number; anomalies: number }> = {};
     
@@ -333,7 +331,7 @@ const StatsDashboard = () => {
                   label={({ protocol, percent }) => `${protocol} ${(percent * 100).toFixed(0)}%`}
                   labelLine={false}
                 >
-                  {stats.protocolDistribution.map((entry, index) => (
+                  {stats.protocolDistribution.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={PROTOCOL_COLORS[index % PROTOCOL_COLORS.length]} />
                   ))}
                 </Pie>
@@ -369,7 +367,7 @@ const StatsDashboard = () => {
                   }
                   labelLine={false}
                 >
-                  {stats.applicationProtocolDistribution.map((entry, index) => (
+                  {stats.applicationProtocolDistribution.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={PROTOCOL_COLORS[index % PROTOCOL_COLORS.length]} />
                   ))}
                 </Pie>

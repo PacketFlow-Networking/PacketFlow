@@ -72,6 +72,7 @@ export interface AnomalyMarker {
   severity: SeverityLevel;
   eventId: string;
   score: number;
+  yValue?: number;
 }
 
 // Filter types
@@ -250,9 +251,27 @@ export interface ProactiveSuggestion {
 
 // 3. User Profile & Learning Types
 export type ExpertiseLevel = 'novice' | 'intermediate' | 'expert';
+export type CognitiveStyle = 'wholist' | 'analyst' | 'unknown';
+
+// Interaction tracking for cognitive style inference
+export interface InteractionHistory {
+  view_switches: Array<{
+    from: string;
+    to: string;
+    timestamp: string;
+  }>;
+  event_clicks: number;
+  detail_expansions: number;
+  filter_applications: number;
+  topology_views: number;
+  list_views: number;
+  avg_click_depth: number;
+  session_start: string;
+}
 
 export interface UserProfile {
   expertise_level: ExpertiseLevel;
+  cognitive_style: CognitiveStyle;
   interaction_count: number;
   preferred_views: string[];
   alert_history: {
@@ -265,12 +284,14 @@ export interface UserProfile {
     tooltips_dismissed: string[];
     tutorials_completed: string[];
   };
+  interaction_history: InteractionHistory;
   created_at: string;
   last_interaction: string;
 }
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
   expertise_level: 'novice',
+  cognitive_style: 'unknown',
   interaction_count: 0,
   preferred_views: ['events'],
   alert_history: {
@@ -282,6 +303,16 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
     concepts_seen: [],
     tooltips_dismissed: [],
     tutorials_completed: [],
+  },
+  interaction_history: {
+    view_switches: [],
+    event_clicks: 0,
+    detail_expansions: 0,
+    filter_applications: 0,
+    topology_views: 0,
+    list_views: 0,
+    avg_click_depth: 0,
+    session_start: new Date().toISOString(),
   },
   created_at: new Date().toISOString(),
   last_interaction: new Date().toISOString(),

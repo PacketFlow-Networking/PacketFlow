@@ -307,6 +307,33 @@ Detection Methods: {', '.join(detection_methods) if detection_methods else 'None
         
         prompt += f"\nSummary: {summary}"
         
+        # Add CONTRASTIVE EXPLANATION context (Why X instead of Y?)
+        prompt += f"\n\n=== CONTRASTIVE ANALYSIS ==="
+        prompt += f"\n WHY THIS IS ANOMALOUS (vs normal traffic):"
+        prompt += f"\n  • Observed: {flows} flows (Score: {anomaly_score:.2f})"
+        prompt += f"\n  • Expected: ~{int(baseline_avg)} flows (Normal baseline)"
+        prompt += f"\n  • Difference: {flows - baseline_avg:.0f} flows ({((flows/max(baseline_avg,1))-1)*100:.0f}% above normal)"
+        
+        if detection_methods:
+            prompt += f"\n  • Detection: {', '.join(detection_methods)}"
+            prompt += f"\n  • Why not normal? These specific statistical methods flagged this as outlier behavior"
+        
+        if threat_indicators:
+            prompt += f"\n\n WHY THESE THREATS (vs benign activity):"
+            for threat in threat_indicators[:3]:  # Top 3 threats
+                if threat == 'DNS_TUNNELING':
+                    prompt += f"\n  • {threat}: Long domain names/high entropy (vs typical short DNS queries)"
+                elif threat == 'PORT_SCAN':
+                    prompt += f"\n  • {threat}: Multiple ports targeted (vs normal single-port connections)"
+                elif threat == 'SQL_INJECTION':
+                    prompt += f"\n  • {threat}: SQL keywords in payload (vs clean HTTP requests)"
+                elif threat == 'XSS_ATTEMPT':
+                    prompt += f"\n  • {threat}: Script tags in payload (vs normal form data)"
+                elif threat == 'BRUTE_FORCE':
+                    prompt += f"\n  • {threat}: Rapid authentication attempts (vs sporadic normal logins)"
+                else:
+                    prompt += f"\n  • {threat}: Pattern-based detection (vs expected protocol behavior)"
+        
         # Enhanced related events analysis
         if self.recent_events:
             prompt += f"\n\n=== RELATED EVENTS (Last {self.correlation_window}s) ==="
@@ -421,9 +448,14 @@ Detection Methods: {', '.join(detection_methods) if detection_methods else 'None
             prompt += "\n\n Context: Command & Control beacon traffic shows regular periodic communication patterns typical of compromised systems."
         
         prompt += """\n\n=== ANALYSIS REQUEST ===
-Provide your analysis in this format:
+Provide your analysis in this CONTRASTIVE and SELECTIVE format:
 
-EXPLANATION: [2-3 sentence explanation of what's happening and why it's significant]
+EXPLANATION: [2-3 sentences explaining WHY this is anomalous INSTEAD OF being normal traffic. Reference the specific deviations from baseline and why alternative explanations were rejected.]
+
+MOST IMPORTANT FACTORS (Selective - top 3 only):
+1. [Factor]: [Why this is critical]
+2. [Factor]: [Why this is critical]
+3. [Factor]: [Why this is critical]
 
 THREAT ASSESSMENT: [low/medium/high/critical]
 
@@ -433,7 +465,7 @@ RECOMMENDATIONS:
 1. [Immediate action to take]
 2. [Follow-up investigation step]
 
-Keep it concise and actionable. Focus on the most important findings."""
+Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the top factors)."""
         
         return prompt
     
@@ -443,13 +475,14 @@ Keep it concise and actionable. Focus on the most important findings."""
         event: Dict,
         correlated: List[Dict]
     ) -> Dict:
-        """Parse AI response into structured format."""
+        """Parse AI response into structured format with contrastive reasoning."""
         lines = raw_response.strip().split('\n')
         
         explanation = ""
         threat_level = "medium"
         confidence = "medium"
         recommendations = []
+        important_factors = []
         
         current_section = None
         
@@ -461,6 +494,8 @@ Keep it concise and actionable. Focus on the most important findings."""
             if line.upper().startswith("EXPLANATION:"):
                 current_section = "explanation"
                 explanation = line.split(":", 1)[1].strip() if ":" in line else ""
+            elif "MOST IMPORTANT" in line.upper() or "IMPORTANT FACTORS" in line.upper():
+                current_section = "factors"
             elif line.upper().startswith("THREAT") and "ASSESSMENT" in line.upper():
                 current_section = "threat"
                 for level in ["critical", "high", "medium", "low"]:
@@ -475,8 +510,12 @@ Keep it concise and actionable. Focus on the most important findings."""
                         break
             elif line.upper().startswith("RECOMMENDATION"):
                 current_section = "recommendations"
-            elif current_section == "explanation" and not line.startswith(("THREAT", "CONFIDENCE", "RECOMMENDATION")):
+            elif current_section == "explanation" and not any(keyword in line.upper() for keyword in ["MOST IMPORTANT", "THREAT", "CONFIDENCE", "RECOMMENDATION"]):
                 explanation += " " + line
+            elif current_section == "factors":
+                line_clean = line.lstrip("123456789.-) ")
+                if line_clean and len(line_clean) > 5:
+                    important_factors.append(line_clean)
             elif current_section == "recommendations":
                 line_clean = line.lstrip("123456789.-) ")
                 if line_clean and len(line_clean) > 5:
@@ -497,7 +536,12 @@ Keep it concise and actionable. Focus on the most important findings."""
             "confidence": confidence,
             "threat_level": threat_level,
             "recommendations": recommendations if recommendations else ["Review event manually", "Check source host logs"],
-            "evidence": evidence
+            "evidence": evidence,
+            "important_factors": important_factors[:3] if important_factors else [
+                f"Flow volume {event.get('flows')} vs baseline {int(event.get('baseline_avg', 0))}",
+                f"Anomaly score: {event.get('anomaly_score', 0):.2f}",
+                f"Detection: {', '.join(event.get('detection_methods', ['Unknown']))}"
+            ]
         }
     
     def _extract_evidence(self, event: Dict, correlated: List[Dict] = None) -> Dict:

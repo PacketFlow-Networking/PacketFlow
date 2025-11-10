@@ -21,13 +21,46 @@ function App() {
   useWebSocket();
   useApi();
   
-  const { mockMode, toggleMockMode, clearOldEvents, filters, setFilters, resetFilters } = useStore();
+  const { 
+    mockMode, 
+    toggleMockMode, 
+    clearOldEvents, 
+    filters, 
+    setFilters, 
+    resetFilters,
+    userProfile,
+    trackViewSwitch,
+    inferCognitiveStyle
+  } = useStore();
   const { showInfo } = useToast();
   
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showAlertConfig, setShowAlertConfig] = useState(false);
-  const [activeTab, setActiveTab] = useState<'events' | 'stats' | 'topology'>('events');
+  
+  // ADAPTIVE UI: Default view based on cognitive style
+  const getDefaultView = (): 'events' | 'stats' | 'topology' => {
+    if (userProfile.cognitive_style === 'wholist') {
+      return 'topology'; // Wholists prefer global/spatial views
+    } else if (userProfile.cognitive_style === 'analyst') {
+      return 'events'; // Analysts prefer detailed lists
+    }
+    // Unknown or novice: default to events
+    return 'events';
+  };
+  
+  const [activeTab, setActiveTab] = useState<'events' | 'stats' | 'topology'>(getDefaultView());
   const [leftPanelTab, setLeftPanelTab] = useState<'chat' | 'incidents'>('chat');
+
+  // Track view switches for cognitive style inference
+  const handleTabChange = (newTab: 'events' | 'stats' | 'topology') => {
+    trackViewSwitch(activeTab, newTab);
+    setActiveTab(newTab);
+    
+    // Periodically infer cognitive style
+    if (userProfile.interaction_count > 0 && userProfile.interaction_count % 5 === 0) {
+      inferCognitiveStyle();
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -176,7 +209,7 @@ function App() {
             {/* Tab Header */}
             <div className="flex items-center border-b border-border bg-panel">
               <button
-                onClick={() => setActiveTab('events')}
+                onClick={() => handleTabChange('events')}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
                   activeTab === 'events'
                     ? 'text-text border-info'
@@ -185,9 +218,12 @@ function App() {
               >
                 <List className="w-4 h-4" />
                 Events
+                {userProfile.cognitive_style === 'analyst' && activeTab !== 'events' && (
+                  <span className="ml-1 text-xs text-info">★</span>
+                )}
               </button>
               <button
-                onClick={() => setActiveTab('stats')}
+                onClick={() => handleTabChange('stats')}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
                   activeTab === 'stats'
                     ? 'text-text border-info'
@@ -198,7 +234,7 @@ function App() {
                 Statistics
               </button>
               <button
-                onClick={() => setActiveTab('topology')}
+                onClick={() => handleTabChange('topology')}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
                   activeTab === 'topology'
                     ? 'text-text border-info'
@@ -207,6 +243,9 @@ function App() {
               >
                 <Network className="w-4 h-4" />
                 Topology
+                {userProfile.cognitive_style === 'wholist' && activeTab !== 'topology' && (
+                  <span className="ml-1 text-xs text-info">★</span>
+                )}
               </button>
             </div>
             

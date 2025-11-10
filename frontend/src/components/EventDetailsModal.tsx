@@ -1,11 +1,13 @@
 import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target } from 'lucide-react';
 import { NetworkEvent } from '../types';
 import { useToast } from '../context/ToastContext';
+import { useStore } from '../context/store';
 import AIExplanationPanel from './AIExplanationPanel';
 import ExpandableText from './ExpandableText';
 import FeedbackPanel from './FeedbackPanel';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useEffect } from 'react';
 
 dayjs.extend(relativeTime);
 
@@ -18,6 +20,14 @@ interface EventDetailsModalProps {
 
 export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }: EventDetailsModalProps) => {
   const { showSuccess, showError } = useToast();
+  const { trackDetailExpansion } = useStore();
+  
+  // Track detail expansion when modal opens
+  useEffect(() => {
+    if (isOpen && event) {
+      trackDetailExpansion();
+    }
+  }, [isOpen, event, trackDetailExpansion]);
   
   if (!isOpen || !event) return null;
 

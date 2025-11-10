@@ -85,6 +85,11 @@ interface UIState {
   // IUI Actions
   updateUserProfile: (updates: Partial<UserProfile>) => void;
   trackInteraction: (interactionType: string) => void;
+  trackViewSwitch: (from: string, to: string) => void;
+  trackEventClick: () => void;
+  trackDetailExpansion: () => void;
+  trackFilterApplication: () => void;
+  inferCognitiveStyle: () => void;
   addSuggestion: (suggestion: ProactiveSuggestion) => void;
   dismissSuggestion: (id: string) => void;
   clearExpiredSuggestions: () => void;
@@ -318,6 +323,124 @@ export const useStore = create<UIState>()(
       last_interaction: new Date().toISOString()
     }
   })),
+  
+  trackViewSwitch: (from: string, to: string) => set((state) => {
+    const newHistory = {
+      ...state.userProfile.interaction_history,
+      view_switches: [
+        ...state.userProfile.interaction_history.view_switches,
+        { from, to, timestamp: new Date().toISOString() }
+      ].slice(-50), // Keep last 50 switches
+      topology_views: to === 'topology' 
+        ? state.userProfile.interaction_history.topology_views + 1 
+        : state.userProfile.interaction_history.topology_views,
+      list_views: to === 'events' 
+        ? state.userProfile.interaction_history.list_views + 1 
+        : state.userProfile.interaction_history.list_views,
+    };
+    
+    return {
+      userProfile: {
+        ...state.userProfile,
+        interaction_history: newHistory,
+        interaction_count: state.userProfile.interaction_count + 1,
+        last_interaction: new Date().toISOString()
+      }
+    };
+  }),
+  
+  trackEventClick: () => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      interaction_history: {
+        ...state.userProfile.interaction_history,
+        event_clicks: state.userProfile.interaction_history.event_clicks + 1
+      },
+      interaction_count: state.userProfile.interaction_count + 1,
+      last_interaction: new Date().toISOString()
+    }
+  })),
+  
+  trackDetailExpansion: () => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      interaction_history: {
+        ...state.userProfile.interaction_history,
+        detail_expansions: state.userProfile.interaction_history.detail_expansions + 1,
+        avg_click_depth: (state.userProfile.interaction_history.avg_click_depth * state.userProfile.interaction_history.detail_expansions + 1) / 
+                         (state.userProfile.interaction_history.detail_expansions + 1)
+      },
+      interaction_count: state.userProfile.interaction_count + 1,
+      last_interaction: new Date().toISOString()
+    }
+  })),
+  
+  trackFilterApplication: () => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      interaction_history: {
+        ...state.userProfile.interaction_history,
+        filter_applications: state.userProfile.interaction_history.filter_applications + 1
+      },
+      interaction_count: state.userProfile.interaction_count + 1,
+      last_interaction: new Date().toISOString()
+    }
+  })),
+  
+  inferCognitiveStyle: () => set((state) => {
+    const history = state.userProfile.interaction_history;
+    
+    // Require at least 10 interactions before inferring
+    if (state.userProfile.interaction_count < 10) {
+      return { userProfile: state.userProfile };
+    }
+    
+    // Calculate heuristics
+    const topologyRatio = history.view_switches.length > 0 
+      ? history.topology_views / (history.topology_views + history.list_views)
+      : 0;
+    
+    const detailRatio = history.event_clicks > 0 
+      ? history.detail_expansions / history.event_clicks
+      : 0;
+    
+    const filterFrequency = history.filter_applications / state.userProfile.interaction_count;
+    
+    // Wholist indicators:
+    // - Prefers topology/global views (high topology ratio)
+    // - Lower click depth (fewer detail expansions)
+    // - Uses filters less (prefers seeing everything at once)
+    const wholistScore = (topologyRatio * 0.5) + ((1 - detailRatio) * 0.3) + ((1 - filterFrequency) * 0.2);
+    
+    // Analyst indicators:
+    // - Prefers list views (low topology ratio)
+    // - High click depth (many detail expansions)
+    // - Uses filters more (wants to drill down)
+    const analystScore = ((1 - topologyRatio) * 0.5) + (detailRatio * 0.3) + (filterFrequency * 0.2);
+    
+    let inferredStyle: 'wholist' | 'analyst' | 'unknown' = 'unknown';
+    
+    // Require clear preference (>0.6 threshold)
+    if (wholistScore > 0.6 && wholistScore > analystScore) {
+      inferredStyle = 'wholist';
+    } else if (analystScore > 0.6 && analystScore > wholistScore) {
+      inferredStyle = 'analyst';
+    }
+    
+    console.log('Cognitive Style Inference:', {
+      wholistScore: wholistScore.toFixed(2),
+      analystScore: analystScore.toFixed(2),
+      inferred: inferredStyle,
+      metrics: { topologyRatio, detailRatio, filterFrequency }
+    });
+    
+    return {
+      userProfile: {
+        ...state.userProfile,
+        cognitive_style: inferredStyle
+      }
+    };
+  }),
   
   addSuggestion: (suggestion) => set((state) => ({
     suggestions: [suggestion, ...state.suggestions].slice(0, 10) // Keep last 10

@@ -12,7 +12,8 @@ const ExportMenu = ({ events, filteredCount }: ExportMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleExport = (format: 'csv' | 'json' | 'text' | 'stats') => {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    // Generate timestamp for filename
+    new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
     
     switch (format) {
       case 'csv':

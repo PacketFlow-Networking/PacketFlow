@@ -11,7 +11,7 @@ import type { NetworkEvent } from '../types';
 dayjs.extend(relativeTime);
 
 const EventStream = () => {
-  const { events, aiMessages, selectEvent, filters } = useStore();
+  const { events, selectEvent, filters, trackEventClick } = useStore();
   const [selectedEvent, setSelectedEvent] = useState<NetworkEvent | null>(null);
 
   // Apply filters to events
@@ -73,7 +73,7 @@ const EventStream = () => {
   const getSeverityBadge = (score: number, severity?: string) => {
     // Use backend severity if available
     if (severity) {
-      const severityMap = {
+      const severityMap: Record<string, { label: string; class: string }> = {
         'critical': { label: 'Critical', class: 'badge-critical' },
         'high': { label: 'High', class: 'badge-warn' },
         'medium': { label: 'Medium', class: 'badge-info' },
@@ -82,21 +82,15 @@ const EventStream = () => {
       };
       return severityMap[severity] || { label: 'Info', class: 'badge-info' };
     }
-
+ 
     // Fallback to score-based severity
     if (score >= 0.8) return { label: 'Critical', class: 'badge-critical' };
     if (score >= 0.5) return { label: 'Warning', class: 'badge-warn' };
     return { label: 'Info', class: 'badge-info' };
   };
 
-  const getAISummaryForEvent = (eventId: string): string | undefined => {
-    const relatedMessage = aiMessages.find(msg => 
-      msg.event_ids.includes(eventId)
-    );
-    return relatedMessage?.content;
-  };
-
   const handleEventClick = (event: NetworkEvent) => {
+    trackEventClick(); // Track for cognitive style inference
     setSelectedEvent(event);
     selectEvent(event.id);
   };
