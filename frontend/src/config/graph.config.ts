@@ -111,7 +111,7 @@ export const validateConfig = () => {
 };
 
 // Run validation on import (development only)
-if (import.meta.env.DEV) {
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
   validateConfig();
   const memory = estimateMemoryUsage();
   console.log('[GraphConfig] Estimated memory usage:', memory);

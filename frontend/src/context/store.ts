@@ -16,7 +16,8 @@ import type {
   ProactiveSuggestion,
   EventFeedback,
   Prediction,
-  ContextualTip
+  ContextualTip,
+  PreferredView
 } from '../types';
 import { DEFAULT_FILTERS as FILTERS, DEFAULT_ALERT_CONFIG, DEFAULT_USER_PROFILE } from '../types';
 
@@ -98,11 +99,13 @@ interface UIState {
   clearOldPredictions: (maxAge: number) => void;
   markConceptSeen: (concept: string) => void;
   dismissTooltip: (tooltipId: string) => void;
+  setPreferredDefaultView: (view: PreferredView) => void;
+  completeOnboarding: () => void;
 }
 
 export const useStore = create<UIState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
   // Initial state
   events: [],
   aiMessages: [],
@@ -325,18 +328,21 @@ export const useStore = create<UIState>()(
   })),
   
   trackViewSwitch: (from: string, to: string) => set((state) => {
+    // Ensure interaction_history exists (migration safety)
+    const history = state.userProfile.interaction_history || DEFAULT_USER_PROFILE.interaction_history;
+    
     const newHistory = {
-      ...state.userProfile.interaction_history,
+      ...history,
       view_switches: [
-        ...state.userProfile.interaction_history.view_switches,
+        ...(history.view_switches || []),
         { from, to, timestamp: new Date().toISOString() }
       ].slice(-50), // Keep last 50 switches
       topology_views: to === 'topology' 
-        ? state.userProfile.interaction_history.topology_views + 1 
-        : state.userProfile.interaction_history.topology_views,
+        ? (history.topology_views || 0) + 1 
+        : (history.topology_views || 0),
       list_views: to === 'events' 
-        ? state.userProfile.interaction_history.list_views + 1 
-        : state.userProfile.interaction_history.list_views,
+        ? (history.list_views || 0) + 1 
+        : (history.list_views || 0),
     };
     
     return {
@@ -349,62 +355,77 @@ export const useStore = create<UIState>()(
     };
   }),
   
-  trackEventClick: () => set((state) => ({
-    userProfile: {
-      ...state.userProfile,
-      interaction_history: {
-        ...state.userProfile.interaction_history,
-        event_clicks: state.userProfile.interaction_history.event_clicks + 1
-      },
-      interaction_count: state.userProfile.interaction_count + 1,
-      last_interaction: new Date().toISOString()
-    }
-  })),
+  trackEventClick: () => set((state) => {
+    const history = state.userProfile.interaction_history || DEFAULT_USER_PROFILE.interaction_history;
+    return {
+      userProfile: {
+        ...state.userProfile,
+        interaction_history: {
+          ...history,
+          event_clicks: (history.event_clicks || 0) + 1
+        },
+        interaction_count: state.userProfile.interaction_count + 1,
+        last_interaction: new Date().toISOString()
+      }
+    };
+  }),
   
-  trackDetailExpansion: () => set((state) => ({
-    userProfile: {
-      ...state.userProfile,
-      interaction_history: {
-        ...state.userProfile.interaction_history,
-        detail_expansions: state.userProfile.interaction_history.detail_expansions + 1,
-        avg_click_depth: (state.userProfile.interaction_history.avg_click_depth * state.userProfile.interaction_history.detail_expansions + 1) / 
-                         (state.userProfile.interaction_history.detail_expansions + 1)
-      },
-      interaction_count: state.userProfile.interaction_count + 1,
-      last_interaction: new Date().toISOString()
-    }
-  })),
+  trackDetailExpansion: () => set((state) => {
+    const history = state.userProfile.interaction_history || DEFAULT_USER_PROFILE.interaction_history;
+    const detailExpansions = history.detail_expansions || 0;
+    const avgClickDepth = history.avg_click_depth || 0;
+    
+    return {
+      userProfile: {
+        ...state.userProfile,
+        interaction_history: {
+          ...history,
+          detail_expansions: detailExpansions + 1,
+          avg_click_depth: (avgClickDepth * detailExpansions + 1) / (detailExpansions + 1)
+        },
+        interaction_count: state.userProfile.interaction_count + 1,
+        last_interaction: new Date().toISOString()
+      }
+    };
+  }),
   
-  trackFilterApplication: () => set((state) => ({
-    userProfile: {
-      ...state.userProfile,
-      interaction_history: {
-        ...state.userProfile.interaction_history,
-        filter_applications: state.userProfile.interaction_history.filter_applications + 1
-      },
-      interaction_count: state.userProfile.interaction_count + 1,
-      last_interaction: new Date().toISOString()
-    }
-  })),
+  trackFilterApplication: () => set((state) => {
+    const history = state.userProfile.interaction_history || DEFAULT_USER_PROFILE.interaction_history;
+    return {
+      userProfile: {
+        ...state.userProfile,
+        interaction_history: {
+          ...history,
+          filter_applications: (history.filter_applications || 0) + 1
+        },
+        interaction_count: state.userProfile.interaction_count + 1,
+        last_interaction: new Date().toISOString()
+      }
+    };
+  }),
   
   inferCognitiveStyle: () => set((state) => {
-    const history = state.userProfile.interaction_history;
+    const history = state.userProfile.interaction_history || DEFAULT_USER_PROFILE.interaction_history;
     
     // Require at least 10 interactions before inferring
     if (state.userProfile.interaction_count < 10) {
       return { userProfile: state.userProfile };
     }
     
-    // Calculate heuristics
-    const topologyRatio = history.view_switches.length > 0 
-      ? history.topology_views / (history.topology_views + history.list_views)
+    // Calculate heuristics (with safe fallbacks)
+    const topologyViews = history.topology_views || 0;
+    const listViews = history.list_views || 0;
+    const topologyRatio = (history.view_switches || []).length > 0 
+      ? topologyViews / (topologyViews + listViews)
       : 0;
     
-    const detailRatio = history.event_clicks > 0 
-      ? history.detail_expansions / history.event_clicks
+    const eventClicks = history.event_clicks || 0;
+    const detailExpansions = history.detail_expansions || 0;
+    const detailRatio = eventClicks > 0 
+      ? detailExpansions / eventClicks
       : 0;
     
-    const filterFrequency = history.filter_applications / state.userProfile.interaction_count;
+    const filterFrequency = (history.filter_applications || 0) / state.userProfile.interaction_count;
     
     // Wholist indicators:
     // - Prefers topology/global views (high topology ratio)
@@ -512,6 +533,24 @@ export const useStore = create<UIState>()(
         tooltips_dismissed: [...new Set([...state.userProfile.learning_progress.tooltips_dismissed, tooltipId])]
       }
     }
+  })),
+  
+  setPreferredDefaultView: (view: PreferredView) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      preferred_default_view: view
+    }
+  })),
+  
+  completeOnboarding: () => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      learning_progress: {
+        ...state.userProfile.learning_progress,
+        onboarding_completed: true,
+        tutorials_completed: [...new Set([...state.userProfile.learning_progress.tutorials_completed, 'initial_onboarding'])]
+      }
+    }
   }))
     }),
     {
@@ -523,7 +562,33 @@ export const useStore = create<UIState>()(
         dismissedSuggestions: state.dismissedSuggestions,
         eventFeedback: state.eventFeedback,
         selectedIncidentId: state.selectedIncidentId
-      })
+      }),
+      // Migration function to handle old data without new fields
+      migrate: (persistedState: any, version: number) => {
+        if (!persistedState) return persistedState;
+        
+        // Ensure userProfile has all required fields
+        if (persistedState.userProfile) {
+          persistedState.userProfile = {
+            ...DEFAULT_USER_PROFILE,
+            ...persistedState.userProfile,
+            // Ensure learning_progress has onboarding_completed
+            learning_progress: {
+              ...DEFAULT_USER_PROFILE.learning_progress,
+              ...(persistedState.userProfile.learning_progress || {}),
+            },
+            // Ensure interaction_history exists
+            interaction_history: {
+              ...DEFAULT_USER_PROFILE.interaction_history,
+              ...(persistedState.userProfile.interaction_history || {}),
+            },
+            // Add preferred_default_view if missing
+            preferred_default_view: persistedState.userProfile.preferred_default_view || 'auto',
+          };
+        }
+        
+        return persistedState;
+      },
     }
   )
 );

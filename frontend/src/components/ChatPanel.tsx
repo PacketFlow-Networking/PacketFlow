@@ -6,6 +6,7 @@ import { useStore, getAllMessages } from '../context/store';
 import { useApi } from '../hooks/useApi';
 import ExpandableText from './ExpandableText';
 import AIDetailsModal from './AIDetailsModal';
+import ProactiveSuggestions from './ProactiveSuggestions'; // H4-01: Move suggestions inside ChatPanel
 import type { AIMessage, UserMessage, NetworkEvent } from '../types';
 
 dayjs.extend(relativeTime);
@@ -189,6 +190,13 @@ const ChatPanel = () => {
 
   return (
     <div className="flex flex-col h-full">
+      {/* H4-01: Proactive Suggestions - Sticky at top with divider */}
+      <div className="sticky top-0 z-10 bg-base border-b border-border">
+        <div className="p-3">
+          <ProactiveSuggestions />
+        </div>
+      </div>
+      
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-ok" />

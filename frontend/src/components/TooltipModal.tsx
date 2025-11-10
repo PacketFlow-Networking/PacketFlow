@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Info, ExternalLink } from 'lucide-react';
+import { X, Info } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import type { NetworkEvent } from '../types';

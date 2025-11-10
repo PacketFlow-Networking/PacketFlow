@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HelpCircle, X, Book, Search } from 'lucide-react';
+import { HelpCircle, X, Book, Search, Brain } from 'lucide-react';
 import { useStore } from '../context/store';
 
 interface Term {
@@ -46,6 +46,7 @@ export default function GlossaryPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'glossary' | 'adaptation'>('glossary'); // H10-03: Tab state
   const { markConceptSeen } = useStore();
 
   const filteredTerms = GLOSSARY.filter(term => {
@@ -80,107 +81,226 @@ export default function GlossaryPanel() {
 
   return (
     <div className="fixed bottom-6 right-6 w-96 max-h-[600px] bg-panel border border-info/30 rounded-lg shadow-2xl flex flex-col z-40 animate-scale-in">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Book className="w-5 h-5 text-info" />
-          <h3 className="text-lg font-semibold text-text">Glossary</h3>
-        </div>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="p-1 rounded hover:bg-base transition-colors"
-        >
-          <X className="w-4 h-4 text-muted" />
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="p-4 border-b border-border">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search terms..."
-            className="w-full pl-10 pr-3 py-2 bg-base border border-border rounded-lg text-sm text-text placeholder-muted focus:border-info focus:outline-none"
-          />
-        </div>
-      </div>
-
-      {/* Categories */}
-      <div className="flex gap-2 p-4 border-b border-border overflow-x-auto">
-        <button
-          onClick={() => setSelectedCategory(null)}
-          className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-            !selectedCategory
-              ? 'bg-info text-base'
-              : 'bg-base text-muted hover:text-text'
-          }`}
-        >
-          All ({GLOSSARY.length})
-        </button>
-        {categories.map(cat => (
+      {/* Header with Tabs - H10-03 */}
+      <div className="border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Book className="w-5 h-5 text-info" />
+            <h3 className="text-lg font-semibold text-text">Help & Documentation</h3>
+          </div>
           <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-              selectedCategory === cat.id
-                ? 'bg-info text-base'
-                : 'bg-base text-muted hover:text-text'
+            onClick={() => setIsOpen(false)}
+            className="p-1 rounded hover:bg-base transition-colors"
+          >
+            <X className="w-4 h-4 text-muted" />
+          </button>
+        </div>
+        
+        {/* Tabs */}
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab('glossary')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'glossary'
+                ? 'text-text border-info bg-panel-hover'
+                : 'text-text-dim border-transparent hover:text-text hover:bg-base'
             }`}
           >
-            {cat.label} ({cat.count})
+            <Book className="w-4 h-4" />
+            Glossary
           </button>
-        ))}
+          <button
+            onClick={() => setActiveTab('adaptation')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+              activeTab === 'adaptation'
+                ? 'text-text border-info bg-panel-hover'
+                : 'text-text-dim border-transparent hover:text-text hover:bg-base'
+            }`}
+          >
+            <Brain className="w-4 h-4" />
+            Intelligent Adaptation
+          </button>
+        </div>
       </div>
 
-      {/* Terms List */}
-      <div className="flex-1 overflow-y-auto scrollbar p-4 space-y-3">
-        {filteredTerms.length === 0 ? (
-          <div className="text-center py-8 text-muted">
-            <HelpCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No terms found</p>
-          </div>
-        ) : (
-          filteredTerms.map(term => (
-            <div
-              key={term.name}
-              onClick={() => handleTermClick(term.name)}
-              className="bg-base border border-border rounded-lg p-3 hover:border-info/50 transition-colors cursor-help"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-text text-sm">{term.name}</h4>
-                <span className={`text-xs px-2 py-0.5 rounded ${
-                  term.category === 'detection' ? 'bg-accent/10 text-accent' :
-                  term.category === 'protocol' ? 'bg-info/10 text-info' :
-                  term.category === 'metric' ? 'bg-success/10 text-success' :
-                  'bg-error/10 text-error'
-                }`}>
-                  {term.category}
-                </span>
-              </div>
-              <p className="text-xs text-muted leading-relaxed mb-2">
-                {term.definition}
-              </p>
-              {term.example && (
-                <div className="bg-panel/50 border border-border/50 rounded p-2">
-                  <p className="text-xs text-muted italic">
-                    <span className="font-semibold">Example:</span> {term.example}
-                  </p>
-                </div>
-              )}
+      {/* Content - H10-03: Conditional rendering based on active tab */}
+      {activeTab === 'glossary' ? (
+        <>
+          {/* Search */}
+          <div className="p-4 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search terms..."
+                className="w-full pl-10 pr-3 py-2 bg-base border border-border rounded-lg text-sm text-text placeholder-muted focus:border-info focus:outline-none"
+              />
             </div>
-          ))
-        )}
-      </div>
+          </div>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-border bg-base/50 text-center">
-        <p className="text-xs text-muted">
-          {filteredTerms.length} {filteredTerms.length === 1 ? 'term' : 'terms'} • Click terms to mark as learned
-        </p>
-      </div>
+          {/* Categories */}
+          <div className="flex gap-2 p-4 border-b border-border overflow-x-auto">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+                !selectedCategory
+                  ? 'bg-info text-base'
+                  : 'bg-base text-muted hover:text-text'
+              }`}
+            >
+              All ({GLOSSARY.length})
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+                  selectedCategory === cat.id
+                    ? 'bg-info text-base'
+                    : 'bg-base text-muted hover:text-text'
+                }`}
+              >
+                {cat.label} ({cat.count})
+              </button>
+            ))}
+          </div>
+
+          {/* Terms List */}
+          <div className="flex-1 overflow-y-auto scrollbar p-4 space-y-3">
+            {filteredTerms.length === 0 ? (
+              <div className="text-center py-8 text-muted">
+                <HelpCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No terms found</p>
+              </div>
+            ) : (
+              filteredTerms.map(term => (
+                <div
+                  key={term.name}
+                  onClick={() => handleTermClick(term.name)}
+                  className="bg-base border border-border rounded-lg p-3 hover:border-info/50 transition-colors cursor-help"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold text-text text-sm">{term.name}</h4>
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      term.category === 'detection' ? 'bg-accent/10 text-accent' :
+                      term.category === 'protocol' ? 'bg-info/10 text-info' :
+                      term.category === 'metric' ? 'bg-success/10 text-success' :
+                      'bg-error/10 text-error'
+                    }`}>
+                      {term.category}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted leading-relaxed mb-2">
+                    {term.definition}
+                  </p>
+                  {term.example && (
+                    <div className="bg-panel/50 border border-border/50 rounded p-2">
+                      <p className="text-xs text-muted italic">
+                        <span className="font-semibold">Example:</span> {term.example}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-3 border-t border-border bg-base/50 text-center">
+            <p className="text-xs text-muted">
+              {filteredTerms.length} {filteredTerms.length === 1 ? 'term' : 'terms'} • Click terms to mark as learned
+            </p>
+          </div>
+        </>
+      ) : (
+        /* H10-03: Intelligent Adaptation Help Section */
+        <div className="flex-1 overflow-y-auto scrollbar p-4 space-y-4">
+          <section className="bg-base border border-info/30 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-info mb-2 flex items-center gap-2">
+              <Brain className="w-4 h-4" />
+              What is Cognitive Style Adaptation?
+            </h4>
+            <p className="text-xs text-text-dim leading-relaxed">
+              AINetUI observes how you interact with the interface and adapts to your natural thinking style. 
+              We distinguish between two main cognitive approaches:
+            </p>
+            <ul className="mt-3 space-y-2 text-xs text-text-dim">
+              <li className="flex gap-2">
+                <span className="text-info">•</span>
+                <div>
+                  <strong className="text-text">Wholist (Big-Picture):</strong> Prefer seeing the overall network topology and spatial relationships first, then drilling into details.
+                </div>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-info">•</span>
+                <div>
+                  <strong className="text-text">Analyst (Detail-Oriented):</strong> Prefer starting with detailed event lists and using filters to narrow down specific patterns.
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <section className="bg-base border border-border rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-text mb-2">How Preferences Are Inferred</h4>
+            <p className="text-xs text-text-dim leading-relaxed mb-3">
+              The system tracks your behavior without any manual input:
+            </p>
+            <ul className="space-y-2 text-xs text-text-dim">
+              <li className="flex gap-2">
+                <span className="text-ok">✓</span>
+                <span><strong>View preferences:</strong> Which tabs you switch to most often (Events / Topology / Stats)</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-ok">✓</span>
+                <span><strong>Click depth:</strong> How often you expand event details vs. staying at overview level</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-ok">✓</span>
+                <span><strong>Filter usage:</strong> Frequency of applying filters to narrow down data</span>
+              </li>
+            </ul>
+            <div className="mt-3 p-2 bg-info/10 border border-info/30 rounded text-xs text-text-dim">
+              <strong className="text-info">Note:</strong> At least 10 interactions are needed before the system can infer your style.
+            </div>
+          </section>
+
+          <section className="bg-base border border-border rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-text mb-2">How to Override or Reset</h4>
+            <ul className="space-y-3 text-xs text-text-dim">
+              <li>
+                <strong className="text-text">Manual Override:</strong>
+                <p className="mt-1">
+                  Click the <strong className="text-info">User Profile</strong> icon (top-right) → 
+                  Set "Preferred Default View" to Events, Topology, Stats, or Auto.
+                </p>
+              </li>
+              <li>
+                <strong className="text-text">Reset Learning Data:</strong>
+                <p className="mt-1">
+                  User Profile → Scroll to bottom → "Reset All Data" button. 
+                  This clears your interaction history and cognitive style inference.
+                </p>
+              </li>
+              <li>
+                <strong className="text-text">Disable Adaptation:</strong>
+                <p className="mt-1">
+                  Set "Preferred Default View" to a specific view (not Auto) to prevent automatic adjustments.
+                </p>
+              </li>
+            </ul>
+          </section>
+
+          <section className="bg-base border border-warn/30 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-warn mb-2">Privacy & Data</h4>
+            <p className="text-xs text-text-dim leading-relaxed">
+              All learning data is stored <strong>locally in your browser</strong> (localStorage). 
+              No tracking data is sent to external servers. You can clear it anytime from User Profile settings.
+            </p>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

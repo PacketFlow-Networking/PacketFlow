@@ -252,6 +252,7 @@ export interface ProactiveSuggestion {
 // 3. User Profile & Learning Types
 export type ExpertiseLevel = 'novice' | 'intermediate' | 'expert';
 export type CognitiveStyle = 'wholist' | 'analyst' | 'unknown';
+export type PreferredView = 'auto' | 'events' | 'topology' | 'stats';
 
 // Interaction tracking for cognitive style inference
 export interface InteractionHistory {
@@ -274,6 +275,7 @@ export interface UserProfile {
   cognitive_style: CognitiveStyle;
   interaction_count: number;
   preferred_views: string[];
+  preferred_default_view: PreferredView; // NEW: Manual override for adaptive view
   alert_history: {
     true_positives: number;
     false_positives: number;
@@ -283,6 +285,7 @@ export interface UserProfile {
     concepts_seen: string[];
     tooltips_dismissed: string[];
     tutorials_completed: string[];
+    onboarding_completed: boolean; // NEW: Track if 3-step onboarding shown
   };
   interaction_history: InteractionHistory;
   created_at: string;
@@ -294,6 +297,7 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   cognitive_style: 'unknown',
   interaction_count: 0,
   preferred_views: ['events'],
+  preferred_default_view: 'auto', // NEW: Default to automatic adaptive view
   alert_history: {
     true_positives: 0,
     false_positives: 0,
@@ -303,6 +307,7 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
     concepts_seen: [],
     tooltips_dismissed: [],
     tutorials_completed: [],
+    onboarding_completed: false, // NEW: Track if 3-step onboarding shown
   },
   interaction_history: {
     view_switches: [],

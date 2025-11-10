@@ -22,6 +22,7 @@ export const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDeta
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // H5-01: Confirmation modal state
 
   if (!isOpen || !incident) return null;
 
@@ -46,12 +47,20 @@ export const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDeta
   };
 
   const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this incident?')) {
-      deleteIncident(incident.id);
-      showWarning('Incident deleted', `"${incident.title}" has been deleted`);
-      // deleteIncident already clears selectedIncidentId, but close modal explicitly
-      onClose();
-    }
+    // H5-01: Show confirmation modal instead of browser confirm()
+    setShowDeleteConfirm(true);
+  };
+  
+  const confirmDelete = () => {
+    deleteIncident(incident.id);
+    showWarning('Incident deleted', `"${incident.title}" has been deleted`);
+    setShowDeleteConfirm(false);
+    // deleteIncident already clears selectedIncidentId, but close modal explicitly
+    onClose();
+  };
+  
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
   };
 
   const handleSaveEdit = () => {
@@ -336,6 +345,58 @@ export const IncidentDetailsModal = ({ incident, isOpen, onClose }: IncidentDeta
           </div>
         </div>
       </div>
+      
+      {/* H5-01: Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60]" onClick={cancelDelete} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] w-full max-w-md animate-scale-in">
+            <div className="panel shadow-2xl border-2 border-critical/50">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 bg-critical/20 rounded-full">
+                    <Trash2 className="w-6 h-6 text-critical" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-text">Delete Incident</h3>
+                    <p className="text-sm text-text-dim">This action cannot be undone</p>
+                  </div>
+                </div>
+                
+                <div className="bg-critical/10 border border-critical/30 rounded-lg p-4 mb-6">
+                  <p className="text-text text-sm">
+                    Are you sure you want to delete incident{' '}
+                    <span className="font-semibold text-critical">{incident.id}</span>?
+                  </p>
+                  <p className="text-text-dim text-sm mt-2">
+                    "{incident.title}"
+                  </p>
+                  {incident.notes.length > 0 && (
+                    <p className="text-text-dim text-xs mt-2">
+                      This will also delete {incident.notes.length} note{incident.notes.length !== 1 ? 's' : ''}.
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={cancelDelete}
+                    className="flex-1 btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 btn bg-critical hover:bg-critical/90 text-white"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };

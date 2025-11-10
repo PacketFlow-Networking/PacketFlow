@@ -15,7 +15,6 @@ import {
   Lock,
   Unlock
 } from 'lucide-react';
-import type { NetworkEvent } from '../types';
 
 export interface TopologyNode {
   id: string;

@@ -13,8 +13,8 @@ import StatsDashboard from './components/StatsDashboard';
 import IncidentPanel from './components/IncidentPanel';
 import TopologyView from './components/TopologyView';
 import AlertConfigModal from './components/alerts/AlertConfigModal';
-import ProactiveSuggestions from './components/ProactiveSuggestions';
 import GlossaryPanel from './components/GlossaryPanel';
+import OnboardingModal from './components/OnboardingModal';
 import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network } from 'lucide-react';
 
 function App() {
@@ -30,15 +30,30 @@ function App() {
     resetFilters,
     userProfile,
     trackViewSwitch,
-    inferCognitiveStyle
+    inferCognitiveStyle,
+    dismissTooltip
   } = useStore();
   const { showInfo } = useToast();
   
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showAlertConfig, setShowAlertConfig] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
-  // ADAPTIVE UI: Default view based on cognitive style
+  // Check if onboarding should be shown on first launch
+  useEffect(() => {
+    if (!userProfile.learning_progress.onboarding_completed) {
+      setShowOnboarding(true);
+    }
+  }, [userProfile.learning_progress.onboarding_completed]);
+  
+  // ADAPTIVE UI: Default view based on cognitive style or user preference
   const getDefaultView = (): 'events' | 'stats' | 'topology' => {
+    // H3-01: Respect manual preference override
+    if (userProfile.preferred_default_view !== 'auto') {
+      return userProfile.preferred_default_view as 'events' | 'stats' | 'topology';
+    }
+    
+    // H1-02: Adaptive behavior - infer from cognitive style
     if (userProfile.cognitive_style === 'wholist') {
       return 'topology'; // Wholists prefer global/spatial views
     } else if (userProfile.cognitive_style === 'analyst') {
@@ -50,6 +65,32 @@ function App() {
   
   const [activeTab, setActiveTab] = useState<'events' | 'stats' | 'topology'>(getDefaultView());
   const [leftPanelTab, setLeftPanelTab] = useState<'chat' | 'incidents'>('chat');
+  const [previousCognitiveStyle, setPreviousCognitiveStyle] = useState(userProfile.cognitive_style);
+
+  // H1-02: Show notification when adaptive view changes (one-time per style change)
+  useEffect(() => {
+    const ADAPTIVE_VIEW_TOOLTIP_ID = 'adaptive-view-changed';
+    
+    // Check if cognitive style changed AND we haven't shown this notification for this style
+    if (
+      previousCognitiveStyle !== userProfile.cognitive_style &&
+      userProfile.cognitive_style !== 'unknown' &&
+      !userProfile.learning_progress.tooltips_dismissed.includes(ADAPTIVE_VIEW_TOOLTIP_ID) &&
+      userProfile.preferred_default_view === 'auto' // Only show if in auto mode
+    ) {
+      const newView = getDefaultView();
+      setActiveTab(newView);
+      
+      showInfo(
+        'View Adjusted',
+        "We've adjusted your view for efficiency — you can change this anytime in Settings.",
+        false
+      );
+      
+      dismissTooltip(ADAPTIVE_VIEW_TOOLTIP_ID);
+      setPreviousCognitiveStyle(userProfile.cognitive_style);
+    }
+  }, [userProfile.cognitive_style, userProfile.preferred_default_view, previousCognitiveStyle, dismissTooltip, showInfo, userProfile.learning_progress.tooltips_dismissed]);
 
   // Track view switches for cognitive style inference
   const handleTabChange = (newTab: 'events' | 'stats' | 'topology') => {
@@ -196,11 +237,6 @@ function App() {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Proactive Suggestions - IUI Enhancement */}
-          <div className="border-b border-border p-3 bg-panel">
-            <ProactiveSuggestions />
-          </div>
-          
           <div className="h-1/2 border-b border-border">
             <GraphView />
           </div>
@@ -284,6 +320,12 @@ function App() {
       <AlertConfigModal
         isOpen={showAlertConfig}
         onClose={() => setShowAlertConfig(false)}
+      />
+      
+      {/* Onboarding Modal - H10-01 */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
       />
 
       {/* Glossary Panel - IUI Feature */}

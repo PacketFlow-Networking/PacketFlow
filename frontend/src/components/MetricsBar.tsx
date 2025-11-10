@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Activity, Wifi, WifiOff, AlertTriangle, Bell } from 'lucide-react';
+import { Activity, Wifi, WifiOff, AlertTriangle, Bell, User as UserIcon } from 'lucide-react';
 import { useStore } from '../context/store';
 import { ToastSettings } from './Toast/ToastSettings';
+import UserProfileModal from './UserProfileModal'; // H3-01: Import User Profile modal
 
 const MetricsBar = () => {
   const { status, connected, mockMode } = useStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false); // H3-01: Profile modal state
 
   const getStatusColor = (value: number, thresholds: { warn: number; critical: number }) => {
     if (value >= thresholds.critical) return 'text-critical';
@@ -86,6 +88,16 @@ const MetricsBar = () => {
           </div>
         )}
         
+        {/* H3-01: User Profile Button */}
+        <button
+          onClick={() => setProfileOpen(true)}
+          className="p-2 rounded hover:bg-panel-hover transition-colors"
+          aria-label="User profile"
+          title="User profile and settings"
+        >
+          <UserIcon className="w-4 h-4 text-text-dim hover:text-text" />
+        </button>
+        
         <button
           onClick={() => setSettingsOpen(true)}
           className="p-2 rounded hover:bg-panel-hover transition-colors"
@@ -97,6 +109,7 @@ const MetricsBar = () => {
       </div>
       
       <ToastSettings isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <UserProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} /> {/* H3-01 */}
     </div>
   );
 };
