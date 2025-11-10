@@ -1,23 +1,26 @@
 import { useState, useMemo } from 'react';
-import { AlertTriangle, Plus, Search, Filter, Clock, User, MessageSquare } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Clock, User, MessageSquare } from 'lucide-react';
 import { useStore } from '../context/store';
-import { useToast } from '../context/ToastContext';
 import { CreateIncidentModal } from './incidents/CreateIncidentModal';
 import { IncidentDetailsModal } from './incidents/IncidentDetailsModal';
-import type { Incident, IncidentStatus } from '../types';
+import type { IncidentStatus } from '../types';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(relativeTime);
 
 const IncidentPanel = () => {
-  const { incidents } = useStore();
-  const { showSuccess } = useToast();
+  const { incidents, selectedIncidentId, selectIncident } = useStore();
   
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<IncidentStatus | 'all'>('all');
+
+  // Get the selected incident object
+  const selectedIncident = useMemo(() => 
+    selectedIncidentId ? incidents.find(inc => inc.id === selectedIncidentId) || null : null,
+    [selectedIncidentId, incidents]
+  );
 
   // Filter incidents
   const filteredIncidents = useMemo(() => {
@@ -185,7 +188,7 @@ const IncidentPanel = () => {
               {filteredIncidents.map((incident) => (
                 <div
                   key={incident.id}
-                  onClick={() => setSelectedIncident(incident)}
+                  onClick={() => selectIncident(incident.id)}
                   className="panel p-4 cursor-pointer hover:bg-panel-hover transition-all"
                 >
                   {/* Header */}
@@ -260,7 +263,7 @@ const IncidentPanel = () => {
       <IncidentDetailsModal
         incident={selectedIncident}
         isOpen={!!selectedIncident}
-        onClose={() => setSelectedIncident(null)}
+        onClose={() => selectIncident(null)}
       />
     </>
   );

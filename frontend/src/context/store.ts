@@ -32,6 +32,7 @@ interface UIState {
   connected: boolean;
   mockMode: boolean;
   selectedEventId: string | null;
+  selectedIncidentId: string | null;
   focusedMessageId: string | null;
   feedback: Record<string, 'up' | 'down'>;
   filters: EventFilters;
@@ -53,6 +54,7 @@ interface UIState {
   setConnected: (connected: boolean) => void;
   toggleMockMode: () => void;
   selectEvent: (eventId: string | null) => void;
+  selectIncident: (incidentId: string | null) => void;
   focusMessage: (messageId: string | null) => void;
   setFeedback: (messageId: string, rating: 'up' | 'down' | null) => void;
   clearOldEvents: (maxAge: number) => void;
@@ -105,6 +107,7 @@ export const useStore = create<UIState>()(
   connected: false,
   mockMode: false,
   selectedEventId: null,
+  selectedIncidentId: null,
   focusedMessageId: null,
   feedback: {},
   filters: FILTERS,
@@ -139,6 +142,8 @@ export const useStore = create<UIState>()(
   
   selectEvent: (eventId) => set({ selectedEventId: eventId }),
   
+  selectIncident: (incidentId) => set({ selectedIncidentId: incidentId }),
+  
   focusMessage: (messageId) => set({ focusedMessageId: messageId }),
   
   setFeedback: (messageId, rating) => set((state) => {
@@ -168,7 +173,8 @@ export const useStore = create<UIState>()(
   
   // Incident actions
   addIncident: (incident) => set((state) => ({
-    incidents: [incident, ...state.incidents]
+    incidents: [incident, ...state.incidents],
+    selectedIncidentId: incident.id // Automatically select newly created incident
   })),
   
   updateIncident: (id, updates) => set((state) => ({
@@ -180,7 +186,8 @@ export const useStore = create<UIState>()(
   })),
   
   deleteIncident: (id) => set((state) => ({
-    incidents: state.incidents.filter(inc => inc.id !== id)
+    incidents: state.incidents.filter(inc => inc.id !== id),
+    selectedIncidentId: state.selectedIncidentId === id ? null : state.selectedIncidentId
   })),
   
   addIncidentNote: (incidentId, note) => set((state) => ({
@@ -391,7 +398,8 @@ export const useStore = create<UIState>()(
         mockMode: state.mockMode,
         userProfile: state.userProfile,
         dismissedSuggestions: state.dismissedSuggestions,
-        eventFeedback: state.eventFeedback
+        eventFeedback: state.eventFeedback,
+        selectedIncidentId: state.selectedIncidentId
       })
     }
   )
