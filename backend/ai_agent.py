@@ -72,11 +72,18 @@ class AIAgent:
         self.max_memory_events = max_memory_events
         self.recent_events = deque(maxlen=max_memory_events)
         self.incident_clusters: List[Dict] = []
-        
+
+        # HTTP session and counters
         self.session: Optional[aiohttp.ClientSession] = None
         self.query_count = 0
         self.error_count = 0
         self.incidents_detected = 0
+
+        # Queue-based AI query system - ensures only ONE outgoing call at a time
+        # New requests wait for the current one to finish before proceeding
+        self.ai_query_queue: asyncio.Queue = asyncio.Queue()
+        self.ai_query_lock = asyncio.Lock()
+        self._ai_worker_task: Optional[asyncio.Task] = None
         
     def _default_system_prompt(self) -> str:
         """Generate default system prompt for network security analysis."""
@@ -178,9 +185,9 @@ Be direct and actionable. Avoid unnecessary hedging."""
                     # Check for correlated events
                     correlated_events = self._find_correlated_events(event)
                     
-                    # Generate structured explanation
-                    explanation = await self._generate_structured_explanation(
-                        event, 
+                    # Generate structured explanation using queue-based system (ONE at a time)
+                    explanation = await self._generate_structured_explanation_queued(
+                        event,
                         correlated_events
                     )
                     
@@ -209,7 +216,8 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 await output_queue.put(event)
                 
             except Exception as e:
-                logger.error(f"Error processing event: {e}")
+                # Use exception logging to capture full traceback for diagnosis
+                logger.exception("Error processing event")
                 self.error_count += 1
                 
                 # Forward event without AI
@@ -250,6 +258,22 @@ Be direct and actionable. Avoid unnecessary hedging."""
         
         return correlated
     
+    async def _generate_structured_explanation_queued(
+        self, 
+        event: Dict,
+        correlated_events: List[Dict]
+    ) -> Dict:
+        """
+        Queue-based wrapper for AI queries - ensures only ONE outgoing call at a time.
+        Subsequent requests wait for the current one to finish.
+        """
+        async with self.ai_query_lock:
+            # Only one query can pass through this lock at a time
+            logger.debug(f"AI query starting (queue position acquired)")
+            result = await self._generate_structured_explanation(event, correlated_events)
+            logger.debug(f"AI query completed")
+            return result
+    
     async def _generate_structured_explanation(
         self, 
         event: Dict,
@@ -269,7 +293,8 @@ Be direct and actionable. Avoid unnecessary hedging."""
             return structured
             
         except Exception as e:
-            logger.error(f"AI generation error: {e}")
+            # Log full traceback to aid debugging (some exceptions had empty str())
+            logger.exception("AI generation error")
             return {
                 "text": f"AI analysis failed: {str(e)[:50]}",
                 "confidence": "low",
@@ -645,10 +670,18 @@ Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the t
             }
         }
         
+        # Custom timeout: 2 minutes for first byte
+        timeout = aiohttp.ClientTimeout(
+            total=None,        # No total timeout
+            sock_connect=10,   # 10s to establish connection
+            sock_read=120      # 2 minutes to receive first byte
+        )
+        
         try:
             async with self.session.post(
                 f"{self.ollama_url}/api/generate",
-                json=payload
+                json=payload,
+                timeout=timeout
             ) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -658,7 +691,7 @@ Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the t
                     logger.error(f"Ollama API error: {response.status} - {error_text}")
                     return f"Ollama API returned status {response.status}. Check if the model '{self.local_model}' is available."
         except asyncio.TimeoutError:
-            logger.error(f"Ollama connection timeout after {self.timeout}s")
+            logger.error(f"Ollama connection timeout (2 minute first-byte timeout)")
             raise Exception(f"OLLAMA_TIMEOUT: Connection to Ollama at {self.ollama_url} timed out. Check if Ollama is running and responsive.")
         except aiohttp.ClientConnectorError as e:
             logger.error(f"Cannot connect to Ollama: {e}")
@@ -686,26 +719,47 @@ Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the t
             "Accept": "*/*",
         }
         
-        async with self.session.post(
-            self.remote_url,
-            json=payload,
-            headers=headers
-        ) as response:
-            if response.status == 200:
-                content = await response.text()
-                
-                try:
-                    data = json.loads(content)
-                    if isinstance(data, dict):
-                        return data.get("response", data.get("content", content)).strip()
-                    else:
+        # Custom timeout: 2 minutes (120s) to wait for first byte to arrive
+        # This allows slow AI models time to start responding while still having a limit
+        # sock_read = timeout for reading each chunk (first byte triggers this)
+        timeout = aiohttp.ClientTimeout(
+            total=None,        # No total timeout
+            sock_connect=10,   # 10s to establish connection
+            sock_read=120      # 2 minutes to receive first byte, then per-chunk
+        )
+        
+        try:
+            async with self.session.post(
+                self.remote_url,
+                json=payload,
+                headers=headers,
+                timeout=timeout
+            ) as response:
+                if response.status == 200:
+                    content = await response.text()
+                    
+                    try:
+                        data = json.loads(content)
+                        if isinstance(data, dict):
+                            return data.get("response", data.get("content", content)).strip()
+                        else:
+                            return content.strip()
+                    except json.JSONDecodeError:
                         return content.strip()
-                except json.JSONDecodeError:
-                    return content.strip()
-            else:
-                error_text = await response.text()
-                logger.error(f"Remote API error: {response.status} - {error_text}")
-                return "Remote AI analysis failed"
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Remote API error: {response.status} - {error_text}")
+                    return "Remote AI analysis failed"
+        except asyncio.TimeoutError:
+            logger.error(f"Remote API timeout after {self.timeout}s")
+            raise Exception(f"REMOTE_TIMEOUT: Connection to {self.remote_url} timed out after {self.timeout}s. The remote AI service may be overloaded.")
+        except aiohttp.ClientConnectorError as e:
+            logger.error(f"Cannot connect to remote API: {e}")
+            raise Exception(f"REMOTE_CONNECTION_REFUSED: Cannot connect to {self.remote_url}. Check your network connection.")
+        except aiohttp.ClientError as e:
+            logger.error(f"Remote API client error: {e}")
+            raise Exception(f"REMOTE_CLIENT_ERROR: {str(e)}")
+
     
     def _clean_explanation(self, explanation: str) -> str:
         """Clean up AI explanation text."""

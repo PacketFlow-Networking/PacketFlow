@@ -1,0 +1,4335 @@
+2025-11-10 21:36:58,854 - __main__ - INFO - ================================================================================
+2025-11-10 21:36:58,854 - __main__ - INFO -  Starting AINetUI Backend (Enhanced)
+2025-11-10 21:36:58,854 - __main__ - INFO - ================================================================================
+2025-11-10 21:36:58,855 - __main__ - INFO -  Capture Interface: 4
+2025-11-10 21:36:58,855 - __main__ - INFO -  Mock Mode: False
+2025-11-10 21:36:58,855 - __main__ - INFO -  AI Mode: REMOTE
+2025-11-10 21:36:58,856 - __main__ - INFO -  AI Model: llama3.1:latest
+2025-11-10 21:36:58,856 - __main__ - INFO -  AI URL: https://chatucy.cs.ucy.ac.cy/api/send_message
+2025-11-10 21:36:58,856 - __main__ - INFO -   Server: http://0.0.0.0:8000
+2025-11-10 21:36:58,856 - __main__ - INFO -  Metrics: http://0.0.0.0:8000/metrics
+2025-11-10 21:36:58,856 - __main__ - INFO -  Database: DatabaseConfig(enabled=True, path=ainetui.db, retention=1d)
+2025-11-10 21:36:58,857 - __main__ - INFO - ================================================================================
+2025-11-10 21:36:58,857 - database - INFO - Database initialized: enabled=True, path=ainetui.db, retention=1d
+2025-11-10 21:36:58,888 - database - INFO - Database schema created/verified
+2025-11-10 21:36:58,888 - database - INFO - Database connected: ainetui.db
+2025-11-10 21:36:58,889 - ai_agent - INFO - Enhanced AI Agent initialized in REMOTE mode
+2025-11-10 21:36:58,889 - ai_agent - INFO - Correlation window: 300s, Max memory: 100 events
+2025-11-10 21:36:58,889 - ai_agent - INFO - Remote mode configured: https://chatucy.cs.ucy.ac.cy/api/send_message
+2025-11-10 21:36:58,889 - ai_agent - INFO - Model: llama3.1:latest
+2025-11-10 21:36:58,889 - task_manager - INFO -  Registered task: packet_capture
+2025-11-10 21:36:58,890 - task_manager - INFO -  Registered task: flow_condenser
+2025-11-10 21:36:58,890 - task_manager - INFO -  Registered task: ai_agent
+2025-11-10 21:36:58,890 - task_manager - INFO -  Registered task: websocket_server
+2025-11-10 21:36:58,890 - task_manager - INFO -  Registered task: queue_monitor
+2025-11-10 21:36:58,890 - task_manager - INFO -  Registered task: metrics_updater
+2025-11-10 21:36:58,891 - task_manager - INFO -  Registered task: db_cleanup
+2025-11-10 21:36:58,891 - __main__ - INFO -  All components started successfully
+2025-11-10 21:36:58,891 - __main__ - INFO - ================================================================================
+2025-11-10 21:36:58,935 - task_manager - INFO -  Starting task: packet_capture
+2025-11-10 21:36:58,936 - capture - INFO - Starting packet capture on interface: 4 (payload capture: True)
+2025-11-10 21:36:58,936 - capture - INFO - Starting TShark with EK format + hex dump for payload capture
+2025-11-10 21:36:58,942 - task_manager - INFO -  Starting task: flow_condenser
+2025-11-10 21:36:58,943 - condense_enhanced - INFO -  Starting ENHANCED packet condensation...
+2025-11-10 21:36:58,943 - condense_enhanced - INFO -  Detection: Z-score=3.0, IQR=2.5
+2025-11-10 21:36:58,943 - condense_enhanced - INFO -  Cleanup: Every 300s, Port scan window: 300s
+2025-11-10 21:36:58,944 - task_manager - INFO -  Starting task: ai_agent
+2025-11-10 21:36:58,944 - ai_agent - INFO - Enhanced AI processing started (correlation enabled)...
+2025-11-10 21:36:58,944 - task_manager - INFO -  Starting task: websocket_server
+2025-11-10 21:36:58,944 - websocket_server - INFO - WebSocket event streaming started...
+2025-11-10 21:36:58,944 - websocket_server - INFO - Starting queue depth monitor...
+2025-11-10 21:36:58,944 - __main__ - INFO - Starting metrics updater...
+2025-11-10 21:36:58,945 - database - INFO - Starting cleanup task (every 1h)
+2025-11-10 21:36:58,945 - task_manager - INFO -  Task health monitor started
+2025-11-10 21:37:00,953 - condense_enhanced - INFO -  Warmup 1/10: 11 flows
+2025-11-10 21:37:01,391 - capture - INFO - Captured 50 packets (with payloads)
+2025-11-10 21:37:01,545 - capture - INFO - Captured 100 packets (with payloads)
+2025-11-10 21:37:01,729 - capture - INFO - Captured 150 packets (with payloads)
+2025-11-10 21:37:02,975 - condense_enhanced - INFO -  Warmup 2/10: 37 flows
+2025-11-10 21:37:04,131 - websocket_server - INFO - Client connected. Total connections: 1
+2025-11-10 21:37:04,150 - capture - INFO - Captured 200 packets (with payloads)
+2025-11-10 21:37:04,764 - capture - INFO - Captured 250 packets (with payloads)
+2025-11-10 21:37:04,991 - condense_enhanced - INFO -  Warmup 3/10: 27 flows
+2025-11-10 21:37:05,290 - capture - INFO - Captured 300 packets (with payloads)
+2025-11-10 21:37:06,062 - capture - INFO - Captured 350 packets (with payloads)
+2025-11-10 21:37:07,008 - condense_enhanced - INFO -  Warmup 4/10: 16 flows
+2025-11-10 21:37:07,133 - websocket_server - INFO - Client connected. Total connections: 2
+2025-11-10 21:37:09,011 - condense_enhanced - INFO -  Warmup 5/10: 17 flows
+2025-11-10 21:37:09,137 - capture - INFO - Captured 400 packets (with payloads)
+2025-11-10 21:37:09,656 - capture - INFO - Captured 450 packets (with payloads)
+2025-11-10 21:37:10,122 - capture - INFO - Captured 500 packets (with payloads)
+2025-11-10 21:37:10,387 - capture - INFO - Captured 550 packets (with payloads)
+2025-11-10 21:37:10,674 - capture - INFO - Captured 600 packets (with payloads)
+2025-11-10 21:37:11,027 - condense_enhanced - INFO -  Warmup 6/10: 49 flows
+2025-11-10 21:37:11,156 - capture - INFO - Captured 650 packets (with payloads)
+2025-11-10 21:37:11,428 - capture - INFO - Captured 700 packets (with payloads)
+2025-11-10 21:37:11,675 - capture - INFO - Captured 750 packets (with payloads)
+2025-11-10 21:37:11,947 - capture - INFO - Captured 800 packets (with payloads)
+2025-11-10 21:37:12,177 - capture - INFO - Captured 850 packets (with payloads)
+2025-11-10 21:37:12,219 - capture - INFO - Captured 900 packets (with payloads)
+2025-11-10 21:37:12,675 - capture - INFO - Captured 950 packets (with payloads)
+2025-11-10 21:37:13,049 - condense_enhanced - INFO -  Warmup 7/10: 64 flows
+2025-11-10 21:37:13,153 - capture - INFO - Captured 1000 packets (with payloads)
+2025-11-10 21:37:13,420 - capture - INFO - Captured 1050 packets (with payloads)
+2025-11-10 21:37:14,433 - capture - INFO - Captured 1100 packets (with payloads)
+2025-11-10 21:37:15,065 - condense_enhanced - INFO -  Warmup 8/10: 30 flows
+2025-11-10 21:37:15,972 - capture - INFO - Captured 1150 packets (with payloads)
+2025-11-10 21:37:17,070 - condense_enhanced - INFO -  Warmup 9/10: 12 flows
+2025-11-10 21:37:19,084 - condense_enhanced - INFO -  Warmup complete after 10 windows
+2025-11-10 21:37:19,085 - condense_enhanced - INFO -  Baseline established for 201 flows
+2025-11-10 21:37:19,087 - condense_enhanced - INFO -  Emitting 11 events
+2025-11-10 21:37:19,537 - capture - INFO - Captured 1200 packets (with payloads)
+2025-11-10 21:37:21,093 - condense_enhanced - INFO -  Emitting 10 events
+2025-11-10 21:37:22,135 - capture - INFO - Captured 1250 packets (with payloads)
+2025-11-10 21:37:23,104 - condense_enhanced - INFO -  Emitting 17 events
+2025-11-10 21:37:25,121 - condense_enhanced - INFO -  Emitting 11 events
+2025-11-10 21:37:26,258 - capture - INFO - Captured 1300 packets (with payloads)
+2025-11-10 21:37:27,140 - condense_enhanced - INFO -  Emitting 20 events
+2025-11-10 21:37:29,154 - condense_enhanced - INFO -  Emitting 13 events
+2025-11-10 21:37:29,349 - capture - INFO - Captured 1350 packets (with payloads)
+2025-11-10 21:37:31,161 - condense_enhanced - INFO -  Emitting 7 events
+2025-11-10 21:37:33,167 - condense_enhanced - INFO -  Emitting 10 events
+2025-11-10 21:37:33,168 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:37:33,168 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-10 21:37:33,644 - capture - INFO - Captured 1400 packets (with payloads)
+2025-11-10 21:37:35,181 - condense_enhanced - INFO -  Emitting 12 events
+2025-11-10 21:37:37,189 - condense_enhanced - INFO -  Emitting 9 events
+2025-11-10 21:37:37,189 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:37:37,229 - capture - INFO - Captured 1450 packets (with payloads)
+2025-11-10 21:37:39,197 - condense_enhanced - INFO -  Emitting 12 events
+2025-11-10 21:37:39,198 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:37:41,224 - condense_enhanced - INFO -  Emitting 15 events
+2025-11-10 21:37:41,224 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:37:41,623 - capture - INFO - Captured 1500 packets (with payloads)
+2025-11-10 21:37:43,240 - condense_enhanced - INFO -  Emitting 10 events
+2025-11-10 21:37:45,251 - condense_enhanced - INFO -  Emitting 7 events
+2025-11-10 21:37:45,252 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:37:47,255 - condense_enhanced - INFO -  Emitting 10 events
+2025-11-10 21:37:47,256 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:37:47,790 - capture - INFO - Captured 1550 packets (with payloads)
+2025-11-10 21:37:49,064 - websocket_server - WARNING - Event queue saturated: 81/100
+2025-11-10 21:37:49,267 - condense_enhanced - INFO -  Emitting 17 events
+2025-11-10 21:37:49,267 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 192.168.0.6  255.255.255.255 (Port 6667)
+2025-11-10 21:37:49,839 - capture - INFO - Captured 1600 packets (with payloads)
+2025-11-10 21:37:50,874 - capture - INFO - Captured 1650 packets (with payloads)
+2025-11-10 21:37:51,287 - condense_enhanced - INFO -  Emitting 19 events
+2025-11-10 21:37:51,287 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 192.168.0.14  255.255.255.255 (Port 6537)
+2025-11-10 21:37:54,086 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:37:56,091 - capture - INFO - Captured 1700 packets (with payloads)
+2025-11-10 21:37:56,143 - capture - INFO - Captured 1750 packets (with payloads)
+2025-11-10 21:37:56,283 - capture - INFO - Captured 1800 packets (with payloads)
+2025-11-10 21:37:56,481 - capture - INFO - Captured 1850 packets (with payloads)
+2025-11-10 21:37:56,536 - capture - INFO - Captured 1900 packets (with payloads)
+2025-11-10 21:37:56,703 - capture - INFO - Captured 1950 packets (with payloads)
+2025-11-10 21:37:56,917 - capture - INFO - Captured 2000 packets (with payloads)
+2025-11-10 21:37:56,969 - capture - INFO - Captured 2050 packets (with payloads)
+2025-11-10 21:37:57,062 - capture - INFO - Captured 2100 packets (with payloads)
+2025-11-10 21:37:57,143 - capture - INFO - Captured 2150 packets (with payloads)
+2025-11-10 21:37:57,318 - capture - INFO - Captured 2200 packets (with payloads)
+2025-11-10 21:37:57,581 - capture - INFO - Captured 2250 packets (with payloads)
+2025-11-10 21:37:58,585 - capture - INFO - Captured 2300 packets (with payloads)
+2025-11-10 21:37:59,087 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:38:00,587 - capture - INFO - Captured 2350 packets (with payloads)
+2025-11-10 21:38:00,653 - capture - INFO - Captured 2400 packets (with payloads)
+2025-11-10 21:38:00,777 - capture - INFO - Captured 2450 packets (with payloads)
+2025-11-10 21:38:00,850 - capture - INFO - Captured 2500 packets (with payloads)
+2025-11-10 21:38:00,901 - capture - INFO - Captured 2550 packets (with payloads)
+2025-11-10 21:38:01,175 - capture - INFO - Captured 2600 packets (with payloads)
+2025-11-10 21:38:01,670 - capture - INFO - Captured 2650 packets (with payloads)
+2025-11-10 21:38:02,439 - capture - INFO - Captured 2700 packets (with payloads)
+2025-11-10 21:38:03,471 - capture - INFO - Captured 2750 packets (with payloads)
+2025-11-10 21:38:03,637 - ai_agent - ERROR - AI generation error
+Traceback (most recent call last):
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\streams.py", line 355, in _wait
+    await waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\ai_agent.py", line 280, in _generate_structured_explanation
+    raw_response = await self._query_remote(prompt)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\ai_agent.py", line 711, in _query_remote
+    content = await response.text()
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\client_reqrep.py", line 737, in text
+    await self.read()
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\client_reqrep.py", line 695, in read
+    self._body = await self.content.read()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\streams.py", line 426, in read
+    block = await self.readany()
+            ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\streams.py", line 448, in readany
+    await self._wait("readany")
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\streams.py", line 354, in _wait
+    with self._timer:
+         ^^^^^^^^^^^
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\helpers.py", line 685, in __exit__
+    raise asyncio.TimeoutError from exc_val
+TimeoutError
+2025-11-10 21:38:03,705 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-10 21:38:03,717 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:38:04,100 - websocket_server - WARNING - Event queue saturated: 94/100
+2025-11-10 21:38:04,262 - capture - INFO - Captured 2800 packets (with payloads)
+2025-11-10 21:38:05,452 - capture - INFO - Captured 2850 packets (with payloads)
+2025-11-10 21:38:05,599 - capture - INFO - Captured 2900 packets (with payloads)
+2025-11-10 21:38:05,747 - condense_enhanced - INFO -  Emitting 134 events
+2025-11-10 21:38:05,747 - condense_enhanced - WARNING -  ANOMALY [CRITICAL]:  ANOMALY [CRITICAL]: Statistical anomaly: Z=6.44, 10 pkts vs 31 | 192.168.0.14  255.255.255.255 (Port 6537)
+2025-11-10 21:38:05,748 - condense_enhanced - WARNING -  ANOMALY [CRITICAL]:  ANOMALY [CRITICAL]: Statistical anomaly: Z=7.01, 5 pkts vs 11 | 192.168.0.16  192.168.0.14 (Port 8009)
+2025-11-10 21:38:05,750 - capture - INFO - Captured 2950 packets (with payloads)
+2025-11-10 21:38:05,855 - capture - INFO - Captured 3000 packets (with payloads)
+2025-11-10 21:38:05,953 - capture - INFO - Captured 3050 packets (with payloads)
+2025-11-10 21:38:06,051 - capture - INFO - Captured 3100 packets (with payloads)
+2025-11-10 21:38:06,136 - capture - INFO - Captured 3150 packets (with payloads)
+2025-11-10 21:38:06,247 - capture - INFO - Captured 3200 packets (with payloads)
+2025-11-10 21:38:06,344 - capture - INFO - Captured 3250 packets (with payloads)
+2025-11-10 21:38:06,710 - capture - INFO - Captured 3300 packets (with payloads)
+2025-11-10 21:38:09,111 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:38:09,393 - capture - INFO - Captured 3350 packets (with payloads)
+2025-11-10 21:38:10,417 - capture - INFO - Captured 3400 packets (with payloads)
+2025-11-10 21:38:10,470 - websocket_server - INFO - Client disconnected. Active connections: 1
+2025-11-10 21:38:10,475 - websocket_server - INFO - Client disconnected. Active connections: 0
+2025-11-10 21:38:10,579 - __main__ - INFO -  Cleaning up resources...
+2025-11-10 21:38:10,579 - task_manager - INFO -  Task packet_capture cancelled (shutdown requested)
+2025-11-10 21:38:10,580 - task_manager - INFO -  Task flow_condenser cancelled (shutdown requested)
+2025-11-10 21:38:10,580 - task_manager - INFO -  Task ai_agent cancelled (shutdown requested)
+2025-11-10 21:38:10,580 - task_manager - INFO -  Task websocket_server cancelled (shutdown requested)
+2025-11-10 21:38:10,622 - capture - INFO - Capture stopped. Total packets: 3403
+2025-11-10 21:38:10,623 - ai_agent - INFO - Enhanced AI Agent (remote) closed. Queries: 1, Incidents: 0, Errors: 0
+2025-11-10 21:38:10,650 - database - INFO - Database connection closed
+2025-11-10 21:38:10,651 - __main__ - INFO -  Backend stopped gracefully
+2025-11-10 21:45:01,837 - __main__ - INFO - ================================================================================
+2025-11-10 21:45:01,837 - __main__ - INFO -  Starting AINetUI Backend (Enhanced)
+2025-11-10 21:45:01,837 - __main__ - INFO - ================================================================================
+2025-11-10 21:45:01,837 - __main__ - INFO -  Capture Interface: 4
+2025-11-10 21:45:01,838 - __main__ - INFO -  Mock Mode: False
+2025-11-10 21:45:01,838 - __main__ - INFO -  AI Mode: REMOTE
+2025-11-10 21:45:01,838 - __main__ - INFO -  AI Model: llama3.1:latest
+2025-11-10 21:45:01,838 - __main__ - INFO -  AI URL: https://chatucy.cs.ucy.ac.cy/api/send_message
+2025-11-10 21:45:01,838 - __main__ - INFO -   Server: http://0.0.0.0:8000
+2025-11-10 21:45:01,838 - __main__ - INFO -  Metrics: http://0.0.0.0:8000/metrics
+2025-11-10 21:45:01,838 - __main__ - INFO -  Database: DatabaseConfig(enabled=True, path=ainetui.db, retention=1d)
+2025-11-10 21:45:01,839 - __main__ - INFO - ================================================================================
+2025-11-10 21:45:01,839 - database - INFO - Database initialized: enabled=True, path=ainetui.db, retention=1d
+2025-11-10 21:45:01,842 - database - INFO - Database schema created/verified
+2025-11-10 21:45:01,842 - database - INFO - Database connected: ainetui.db
+2025-11-10 21:45:01,842 - ai_agent - INFO - Enhanced AI Agent initialized in REMOTE mode
+2025-11-10 21:45:01,843 - ai_agent - INFO - Correlation window: 300s, Max memory: 100 events
+2025-11-10 21:45:01,843 - ai_agent - INFO - Remote mode configured: https://chatucy.cs.ucy.ac.cy/api/send_message
+2025-11-10 21:45:01,843 - ai_agent - INFO - Model: llama3.1:latest
+2025-11-10 21:45:01,843 - task_manager - INFO -  Registered task: packet_capture
+2025-11-10 21:45:01,843 - task_manager - INFO -  Registered task: flow_condenser
+2025-11-10 21:45:01,843 - task_manager - INFO -  Registered task: ai_agent
+2025-11-10 21:45:01,843 - task_manager - INFO -  Registered task: websocket_server
+2025-11-10 21:45:01,844 - task_manager - INFO -  Registered task: queue_monitor
+2025-11-10 21:45:01,844 - task_manager - INFO -  Registered task: metrics_updater
+2025-11-10 21:45:01,844 - task_manager - INFO -  Registered task: db_cleanup
+2025-11-10 21:45:01,844 - __main__ - INFO -  All components started successfully
+2025-11-10 21:45:01,844 - __main__ - INFO - ================================================================================
+2025-11-10 21:45:01,875 - task_manager - INFO -  Starting task: packet_capture
+2025-11-10 21:45:01,876 - capture - INFO - Starting packet capture on interface: 4 (payload capture: True)
+2025-11-10 21:45:01,876 - capture - INFO - Starting TShark with EK format + hex dump for payload capture
+2025-11-10 21:45:01,881 - task_manager - INFO -  Starting task: flow_condenser
+2025-11-10 21:45:01,882 - condense_enhanced - INFO -  Starting ENHANCED packet condensation...
+2025-11-10 21:45:01,882 - condense_enhanced - INFO -  Detection: Z-score=3.0, IQR=2.5
+2025-11-10 21:45:01,882 - condense_enhanced - INFO -  Cleanup: Every 300s, Port scan window: 300s
+2025-11-10 21:45:01,882 - task_manager - INFO -  Starting task: ai_agent
+2025-11-10 21:45:01,882 - ai_agent - INFO - Enhanced AI processing started (correlation enabled)...
+2025-11-10 21:45:01,883 - task_manager - INFO -  Starting task: websocket_server
+2025-11-10 21:45:01,883 - websocket_server - INFO - WebSocket event streaming started...
+2025-11-10 21:45:01,883 - websocket_server - INFO - Starting queue depth monitor...
+2025-11-10 21:45:01,884 - __main__ - INFO - Starting metrics updater...
+2025-11-10 21:45:01,884 - database - INFO - Starting cleanup task (every 1h)
+2025-11-10 21:45:01,884 - task_manager - INFO -  Task health monitor started
+2025-11-10 21:45:03,700 - capture - INFO - Captured 50 packets (with payloads)
+2025-11-10 21:45:03,798 - capture - INFO - Captured 100 packets (with payloads)
+2025-11-10 21:45:03,896 - condense_enhanced - INFO -  Warmup 1/10: 13 flows
+2025-11-10 21:45:04,053 - capture - INFO - Captured 150 packets (with payloads)
+2025-11-10 21:45:04,814 - capture - INFO - Captured 200 packets (with payloads)
+2025-11-10 21:45:05,881 - capture - INFO - Captured 250 packets (with payloads)
+2025-11-10 21:45:05,904 - condense_enhanced - INFO -  Warmup 2/10: 13 flows
+2025-11-10 21:45:06,082 - capture - INFO - Captured 300 packets (with payloads)
+2025-11-10 21:45:06,251 - capture - INFO - Captured 350 packets (with payloads)
+2025-11-10 21:45:06,522 - capture - INFO - Captured 400 packets (with payloads)
+2025-11-10 21:45:06,678 - capture - INFO - Captured 450 packets (with payloads)
+2025-11-10 21:45:06,823 - capture - INFO - Captured 500 packets (with payloads)
+2025-11-10 21:45:07,190 - capture - INFO - Captured 550 packets (with payloads)
+2025-11-10 21:45:07,406 - websocket_server - INFO - Client connected. Total connections: 1
+2025-11-10 21:45:07,456 - capture - INFO - Captured 600 packets (with payloads)
+2025-11-10 21:45:07,920 - condense_enhanced - INFO -  Warmup 3/10: 30 flows
+2025-11-10 21:45:08,221 - capture - INFO - Captured 650 packets (with payloads)
+2025-11-10 21:45:09,933 - condense_enhanced - INFO -  Warmup 4/10: 25 flows
+2025-11-10 21:45:09,963 - capture - INFO - Captured 700 packets (with payloads)
+2025-11-10 21:45:10,561 - websocket_server - INFO - Client connected. Total connections: 2
+2025-11-10 21:45:11,767 - capture - INFO - Captured 750 packets (with payloads)
+2025-11-10 21:45:11,935 - condense_enhanced - INFO -  Warmup 5/10: 10 flows
+2025-11-10 21:45:11,943 - capture - INFO - Captured 800 packets (with payloads)
+2025-11-10 21:45:12,105 - capture - INFO - Captured 850 packets (with payloads)
+2025-11-10 21:45:12,211 - capture - INFO - Captured 900 packets (with payloads)
+2025-11-10 21:45:12,279 - capture - INFO - Captured 950 packets (with payloads)
+2025-11-10 21:45:12,418 - capture - INFO - Captured 1000 packets (with payloads)
+2025-11-10 21:45:12,478 - capture - INFO - Captured 1050 packets (with payloads)
+2025-11-10 21:45:12,678 - capture - INFO - Captured 1100 packets (with payloads)
+2025-11-10 21:45:12,738 - capture - INFO - Captured 1150 packets (with payloads)
+2025-11-10 21:45:12,929 - capture - INFO - Captured 1200 packets (with payloads)
+2025-11-10 21:45:12,966 - capture - INFO - Captured 1250 packets (with payloads)
+2025-11-10 21:45:13,061 - capture - INFO - Captured 1300 packets (with payloads)
+2025-11-10 21:45:13,189 - capture - INFO - Captured 1350 packets (with payloads)
+2025-11-10 21:45:13,440 - capture - INFO - Captured 1400 packets (with payloads)
+2025-11-10 21:45:13,706 - capture - INFO - Captured 1450 packets (with payloads)
+2025-11-10 21:45:13,948 - condense_enhanced - INFO -  Warmup 6/10: 45 flows
+2025-11-10 21:45:14,166 - capture - INFO - Captured 1500 packets (with payloads)
+2025-11-10 21:45:14,251 - capture - INFO - Captured 1550 packets (with payloads)
+2025-11-10 21:45:14,766 - capture - INFO - Captured 1600 packets (with payloads)
+2025-11-10 21:45:15,012 - capture - INFO - Captured 1650 packets (with payloads)
+2025-11-10 21:45:15,280 - capture - INFO - Captured 1700 packets (with payloads)
+2025-11-10 21:45:15,755 - capture - INFO - Captured 1750 packets (with payloads)
+2025-11-10 21:45:15,956 - condense_enhanced - INFO -  Warmup 7/10: 42 flows
+2025-11-10 21:45:16,033 - capture - INFO - Captured 1800 packets (with payloads)
+2025-11-10 21:45:16,261 - capture - INFO - Captured 1850 packets (with payloads)
+2025-11-10 21:45:16,747 - capture - INFO - Captured 1900 packets (with payloads)
+2025-11-10 21:45:17,772 - capture - INFO - Captured 1950 packets (with payloads)
+2025-11-10 21:45:17,975 - condense_enhanced - INFO -  Warmup 8/10: 34 flows
+2025-11-10 21:45:19,843 - capture - INFO - Captured 2000 packets (with payloads)
+2025-11-10 21:45:19,985 - condense_enhanced - INFO -  Warmup 9/10: 10 flows
+2025-11-10 21:45:21,994 - condense_enhanced - INFO -  Warmup complete after 10 windows
+2025-11-10 21:45:21,995 - condense_enhanced - INFO -  Baseline established for 156 flows
+2025-11-10 21:45:21,996 - condense_enhanced - INFO -  Emitting 4 events
+2025-11-10 21:45:23,433 - capture - INFO - Captured 2050 packets (with payloads)
+2025-11-10 21:45:23,462 - capture - INFO - Captured 2100 packets (with payloads)
+2025-11-10 21:45:23,488 - capture - INFO - Captured 2150 packets (with payloads)
+2025-11-10 21:45:23,732 - capture - INFO - Captured 2200 packets (with payloads)
+2025-11-10 21:45:23,928 - capture - INFO - Captured 2250 packets (with payloads)
+2025-11-10 21:45:24,013 - condense_enhanced - INFO -  Emitting 17 events
+2025-11-10 21:45:25,069 - capture - INFO - Captured 2300 packets (with payloads)
+2025-11-10 21:45:25,099 - capture - INFO - Captured 2350 packets (with payloads)
+2025-11-10 21:45:25,348 - capture - INFO - Captured 2400 packets (with payloads)
+2025-11-10 21:45:26,034 - condense_enhanced - INFO -  Emitting 8 events
+2025-11-10 21:45:26,603 - capture - INFO - Captured 2450 packets (with payloads)
+2025-11-10 21:45:27,331 - capture - INFO - Captured 2500 packets (with payloads)
+2025-11-10 21:45:27,521 - capture - INFO - Captured 2550 packets (with payloads)
+2025-11-10 21:45:27,681 - capture - INFO - Captured 2600 packets (with payloads)
+2025-11-10 21:45:27,875 - capture - INFO - Captured 2650 packets (with payloads)
+2025-11-10 21:45:28,041 - condense_enhanced - INFO -  Emitting 19 events
+2025-11-10 21:45:28,177 - capture - INFO - Captured 2700 packets (with payloads)
+2025-11-10 21:45:28,345 - capture - INFO - Captured 2750 packets (with payloads)
+2025-11-10 21:45:29,054 - capture - INFO - Captured 2800 packets (with payloads)
+2025-11-10 21:45:30,048 - condense_enhanced - INFO -  Emitting 13 events
+2025-11-10 21:45:31,108 - capture - INFO - Captured 2850 packets (with payloads)
+2025-11-10 21:45:31,533 - capture - INFO - Captured 2900 packets (with payloads)
+2025-11-10 21:45:32,053 - condense_enhanced - INFO -  Emitting 12 events
+2025-11-10 21:45:32,054 - condense_enhanced - WARNING -  ANOMALY [HIGH]:  ANOMALY [HIGH]: Payload threats: HIGH_ENTROPY_DATA | 140.82.114.21  192.168.0.16 (Port 63540) | Threats: HIGH_ENTROPY_DATA
+2025-11-10 21:45:32,054 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 192.168.0.16  140.82.114.21 (HTTPS)
+2025-11-10 21:45:32,054 - ai_agent - INFO - Analyzing high anomaly with enhanced AI...
+2025-11-10 21:45:32,545 - capture - INFO - Captured 2950 packets (with payloads)
+2025-11-10 21:45:33,315 - capture - INFO - Captured 3000 packets (with payloads)
+2025-11-10 21:45:34,065 - condense_enhanced - INFO -  Emitting 17 events
+2025-11-10 21:45:34,066 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 192.168.0.16  140.82.114.21 (HTTPS)
+2025-11-10 21:45:36,078 - condense_enhanced - INFO -  Emitting 12 events
+2025-11-10 21:45:36,079 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:45:36,132 - capture - INFO - Captured 3050 packets (with payloads)
+2025-11-10 21:45:36,383 - capture - INFO - Captured 3100 packets (with payloads)
+2025-11-10 21:45:37,514 - capture - INFO - Captured 3150 packets (with payloads)
+2025-11-10 21:45:37,541 - capture - INFO - Captured 3200 packets (with payloads)
+2025-11-10 21:45:38,100 - condense_enhanced - INFO -  Emitting 15 events
+2025-11-10 21:45:38,101 - condense_enhanced - WARNING -  ANOMALY [HIGH]:  ANOMALY [HIGH]: Payload threats: HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA | 140.82.114.21  192.168.0.16 (Port 63540) | Threats: HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA
+2025-11-10 21:45:38,101 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:45:39,415 - capture - INFO - Captured 3250 packets (with payloads)
+2025-11-10 21:45:39,839 - capture - INFO - Captured 3300 packets (with payloads)
+2025-11-10 21:45:39,893 - capture - INFO - Captured 3350 packets (with payloads)
+2025-11-10 21:45:40,114 - condense_enhanced - INFO -  Emitting 21 events
+2025-11-10 21:45:40,114 - condense_enhanced - WARNING -  ANOMALY [HIGH]:  ANOMALY [HIGH]: Payload threats: HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA | 192.168.0.16  140.82.114.21 (HTTPS) | Threats: HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA
+2025-11-10 21:45:40,138 - capture - INFO - Captured 3400 packets (with payloads)
+2025-11-10 21:45:40,305 - capture - INFO - Captured 3450 packets (with payloads)
+2025-11-10 21:45:40,554 - capture - INFO - Captured 3500 packets (with payloads)
+2025-11-10 21:45:40,738 - capture - INFO - Captured 3550 packets (with payloads)
+2025-11-10 21:45:41,266 - capture - INFO - Captured 3600 packets (with payloads)
+2025-11-10 21:45:42,062 - capture - INFO - Captured 3650 packets (with payloads)
+2025-11-10 21:45:42,134 - condense_enhanced - INFO -  Emitting 18 events
+2025-11-10 21:45:42,135 - condense_enhanced - WARNING -  ANOMALY [HIGH]:  ANOMALY [HIGH]: Unusual behavioral pattern | 192.168.0.16  140.82.114.21 (HTTPS) | Threats: HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA, HIGH_ENTROPY_DATA
+2025-11-10 21:45:42,135 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | fe80::8aef:16ff:fe23:aae7  ff02::1 (Port 0)
+2025-11-10 21:45:42,566 - capture - INFO - Captured 3700 packets (with payloads)
+2025-11-10 21:45:42,833 - capture - INFO - Captured 3750 packets (with payloads)
+2025-11-10 21:45:43,082 - capture - INFO - Captured 3800 packets (with payloads)
+2025-11-10 21:45:43,514 - capture - INFO - Captured 3850 packets (with payloads)
+2025-11-10 21:45:43,783 - capture - INFO - Captured 3900 packets (with payloads)
+2025-11-10 21:45:44,150 - condense_enhanced - INFO -  Emitting 46 events
+2025-11-10 21:45:44,530 - capture - INFO - Captured 3950 packets (with payloads)
+2025-11-10 21:45:45,813 - capture - INFO - Captured 4000 packets (with payloads)
+2025-11-10 21:45:46,001 - capture - INFO - Captured 4050 packets (with payloads)
+2025-11-10 21:45:46,274 - capture - INFO - Captured 4100 packets (with payloads)
+2025-11-10 21:45:46,554 - capture - INFO - Captured 4150 packets (with payloads)
+2025-11-10 21:45:46,718 - capture - INFO - Captured 4200 packets (with payloads)
+2025-11-10 21:45:46,845 - capture - INFO - Captured 4250 packets (with payloads)
+2025-11-10 21:45:46,960 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:45:47,090 - capture - INFO - Captured 4300 packets (with payloads)
+2025-11-10 21:45:47,365 - capture - INFO - Captured 4350 packets (with payloads)
+2025-11-10 21:45:47,452 - capture - INFO - Captured 4400 packets (with payloads)
+2025-11-10 21:45:47,747 - capture - INFO - Captured 4450 packets (with payloads)
+2025-11-10 21:45:48,013 - capture - INFO - Captured 4500 packets (with payloads)
+2025-11-10 21:45:50,830 - capture - INFO - Captured 4550 packets (with payloads)
+2025-11-10 21:45:51,962 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:45:53,883 - capture - INFO - Captured 4600 packets (with payloads)
+2025-11-10 21:45:55,961 - capture - INFO - Captured 4650 packets (with payloads)
+2025-11-10 21:45:56,976 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:45:57,942 - capture - INFO - Captured 4700 packets (with payloads)
+2025-11-10 21:46:00,747 - capture - INFO - Captured 4750 packets (with payloads)
+2025-11-10 21:46:01,978 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:46:04,082 - capture - INFO - Captured 4800 packets (with payloads)
+2025-11-10 21:46:05,974 - capture - INFO - Captured 4850 packets (with payloads)
+2025-11-10 21:46:06,379 - capture - INFO - Captured 4900 packets (with payloads)
+2025-11-10 21:46:06,987 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:46:07,146 - capture - INFO - Captured 4950 packets (with payloads)
+2025-11-10 21:46:09,200 - capture - INFO - Captured 5000 packets (with payloads)
+2025-11-10 21:46:09,967 - capture - INFO - Captured 5050 packets (with payloads)
+2025-11-10 21:46:11,995 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:46:12,119 - capture - INFO - Captured 5100 packets (with payloads)
+2025-11-10 21:46:12,149 - capture - INFO - Captured 5150 packets (with payloads)
+2025-11-10 21:46:12,181 - capture - INFO - Captured 5200 packets (with payloads)
+2025-11-10 21:46:12,210 - capture - INFO - Captured 5250 packets (with payloads)
+2025-11-10 21:46:12,236 - capture - INFO - Captured 5300 packets (with payloads)
+2025-11-10 21:46:12,264 - capture - INFO - Captured 5350 packets (with payloads)
+2025-11-10 21:46:12,299 - capture - INFO - Captured 5400 packets (with payloads)
+2025-11-10 21:46:12,326 - capture - INFO - Captured 5450 packets (with payloads)
+2025-11-10 21:46:12,353 - capture - INFO - Captured 5500 packets (with payloads)
+2025-11-10 21:46:12,414 - capture - INFO - Captured 5550 packets (with payloads)
+2025-11-10 21:46:12,850 - capture - INFO - Captured 5600 packets (with payloads)
+2025-11-10 21:46:13,610 - capture - INFO - Captured 5650 packets (with payloads)
+2025-11-10 21:46:14,894 - capture - INFO - Captured 5700 packets (with payloads)
+2025-11-10 21:46:15,167 - capture - INFO - Captured 5750 packets (with payloads)
+2025-11-10 21:46:15,339 - capture - INFO - Captured 5800 packets (with payloads)
+2025-11-10 21:46:15,403 - capture - INFO - Captured 5850 packets (with payloads)
+2025-11-10 21:46:15,618 - capture - INFO - Captured 5900 packets (with payloads)
+2025-11-10 21:46:15,892 - capture - INFO - Captured 5950 packets (with payloads)
+2025-11-10 21:46:16,145 - capture - INFO - Captured 6000 packets (with payloads)
+2025-11-10 21:46:16,810 - capture - INFO - Captured 6050 packets (with payloads)
+2025-11-10 21:46:17,007 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:46:18,092 - capture - INFO - Captured 6100 packets (with payloads)
+2025-11-10 21:46:19,109 - capture - INFO - Captured 6150 packets (with payloads)
+2025-11-10 21:46:20,142 - capture - INFO - Captured 6200 packets (with payloads)
+2025-11-10 21:46:21,415 - capture - INFO - Captured 6250 packets (with payloads)
+2025-11-10 21:46:21,578 - capture - INFO - Captured 6300 packets (with payloads)
+2025-11-10 21:46:21,731 - capture - INFO - Captured 6350 packets (with payloads)
+2025-11-10 21:46:21,795 - capture - INFO - Captured 6400 packets (with payloads)
+2025-11-10 21:46:21,892 - capture - INFO - Captured 6450 packets (with payloads)
+2025-11-10 21:46:22,008 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:46:22,059 - capture - INFO - Captured 6500 packets (with payloads)
+2025-11-10 21:46:22,538 - capture - INFO - Captured 6550 packets (with payloads)
+2025-11-10 21:46:23,708 - capture - INFO - Captured 6600 packets (with payloads)
+2025-11-10 21:46:24,756 - capture - INFO - Captured 6650 packets (with payloads)
+2025-11-10 21:46:25,772 - capture - INFO - Captured 6700 packets (with payloads)
+2025-11-10 21:46:26,035 - capture - INFO - Captured 6750 packets (with payloads)
+2025-11-10 21:46:26,331 - capture - INFO - Captured 6800 packets (with payloads)
+2025-11-10 21:46:26,485 - capture - INFO - Captured 6850 packets (with payloads)
+2025-11-10 21:46:26,559 - capture - INFO - Captured 6900 packets (with payloads)
+2025-11-10 21:46:26,618 - capture - INFO - Captured 6950 packets (with payloads)
+2025-11-10 21:46:26,782 - capture - INFO - Captured 7000 packets (with payloads)
+2025-11-10 21:46:26,858 - capture - INFO - Captured 7050 packets (with payloads)
+2025-11-10 21:46:26,914 - capture - INFO - Captured 7100 packets (with payloads)
+2025-11-10 21:46:27,011 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:46:27,109 - capture - INFO - Captured 7150 packets (with payloads)
+2025-11-10 21:46:27,356 - capture - INFO - Captured 7200 packets (with payloads)
+2025-11-10 21:46:27,389 - capture - INFO - Captured 7250 packets (with payloads)
+2025-11-10 21:46:27,623 - capture - INFO - Captured 7300 packets (with payloads)
+2025-11-10 21:46:27,746 - capture - INFO - Captured 7350 packets (with payloads)
+2025-11-10 21:46:27,872 - capture - INFO - Captured 7400 packets (with payloads)
+2025-11-10 21:46:28,073 - capture - INFO - Captured 7450 packets (with payloads)
+2025-11-10 21:46:28,178 - capture - INFO - Captured 7500 packets (with payloads)
+2025-11-10 21:46:28,261 - capture - INFO - Captured 7550 packets (with payloads)
+2025-11-10 21:46:28,372 - capture - INFO - Captured 7600 packets (with payloads)
+2025-11-10 21:46:28,604 - capture - INFO - Captured 7650 packets (with payloads)
+2025-11-10 21:46:28,856 - capture - INFO - Captured 7700 packets (with payloads)
+2025-11-10 21:46:29,186 - capture - INFO - Captured 7750 packets (with payloads)
+2025-11-10 21:46:29,453 - capture - INFO - Captured 7800 packets (with payloads)
+2025-11-10 21:46:29,951 - capture - INFO - Captured 7850 packets (with payloads)
+2025-11-10 21:46:30,899 - capture - INFO - Captured 7900 packets (with payloads)
+2025-11-10 21:46:31,081 - capture - INFO - Captured 7950 packets (with payloads)
+2025-11-10 21:46:31,154 - capture - INFO - Captured 8000 packets (with payloads)
+2025-11-10 21:46:31,221 - capture - INFO - Captured 8050 packets (with payloads)
+2025-11-10 21:46:31,271 - capture - INFO - Captured 8100 packets (with payloads)
+2025-11-10 21:46:31,347 - capture - INFO - Captured 8150 packets (with payloads)
+2025-11-10 21:46:31,398 - capture - INFO - Captured 8200 packets (with payloads)
+2025-11-10 21:46:31,892 - capture - INFO - Captured 8250 packets (with payloads)
+2025-11-10 21:46:32,017 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:46:32,640 - ai_agent - ERROR - Remote API timeout after 60s
+2025-11-10 21:46:32,640 - ai_agent - ERROR - AI generation error
+Traceback (most recent call last):
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\streams.py", line 355, in _wait
+    await waiter
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\ai_agent.py", line 716, in _query_remote
+    content = await response.text()
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\client_reqrep.py", line 737, in text
+    await self.read()
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\client_reqrep.py", line 695, in read
+    self._body = await self.content.read()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\streams.py", line 426, in read
+    block = await self.readany()
+            ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\streams.py", line 448, in readany
+    await self._wait("readany")
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\streams.py", line 354, in _wait
+    with self._timer:
+         ^^^^^^^^^^^
+  File "C:\Users\kkras\AppData\Roaming\Python\Python313\site-packages\aiohttp\helpers.py", line 685, in __exit__
+    raise asyncio.TimeoutError from exc_val
+TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\ai_agent.py", line 280, in _generate_structured_explanation
+    raw_response = await self._query_remote(prompt)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\ai_agent.py", line 732, in _query_remote
+    raise Exception(f"REMOTE_TIMEOUT: Connection to {self.remote_url} timed out after {self.timeout}s. The remote AI service may be overloaded.")
+Exception: REMOTE_TIMEOUT: Connection to https://chatucy.cs.ucy.ac.cy/api/send_message timed out after 60s. The remote AI service may be overloaded.
+2025-11-10 21:46:32,645 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-10 21:46:33,158 - capture - INFO - Captured 8300 packets (with payloads)
+2025-11-10 21:46:35,043 - capture - INFO - Captured 8350 packets (with payloads)
+2025-11-10 21:46:36,826 - capture - INFO - Captured 8400 packets (with payloads)
+2025-11-10 21:46:37,024 - websocket_server - WARNING - Event queue saturated: 100/100
+2025-11-10 21:46:38,012 - capture - INFO - Captured 8450 packets (with payloads)
+2025-11-10 21:46:38,269 - capture - INFO - Captured 8500 packets (with payloads)
+2025-11-10 21:46:38,786 - capture - INFO - Captured 8550 packets (with payloads)
+2025-11-10 21:46:39,685 - websocket_server - INFO - Client disconnected. Active connections: 1
+2025-11-10 21:46:39,686 - websocket_server - INFO - Client disconnected. Active connections: 0
+2025-11-10 21:46:39,790 - __main__ - INFO -  Cleaning up resources...
+2025-11-10 21:46:39,790 - task_manager - INFO -  Task packet_capture cancelled (shutdown requested)
+2025-11-10 21:46:39,790 - task_manager - INFO -  Task flow_condenser cancelled (shutdown requested)
+2025-11-10 21:46:39,791 - task_manager - INFO -  Task ai_agent cancelled (shutdown requested)
+2025-11-10 21:46:39,791 - task_manager - INFO -  Task websocket_server cancelled (shutdown requested)
+2025-11-10 21:46:39,803 - __main__ - INFO - 
+ Shutdown complete
+2025-11-10 21:57:48,639 - __main__ - INFO - ================================================================================
+2025-11-10 21:57:48,639 - __main__ - INFO -  Starting AINetUI Backend (Enhanced)
+2025-11-10 21:57:48,639 - __main__ - INFO - ================================================================================
+2025-11-10 21:57:48,639 - __main__ - INFO -  Capture Interface: 4
+2025-11-10 21:57:48,639 - __main__ - INFO -  Mock Mode: False
+2025-11-10 21:57:48,640 - __main__ - INFO -  AI Mode: REMOTE
+2025-11-10 21:57:48,640 - __main__ - INFO -  AI Model: llama3.1:latest
+2025-11-10 21:57:48,640 - __main__ - INFO -  AI URL: https://chatucy.cs.ucy.ac.cy/api/send_message
+2025-11-10 21:57:48,640 - __main__ - INFO -   Server: http://0.0.0.0:8000
+2025-11-10 21:57:48,640 - __main__ - INFO -  Metrics: http://0.0.0.0:8000/metrics
+2025-11-10 21:57:48,640 - __main__ - INFO -  Database: DatabaseConfig(enabled=True, path=ainetui.db, retention=1d)
+2025-11-10 21:57:48,640 - __main__ - INFO - ================================================================================
+2025-11-10 21:57:48,640 - database - INFO - Database initialized: enabled=True, path=ainetui.db, retention=1d
+2025-11-10 21:57:48,656 - database - INFO - Database schema created/verified
+2025-11-10 21:57:48,656 - database - INFO - Database connected: ainetui.db
+2025-11-10 21:57:48,656 - ai_agent - INFO - Enhanced AI Agent initialized in REMOTE mode
+2025-11-10 21:57:48,656 - ai_agent - INFO - Correlation window: 300s, Max memory: 100 events
+2025-11-10 21:57:48,657 - ai_agent - INFO - Remote mode configured: https://chatucy.cs.ucy.ac.cy/api/send_message
+2025-11-10 21:57:48,657 - ai_agent - INFO - Model: llama3.1:latest
+2025-11-10 21:57:48,657 - task_manager - INFO -  Registered task: packet_capture
+2025-11-10 21:57:48,657 - task_manager - INFO -  Registered task: flow_condenser
+2025-11-10 21:57:48,657 - task_manager - INFO -  Registered task: ai_agent
+2025-11-10 21:57:48,657 - task_manager - INFO -  Registered task: websocket_server
+2025-11-10 21:57:48,657 - task_manager - INFO -  Registered task: queue_monitor
+2025-11-10 21:57:48,657 - task_manager - INFO -  Registered task: metrics_updater
+2025-11-10 21:57:48,658 - task_manager - INFO -  Registered task: db_cleanup
+2025-11-10 21:57:48,658 - __main__ - INFO -  All components started successfully
+2025-11-10 21:57:48,658 - __main__ - INFO - ================================================================================
+2025-11-10 21:57:48,686 - task_manager - INFO -  Starting task: packet_capture
+2025-11-10 21:57:48,687 - capture - INFO - Starting packet capture on interface: 4 (payload capture: True)
+2025-11-10 21:57:48,687 - capture - INFO - Starting TShark with EK format + hex dump for payload capture
+2025-11-10 21:57:48,692 - task_manager - INFO -  Starting task: flow_condenser
+2025-11-10 21:57:48,692 - condense_enhanced - INFO -  Starting ENHANCED packet condensation...
+2025-11-10 21:57:48,692 - condense_enhanced - INFO -  Detection: Z-score=3.0, IQR=2.5
+2025-11-10 21:57:48,692 - condense_enhanced - INFO -  Cleanup: Every 300s, Port scan window: 300s
+2025-11-10 21:57:48,692 - task_manager - INFO -  Starting task: ai_agent
+2025-11-10 21:57:48,692 - ai_agent - INFO - Enhanced AI processing started (correlation enabled)...
+2025-11-10 21:57:48,692 - task_manager - INFO -  Starting task: websocket_server
+2025-11-10 21:57:48,693 - websocket_server - INFO - WebSocket event streaming started...
+2025-11-10 21:57:48,693 - websocket_server - INFO - Starting queue depth monitor...
+2025-11-10 21:57:48,693 - __main__ - INFO - Starting metrics updater...
+2025-11-10 21:57:48,693 - database - INFO - Starting cleanup task (every 1h)
+2025-11-10 21:57:48,694 - task_manager - INFO -  Task health monitor started
+2025-11-10 21:57:50,698 - condense_enhanced - INFO -  Warmup 1/10: 16 flows
+2025-11-10 21:57:50,935 - capture - INFO - Captured 50 packets (with payloads)
+2025-11-10 21:57:51,832 - capture - INFO - Captured 100 packets (with payloads)
+2025-11-10 21:57:52,703 - condense_enhanced - INFO -  Warmup 2/10: 24 flows
+2025-11-10 21:57:53,185 - capture - INFO - Captured 150 packets (with payloads)
+2025-11-10 21:57:53,561 - websocket_server - INFO - Client connected. Total connections: 1
+2025-11-10 21:57:53,916 - capture - INFO - Captured 200 packets (with payloads)
+2025-11-10 21:57:54,224 - capture - INFO - Captured 250 packets (with payloads)
+2025-11-10 21:57:54,425 - capture - INFO - Captured 300 packets (with payloads)
+2025-11-10 21:57:54,594 - capture - INFO - Captured 350 packets (with payloads)
+2025-11-10 21:57:54,640 - capture - INFO - Captured 400 packets (with payloads)
+2025-11-10 21:57:54,723 - condense_enhanced - INFO -  Warmup 3/10: 52 flows
+2025-11-10 21:57:54,746 - capture - INFO - Captured 450 packets (with payloads)
+2025-11-10 21:57:54,819 - capture - INFO - Captured 500 packets (with payloads)
+2025-11-10 21:57:54,884 - capture - INFO - Captured 550 packets (with payloads)
+2025-11-10 21:57:54,923 - capture - INFO - Captured 600 packets (with payloads)
+2025-11-10 21:57:55,265 - capture - INFO - Captured 650 packets (with payloads)
+2025-11-10 21:57:55,513 - capture - INFO - Captured 700 packets (with payloads)
+2025-11-10 21:57:56,272 - capture - INFO - Captured 750 packets (with payloads)
+2025-11-10 21:57:56,559 - websocket_server - INFO - Client connected. Total connections: 2
+2025-11-10 21:57:56,740 - condense_enhanced - INFO -  Warmup 4/10: 72 flows
+2025-11-10 21:57:57,052 - capture - INFO - Captured 800 packets (with payloads)
+2025-11-10 21:57:58,585 - capture - INFO - Captured 850 packets (with payloads)
+2025-11-10 21:57:58,754 - condense_enhanced - INFO -  Warmup 5/10: 19 flows
+2025-11-10 21:58:00,375 - capture - INFO - Captured 900 packets (with payloads)
+2025-11-10 21:58:00,767 - condense_enhanced - INFO -  Warmup 6/10: 20 flows
+2025-11-10 21:58:02,780 - condense_enhanced - INFO -  Warmup 7/10: 6 flows
+2025-11-10 21:58:04,787 - condense_enhanced - INFO -  Warmup 8/10: 8 flows
+2025-11-10 21:58:05,285 - capture - INFO - Captured 950 packets (with payloads)
+2025-11-10 21:58:06,798 - condense_enhanced - INFO -  Warmup 9/10: 10 flows
+2025-11-10 21:58:08,800 - condense_enhanced - INFO -  Warmup complete after 10 windows
+2025-11-10 21:58:08,800 - condense_enhanced - INFO -  Baseline established for 167 flows
+2025-11-10 21:58:08,801 - condense_enhanced - INFO -  Emitting 3 events
+2025-11-10 21:58:10,372 - capture - INFO - Captured 1000 packets (with payloads)
+2025-11-10 21:58:10,804 - condense_enhanced - INFO -  Emitting 15 events
+2025-11-10 21:58:12,818 - condense_enhanced - INFO -  Emitting 9 events
+2025-11-10 21:58:14,833 - condense_enhanced - INFO -  Emitting 11 events
+2025-11-10 21:58:15,039 - websocket_server - INFO - Client disconnected. Active connections: 1
+2025-11-10 21:58:15,039 - websocket_server - INFO - Client disconnected. Active connections: 0
+2025-11-10 21:58:15,256 - capture - INFO - Captured 1050 packets (with payloads)
+2025-11-10 21:58:15,528 - capture - INFO - Captured 1100 packets (with payloads)
+2025-11-10 21:58:15,704 - capture - INFO - Captured 1150 packets (with payloads)
+2025-11-10 21:58:15,783 - capture - INFO - Captured 1200 packets (with payloads)
+2025-11-10 21:58:15,912 - capture - INFO - Captured 1250 packets (with payloads)
+2025-11-10 21:58:15,970 - capture - INFO - Captured 1300 packets (with payloads)
+2025-11-10 21:58:16,314 - capture - INFO - Captured 1350 packets (with payloads)
+2025-11-10 21:58:16,327 - task_manager - INFO -  Task packet_capture completed normally
+2025-11-10 21:58:16,474 - __main__ - INFO -  Cleaning up resources...
+2025-11-10 21:58:16,474 - task_manager - INFO -  Task flow_condenser cancelled (shutdown requested)
+2025-11-10 21:58:16,474 - task_manager - INFO -  Task ai_agent cancelled (shutdown requested)
+2025-11-10 21:58:16,474 - task_manager - INFO -  Task websocket_server cancelled (shutdown requested)
+2025-11-10 21:58:16,474 - __main__ - ERROR -  Fatal error: 
+Traceback (most recent call last):
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\main.py", line 295, in <module>
+    asyncio.run(main())
+    ~~~~~~~~~~~^^^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\main.py", line 290, in main
+    await backend.start()
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\main.py", line 272, in start
+    await self.capture.stop()
+  File "C:\Users\kkras\OneDrive\Documents\AINetUI\backend\capture.py", line 710, in stop
+    self.process.terminate()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\asyncio\subprocess.py", line 143, in terminate
+    self._transport.terminate()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\asyncio\base_subprocess.py", line 159, in terminate
+    self._check_proc()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\asyncio\base_subprocess.py", line 151, in _check_proc
+    raise ProcessLookupError()
+ProcessLookupError
+2025-11-18 18:55:38,651 - __main__ - INFO - ================================================================================
+2025-11-18 18:55:38,651 - __main__ - INFO -  Starting AINetUI Backend (Enhanced)
+2025-11-18 18:55:38,652 - __main__ - INFO - ================================================================================
+2025-11-18 18:55:38,652 - __main__ - INFO -  Capture Interface: 4
+2025-11-18 18:55:38,652 - __main__ - INFO -  Mock Mode: False
+2025-11-18 18:55:38,652 - __main__ - INFO -  AI Mode: REMOTE
+2025-11-18 18:55:38,652 - __main__ - INFO -  AI Model: llama3.1:latest
+2025-11-18 18:55:38,652 - __main__ - INFO -  AI URL: https://chatucy.cs.ucy.ac.cy/api/send_message
+2025-11-18 18:55:38,653 - __main__ - INFO -   Server: http://0.0.0.0:8000
+2025-11-18 18:55:38,653 - __main__ - INFO -  Metrics: http://0.0.0.0:8000/metrics
+2025-11-18 18:55:38,653 - __main__ - INFO -  Database: DatabaseConfig(enabled=True, path=ainetui.db, retention=1d)
+2025-11-18 18:55:38,653 - __main__ - INFO - ================================================================================
+2025-11-18 18:55:38,653 - database - INFO - Database initialized: enabled=True, path=ainetui.db, retention=1d
+2025-11-18 18:55:38,717 - database - INFO - Database schema created/verified
+2025-11-18 18:55:38,717 - database - INFO - Database connected: ainetui.db
+2025-11-18 18:55:38,718 - ai_agent - INFO - Enhanced AI Agent initialized in REMOTE mode
+2025-11-18 18:55:38,718 - ai_agent - INFO - Correlation window: 300s, Max memory: 100 events
+2025-11-18 18:55:38,718 - ai_agent - INFO - Remote mode configured: https://chatucy.cs.ucy.ac.cy/api/send_message
+2025-11-18 18:55:38,718 - ai_agent - INFO - Model: llama3.1:latest
+2025-11-18 18:55:38,718 - task_manager - INFO -  Registered task: packet_capture
+2025-11-18 18:55:38,719 - task_manager - INFO -  Registered task: flow_condenser
+2025-11-18 18:55:38,719 - task_manager - INFO -  Registered task: ai_agent
+2025-11-18 18:55:38,719 - task_manager - INFO -  Registered task: websocket_server
+2025-11-18 18:55:38,719 - task_manager - INFO -  Registered task: queue_monitor
+2025-11-18 18:55:38,719 - task_manager - INFO -  Registered task: metrics_updater
+2025-11-18 18:55:38,719 - task_manager - INFO -  Registered task: db_cleanup
+2025-11-18 18:55:38,719 - __main__ - INFO -  All components started successfully
+2025-11-18 18:55:38,719 - __main__ - INFO - ================================================================================
+2025-11-18 18:55:38,881 - task_manager - INFO -  Starting task: packet_capture
+2025-11-18 18:55:38,881 - capture - INFO - Starting packet capture on interface: 4 (payload capture: True)
+2025-11-18 18:55:38,882 - capture - INFO - Starting TShark with EK format + hex dump for payload capture
+2025-11-18 18:55:38,951 - task_manager - INFO -  Starting task: flow_condenser
+2025-11-18 18:55:38,951 - condense_enhanced - INFO -  Starting ENHANCED packet condensation...
+2025-11-18 18:55:38,952 - condense_enhanced - INFO -  Detection: Z-score=3.0, IQR=2.5
+2025-11-18 18:55:38,952 - condense_enhanced - INFO -  Cleanup: Every 300s, Port scan window: 300s
+2025-11-18 18:55:38,952 - task_manager - INFO -  Starting task: ai_agent
+2025-11-18 18:55:38,952 - ai_agent - INFO - Enhanced AI processing started (correlation enabled)...
+2025-11-18 18:55:38,952 - task_manager - INFO -  Starting task: websocket_server
+2025-11-18 18:55:38,953 - websocket_server - INFO - WebSocket event streaming started...
+2025-11-18 18:55:38,953 - websocket_server - INFO - Starting queue depth monitor...
+2025-11-18 18:55:38,953 - __main__ - INFO - Starting metrics updater...
+2025-11-18 18:55:38,953 - database - INFO - Starting cleanup task (every 1h)
+2025-11-18 18:55:38,953 - task_manager - INFO -  Task health monitor started
+2025-11-18 18:55:40,958 - condense_enhanced - INFO -  Warmup 1/10: 0 flows
+2025-11-18 18:55:42,970 - condense_enhanced - INFO -  Warmup 2/10: 0 flows
+2025-11-18 18:55:43,686 - capture - INFO - Captured 50 packets (with payloads)
+2025-11-18 18:55:43,720 - capture - INFO - Captured 100 packets (with payloads)
+2025-11-18 18:55:43,786 - capture - INFO - Captured 150 packets (with payloads)
+2025-11-18 18:55:43,835 - capture - INFO - Captured 200 packets (with payloads)
+2025-11-18 18:55:43,945 - capture - INFO - Captured 250 packets (with payloads)
+2025-11-18 18:55:43,979 - capture - INFO - Captured 300 packets (with payloads)
+2025-11-18 18:55:44,030 - capture - INFO - Captured 350 packets (with payloads)
+2025-11-18 18:55:44,113 - capture - INFO - Captured 400 packets (with payloads)
+2025-11-18 18:55:44,350 - capture - INFO - Captured 450 packets (with payloads)
+2025-11-18 18:55:44,371 - capture - INFO - Captured 500 packets (with payloads)
+2025-11-18 18:55:44,427 - capture - INFO - Captured 550 packets (with payloads)
+2025-11-18 18:55:44,478 - capture - INFO - Captured 600 packets (with payloads)
+2025-11-18 18:55:44,961 - capture - INFO - Captured 650 packets (with payloads)
+2025-11-18 18:55:45,010 - condense_enhanced - INFO -  Warmup 3/10: 80 flows
+2025-11-18 18:55:46,722 - websocket_server - INFO - Client connected. Total connections: 1
+2025-11-18 18:55:47,026 - condense_enhanced - INFO -  Warmup 4/10: 17 flows
+2025-11-18 18:55:47,242 - capture - INFO - Captured 700 packets (with payloads)
+2025-11-18 18:55:49,036 - condense_enhanced - INFO -  Warmup 5/10: 12 flows
+2025-11-18 18:55:49,338 - capture - INFO - Captured 750 packets (with payloads)
+2025-11-18 18:55:49,709 - websocket_server - INFO - Client connected. Total connections: 2
+2025-11-18 18:55:51,056 - condense_enhanced - INFO -  Warmup 6/10: 14 flows
+2025-11-18 18:55:53,064 - condense_enhanced - INFO -  Warmup 7/10: 4 flows
+2025-11-18 18:55:55,072 - condense_enhanced - INFO -  Warmup 8/10: 6 flows
+2025-11-18 18:55:56,096 - capture - INFO - Captured 800 packets (with payloads)
+2025-11-18 18:55:57,077 - condense_enhanced - INFO -  Warmup 9/10: 11 flows
+2025-11-18 18:55:57,337 - capture - INFO - Captured 850 packets (with payloads)
+2025-11-18 18:55:58,363 - capture - INFO - Captured 900 packets (with payloads)
+2025-11-18 18:55:58,769 - capture - INFO - Captured 950 packets (with payloads)
+2025-11-18 18:55:59,031 - capture - INFO - Captured 1000 packets (with payloads)
+2025-11-18 18:55:59,078 - condense_enhanced - INFO -  Warmup complete after 10 windows
+2025-11-18 18:55:59,079 - condense_enhanced - INFO -  Baseline established for 128 flows
+2025-11-18 18:55:59,085 - condense_enhanced - INFO -  Emitting 33 events
+2025-11-18 18:55:59,305 - capture - INFO - Captured 1050 packets (with payloads)
+2025-11-18 18:55:59,807 - capture - INFO - Captured 1100 packets (with payloads)
+2025-11-18 18:56:00,304 - capture - INFO - Captured 1150 packets (with payloads)
+2025-11-18 18:56:00,583 - capture - INFO - Captured 1200 packets (with payloads)
+2025-11-18 18:56:01,095 - condense_enhanced - INFO -  Emitting 37 events
+2025-11-18 18:56:01,112 - capture - INFO - Captured 1250 packets (with payloads)
+2025-11-18 18:56:01,589 - capture - INFO - Captured 1300 packets (with payloads)
+2025-11-18 18:56:02,107 - capture - INFO - Captured 1350 packets (with payloads)
+2025-11-18 18:56:02,625 - capture - INFO - Captured 1400 packets (with payloads)
+2025-11-18 18:56:02,886 - capture - INFO - Captured 1450 packets (with payloads)
+2025-11-18 18:56:03,110 - condense_enhanced - INFO -  Emitting 36 events
+2025-11-18 18:56:05,123 - condense_enhanced - INFO -  Emitting 8 events
+2025-11-18 18:56:05,124 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:05,125 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:05,125 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:05,296 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:05,298 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:05,424 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:05,707 - capture - INFO - Captured 1500 packets (with payloads)
+2025-11-18 18:56:07,140 - condense_enhanced - INFO -  Emitting 14 events
+2025-11-18 18:56:07,140 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:07,140 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:07,141 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:07,252 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:07,254 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:07,269 - capture - INFO - Captured 1550 packets (with payloads)
+2025-11-18 18:56:07,357 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:07,791 - capture - INFO - Captured 1600 packets (with payloads)
+2025-11-18 18:56:09,150 - condense_enhanced - INFO -  Emitting 17 events
+2025-11-18 18:56:09,151 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:09,151 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:09,152 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:09,285 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:09,287 - ai_agent - WARNING - INCIDENT DETECTED: Suspicious Activity from 10.102.71.125
+2025-11-18 18:56:09,287 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:09,409 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:09,410 - ai_agent - WARNING - INCIDENT DETECTED: Suspicious Activity from 104.16.0.35
+2025-11-18 18:56:09,624 - capture - INFO - Captured 1650 packets (with payloads)
+2025-11-18 18:56:11,157 - condense_enhanced - INFO -  Emitting 20 events
+2025-11-18 18:56:11,158 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:11,158 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:11,159 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:11,286 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:11,289 - ai_agent - WARNING - INCIDENT DETECTED: Suspicious Activity from 10.102.71.125
+2025-11-18 18:56:11,289 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:11,609 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:11,611 - ai_agent - WARNING - INCIDENT DETECTED: Suspicious Activity from 104.16.0.35
+2025-11-18 18:56:11,640 - capture - INFO - Captured 1700 packets (with payloads)
+2025-11-18 18:56:12,922 - capture - INFO - Captured 1750 packets (with payloads)
+2025-11-18 18:56:13,171 - condense_enhanced - INFO -  Emitting 14 events
+2025-11-18 18:56:13,171 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:13,172 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:13,172 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:13,298 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:13,300 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 10.102.71.125
+2025-11-18 18:56:13,300 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:13,612 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:13,613 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 104.16.0.35
+2025-11-18 18:56:15,184 - condense_enhanced - INFO -  Emitting 6 events
+2025-11-18 18:56:15,184 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:15,184 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:15,185 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:15,321 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:15,322 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 10.102.71.125
+2025-11-18 18:56:15,322 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:15,326 - capture - INFO - Captured 1800 packets (with payloads)
+2025-11-18 18:56:15,445 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:15,446 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 104.16.0.35
+2025-11-18 18:56:15,458 - capture - INFO - Captured 1850 packets (with payloads)
+2025-11-18 18:56:15,701 - capture - INFO - Captured 1900 packets (with payloads)
+2025-11-18 18:56:17,191 - condense_enhanced - INFO -  Emitting 10 events
+2025-11-18 18:56:17,191 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:17,192 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:17,192 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:17,319 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:17,321 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 10.102.71.125
+2025-11-18 18:56:17,322 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:17,436 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:17,438 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 104.16.0.35
+2025-11-18 18:56:17,686 - capture - INFO - Captured 1950 packets (with payloads)
+2025-11-18 18:56:19,207 - condense_enhanced - INFO -  Emitting 10 events
+2025-11-18 18:56:19,207 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:19,208 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:19,208 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:19,340 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:19,342 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 10.102.71.125
+2025-11-18 18:56:19,342 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:19,623 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:19,626 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 104.16.0.35
+2025-11-18 18:56:19,688 - capture - INFO - Captured 2000 packets (with payloads)
+2025-11-18 18:56:20,198 - capture - INFO - Captured 2050 packets (with payloads)
+2025-11-18 18:56:21,227 - condense_enhanced - INFO -  Emitting 19 events
+2025-11-18 18:56:21,227 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:21,227 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:21,228 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:21,340 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:21,342 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 10.102.71.125
+2025-11-18 18:56:21,342 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:21,624 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:21,626 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 104.16.0.35
+2025-11-18 18:56:21,691 - capture - INFO - Captured 2100 packets (with payloads)
+2025-11-18 18:56:22,204 - capture - INFO - Captured 2150 packets (with payloads)
+2025-11-18 18:56:22,968 - capture - INFO - Captured 2200 packets (with payloads)
+2025-11-18 18:56:23,242 - condense_enhanced - INFO -  Emitting 22 events
+2025-11-18 18:56:23,243 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 10.102.71.125  104.16.0.35 (HTTPS)
+2025-11-18 18:56:23,243 - condense_enhanced - WARNING -  ANOMALY [MEDIUM]:  ANOMALY [MEDIUM]: Unusual behavioral pattern | 104.16.0.35  10.102.71.125 (Port 49831)
+2025-11-18 18:56:23,243 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:23,357 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:23,358 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 10.102.71.125
+2025-11-18 18:56:23,359 - ai_agent - INFO - Analyzing medium anomaly with enhanced AI...
+2025-11-18 18:56:23,462 - ai_agent - ERROR - Remote API error: 503 - <!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Service Unavailable — Maintenance in Progress</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+    body {
+
+        margin: 0;
+
+        padding: 0;
+
+        background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77);
+
+        font-family: "Segoe UI", Tahoma, sans-serif;
+
+        color: #f8f9fa;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        height: 100vh;
+
+        overflow: hidden;
+
+        text-align: center;
+
+    }
+
+
+
+    .container {
+
+        background: rgba(0, 0, 0, 0.25);
+
+        padding: 40px 60px;
+
+        border-radius: 16px;
+
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+
+        backdrop-filter: blur(12px);
+
+        animation: fadein 1s ease;
+
+    }
+
+
+
+    @keyframes fadein {
+
+        from { opacity: 0; transform: translateY(20px); }
+
+        to { opacity: 1; transform: translateY(0); }
+
+    }
+
+
+
+    h1 {
+
+        margin-bottom: 10px;
+
+        font-size: 38px;
+
+        font-weight: 600;
+
+        letter-spacing: -1px;
+
+    }
+
+
+
+    p {
+
+        font-size: 20px;
+
+        line-height: 1.6;
+
+        margin-top: 0;
+
+        opacity: 0.9;
+
+    }
+
+
+
+    .spinner {
+
+        margin: 30px auto;
+
+        width: 70px;
+
+        height: 70px;
+
+        border: 7px solid rgba(255, 255, 255, 0.25);
+
+        border-top-color: #ffffff;
+
+        border-radius: 50%;
+
+        animation: spin 1.2s linear infinite;
+
+    }
+
+
+
+    @keyframes spin {
+
+        to { transform: rotate(360deg); }
+
+    }
+
+
+
+    .footer {
+
+        margin-top: 25px;
+
+        font-size: 14px;
+
+        opacity: 0.6;
+
+    }
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<div class="container">
+
+    <div class="spinner"></div>
+
+    <h1>Service Unavailable</h1>
+
+    <p>
+
+        The system is currently running internal experiments<br>
+
+        and is temporarily unavailable.<br>
+
+        Please check back shortly.
+
+    </p>
+
+    <div class="footer">
+
+        Thank you for your patience.
+
+    </div>
+
+</div>
+
+
+
+</body>
+
+</html>
+
+
+
+2025-11-18 18:56:23,465 - ai_agent - WARNING - INCIDENT DETECTED: DDoS / Flooding Attack from 104.16.0.35
+2025-11-18 18:56:23,596 - websocket_server - INFO - Client disconnected. Active connections: 1
+2025-11-18 18:56:23,596 - websocket_server - INFO - Client disconnected. Active connections: 0
+2025-11-18 18:56:23,698 - __main__ - INFO -  Cleaning up resources...
+2025-11-18 18:56:23,698 - task_manager - INFO -  Task packet_capture cancelled (shutdown requested)
+2025-11-18 18:56:23,698 - task_manager - INFO -  Task flow_condenser cancelled (shutdown requested)
+2025-11-18 18:56:23,699 - task_manager - INFO -  Task ai_agent cancelled (shutdown requested)
+2025-11-18 18:56:23,699 - task_manager - INFO -  Task websocket_server cancelled (shutdown requested)
+2025-11-18 18:56:23,709 - capture - INFO - Capture stopped. Total packets: 2237
+2025-11-18 18:56:23,710 - ai_agent - INFO - Enhanced AI Agent (remote) closed. Queries: 20, Incidents: 16, Errors: 0
+2025-11-18 18:56:23,720 - database - INFO - Database connection closed
+2025-11-18 18:56:23,720 - __main__ - INFO -  Backend stopped gracefully

@@ -481,6 +481,60 @@ class WebSocketServer:
                         ip == 'localhost'
                     )
                 
+                # Helper to infer physical room from IP subnet (dynamic detection)
+                def infer_physical_room(ip: str) -> str:
+                    """
+                    Dynamically infer physical room/zone from IP address patterns.
+                    Uses common subnet conventions to group hosts.
+                    """
+                    if not is_internal(ip):
+                        return "External Network"
+                    
+                    # Common subnet patterns (automatically adapts to any subnet)
+                    parts = ip.split('.')
+                    
+                    # 192.168.x.x subnets
+                    if parts[0] == '192' and parts[1] == '168':
+                        third_octet = parts[2]
+                        subnet_map = {
+                            '1': 'Workstation Zone',
+                            '2': 'Server Room',
+                            '3': 'IoT Zone',
+                            '4': 'Guest Network',
+                            '5': 'Development Lab',
+                        }
+                        return subnet_map.get(third_octet, f'Subnet 192.168.{third_octet}.0/24')
+                    
+                    # 10.x.x.x subnets
+                    elif parts[0] == '10':
+                        second_octet = parts[1]
+                        subnet_map = {
+                            '0': 'DMZ Zone',
+                            '1': 'Production Network',
+                            '10': 'Management Network',
+                            '20': 'Storage Network',
+                            '100': 'VPN Users',
+                        }
+                        return subnet_map.get(second_octet, f'Subnet 10.{second_octet}.0.0/16')
+                    
+                    # 172.16-31.x.x subnets
+                    elif parts[0] == '172':
+                        second_octet = int(parts[1])
+                        if 16 <= second_octet <= 31:
+                            subnet_map = {
+                                16: 'Private Cloud',
+                                17: 'Container Network',
+                                20: 'Test Environment',
+                                25: 'Backup Network',
+                            }
+                            return subnet_map.get(second_octet, f'Subnet 172.{second_octet}.0.0/16')
+                    
+                    # Localhost
+                    elif ip.startswith('127.'):
+                        return 'Localhost'
+                    
+                    return f'Subnet {parts[0]}.{parts[1]}.x.x'
+                
                 # Process events to build nodes
                 for event in events:
                     src = event.get('src', '')
@@ -492,6 +546,7 @@ class WebSocketServer:
                             "id": src,
                             "ip": src,
                             "type": "internal" if is_internal(src) else "external",
+                            "physical_room": infer_physical_room(src),  # Dynamic room inference
                             "anomalyScore": 0,
                             "eventCount": 0,
                             "totalBytes": 0,
@@ -512,6 +567,7 @@ class WebSocketServer:
                             "id": dst,
                             "ip": dst,
                             "type": "internal" if is_internal(dst) else "external",
+                            "physical_room": infer_physical_room(dst),  # Dynamic room inference
                             "anomalyScore": 0,
                             "eventCount": 0,
                             "totalBytes": 0,

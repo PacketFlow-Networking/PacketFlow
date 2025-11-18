@@ -16,7 +16,8 @@ import AlertConfigModal from './components/alerts/AlertConfigModal';
 import GlossaryPanel from './components/GlossaryPanel';
 import OnboardingModal from './components/OnboardingModal';
 import PacketFlowIntro from './components/PacketFlowIntro';
-import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network } from 'lucide-react';
+import ThreeDTopologyModal from './components/ThreeDTopologyModal';
+import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network, Box } from 'lucide-react';
 
 function App() {
   // Startup animation state (shown on first load only)
@@ -51,6 +52,7 @@ function App() {
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showAlertConfig, setShowAlertConfig] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [show3DTopology, setShow3DTopology] = useState(false);
   
   // Check if onboarding should be shown on first launch
   useEffect(() => {
@@ -210,7 +212,11 @@ function App() {
       setActiveTab('topology');
       showInfo('Network Topology', 'Viewing network topology graph');
     },
-    isModalOpen: showShortcutsHelp || showAlertConfig,
+    onOpen3DTopology: () => {
+      setShow3DTopology(true);
+      showInfo('3D Topology', 'Opening immersive 3D network view');
+    },
+    isModalOpen: showShortcutsHelp || showAlertConfig || show3DTopology,
   });
 
   // Show intro animation on first load
@@ -301,6 +307,14 @@ function App() {
                   <span className="ml-1 text-xs text-info">★</span>
                 )}
               </button>
+              <button
+                onClick={() => setShow3DTopology(true)}
+                className="flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 border-transparent hover:text-text hover:bg-panel-hover text-text-dim group"
+                title="Open 3D immersive network view"
+              >
+                <Box className="w-4 h-4 group-hover:text-info transition-colors" />
+                <span className="group-hover:text-text">3D View</span>
+              </button>
             </div>
             
             {/* Tab Content */}
@@ -344,6 +358,12 @@ function App() {
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={() => setShowOnboarding(false)}
+      />
+
+      {/* 3D Topology Modal - Full screen immersive view */}
+      <ThreeDTopologyModal
+        isOpen={show3DTopology}
+        onClose={() => setShow3DTopology(false)}
       />
 
       {/* Glossary Panel - IUI Feature */}

@@ -21,6 +21,7 @@ const shortcuts: Shortcut[] = [
   { key: 'r', description: 'Reset filters to default', category: 'Filters' },
   { key: 't', description: 'Cycle through tabs (Events/Stats/Topology)', category: 'Navigation' },
   { key: 'n', description: 'Show network topology view', category: 'Navigation' },
+  { key: 'Shift+N', description: 'Open 3D immersive topology', category: 'Navigation' },
   { key: 'i', description: 'Toggle Chat/Incidents panel', category: 'Navigation' },
   
   // Event Navigation
@@ -134,6 +135,7 @@ interface UseKeyboardShortcutsOptions {
   onToggleLeftPanel?: () => void;
   onOpenAlertConfig?: () => void;
   onShowTopology?: () => void;
+  onOpen3DTopology?: () => void;
   isModalOpen?: boolean;
 }
 
@@ -154,6 +156,7 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
     onToggleLeftPanel,
     onOpenAlertConfig,
     onShowTopology,
+    onOpen3DTopology,
     isModalOpen = false,
   } = options;
 
@@ -245,7 +248,12 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
           break;
         case 'n':
           e.preventDefault();
-          if (onShowTopology) onShowTopology();
+          // Shift+N for 3D, regular N for 2D topology
+          if (e.shiftKey) {
+            if (onOpen3DTopology) onOpen3DTopology();
+          } else {
+            if (onShowTopology) onShowTopology();
+          }
           break;
       }
     };

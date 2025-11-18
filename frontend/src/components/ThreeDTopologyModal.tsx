@@ -65,21 +65,21 @@ export default function ThreeDTopologyModal({ isOpen, onClose }: ThreeDTopologyM
           isFullyMounted ? 'scale-100' : 'scale-95'
         }`}
       >
-        {/* Close Button - Always visible */}
+        {/* Close Button - Moved to top-left to avoid overlap with view mode controls */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-[60] p-2 bg-panel/90 backdrop-blur-sm hover:bg-panel-hover border border-border rounded-lg shadow-lg transition-all group"
+          className="absolute top-4 left-4 z-[60] p-2 bg-panel/90 backdrop-blur-sm hover:bg-panel-hover border border-border rounded-lg shadow-lg transition-all group"
           aria-label="Close 3D topology view"
           title="Close (Esc)"
         >
           <X className="w-6 h-6 text-text group-hover:text-red-400 transition-colors" />
         </button>
 
-        {/* Full Screen Icon Indicator */}
-        <div className="absolute top-4 right-16 z-[60] px-3 py-2 bg-panel/90 backdrop-blur-sm border border-border rounded-lg shadow-lg pointer-events-none">
-          <div className="flex items-center gap-2 text-xs text-text-dim">
-            <Maximize2 className="w-4 h-4" />
-            <span>Full Screen View</span>
+        {/* Full Screen Icon Indicator - Subtle placement at top-left */}
+        <div className="absolute top-4 left-16 z-[60] px-2 py-1 bg-panel/70 backdrop-blur-sm border border-border/50 rounded-lg shadow-md pointer-events-none">
+          <div className="flex items-center gap-1.5 text-xs text-text-dim">
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Full Screen</span>
           </div>
         </div>
 

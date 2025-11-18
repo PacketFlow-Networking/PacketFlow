@@ -8,6 +8,7 @@ interface Node3D {
   id: string;
   ip: string;
   type: 'internal' | 'external';
+  physical_room?: string; // NEW: Physical room/subnet zone
   anomalyScore: number;
   eventCount: number;
   totalBytes: number;
@@ -23,6 +24,7 @@ interface Node3D {
   fx?: number | null;
   fy?: number | null;
   fz?: number | null;
+  cluster?: number; // Semantic cluster ID
 }
 
 interface Link3D {
@@ -38,6 +40,25 @@ interface GraphData {
   links: Link3D[];
 }
 
+interface Cluster {
+  id: number;
+  nodes: Node3D[];
+  center: { x: number; y: number; z: number };
+  color: string;
+  name: string;
+  type: 'internal_room' | 'dmz' | 'external';
+}
+
+interface PhysicalRoom {
+  name: string;
+  nodes: Node3D[];
+  center: { x: number; y: number; z: number };
+  color: string;
+  bounds: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number };
+}
+
+type ViewMode = 'semantic' | 'physical' | 'hybrid';
+
 interface TopologyFilters {
   showInternal: boolean;
   showExternal: boolean;
@@ -45,7 +66,7 @@ interface TopologyFilters {
   minTraffic: number;
 }
 
-function NetworkNode({ node, onClick }: { node: Node3D; onClick: () => void }) {
+function NetworkNode({ node, onClick, showLabels }: { node: Node3D; onClick: () => void; showLabels: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
   
   const color = useMemo(() => {
@@ -61,7 +82,8 @@ function NetworkNode({ node, onClick }: { node: Node3D; onClick: () => void }) {
   return (
     <group position={[node.x || 0, node.y || 0, node.z || 0]}>
       <mesh ref={meshRef} onClick={onClick}>
-        <sphereGeometry args={[size, 16, 16]} />
+        {/* Reduced poly count: 16,16 -> 8,8 for 4x faster rendering */}
+        <sphereGeometry args={[size, 8, 8]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
@@ -72,15 +94,19 @@ function NetworkNode({ node, onClick }: { node: Node3D; onClick: () => void }) {
       </mesh>
       {node.anomalyScore > 0.5 && (
         <mesh position={[0, size + 3, 0]}>
-          <sphereGeometry args={[2, 8, 8]} />
+          {/* Reduced poly count: 8,8 -> 4,4 */}
+          <sphereGeometry args={[2, 4, 4]} />
           <meshBasicMaterial color="#ef4444" />
         </mesh>
       )}
-      <Html center distanceFactor={15} style={{ pointerEvents: 'none' }}>
-        <div className="text-white text-[10px] font-mono whitespace-nowrap bg-black/50 px-1 rounded">
-          {node.ip}
-        </div>
-      </Html>
+      {/* Only show labels when enabled (expensive DOM operations) */}
+      {showLabels && (
+        <Html center distanceFactor={10} style={{ pointerEvents: 'none' }}>
+          <div className="text-white text-xs font-mono whitespace-nowrap bg-black/80 px-2 py-1 rounded shadow-lg">
+            {node.ip}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
@@ -108,12 +134,280 @@ function NetworkLink({ link }: { link: Link3D }) {
   );
 }
 
+// Cluster Detection Algorithm - Groups nodes that communicate heavily with each other
+function detectClusters(nodes: Node3D[], links: Link3D[]): Cluster[] {
+  // Build adjacency matrix for communication strength
+  const adjacency: Map<string, Map<string, number>> = new Map();
+  
+  links.forEach(link => {
+    const sourceId = typeof link.source === 'string' ? link.source : link.source.id;
+    const targetId = typeof link.target === 'string' ? link.target : link.target.id;
+    
+    if (!adjacency.has(sourceId)) adjacency.set(sourceId, new Map());
+    if (!adjacency.has(targetId)) adjacency.set(targetId, new Map());
+    
+    adjacency.get(sourceId)!.set(targetId, link.value);
+    adjacency.get(targetId)!.set(sourceId, link.value);
+  });
+  
+  // Assign clusters using greedy connected components
+  const nodeClusterMap = new Map<string, number>();
+  let currentCluster = 0;
+  
+  const assignCluster = (nodeId: string, clusterId: number) => {
+    if (nodeClusterMap.has(nodeId)) return;
+    
+    nodeClusterMap.set(nodeId, clusterId);
+    const neighbors = adjacency.get(nodeId);
+    
+    if (neighbors) {
+      // Sort neighbors by communication strength
+      const sortedNeighbors = Array.from(neighbors.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10); // Only consider top 10 strongest connections
+      
+      sortedNeighbors.forEach(([neighborId, strength]) => {
+        if (strength > 10 && !nodeClusterMap.has(neighborId)) { // Threshold for cluster membership
+          assignCluster(neighborId, clusterId);
+        }
+      });
+    }
+  };
+  
+  // Assign internal nodes to clusters
+  nodes.filter(n => n.type === 'internal').forEach(node => {
+    if (!nodeClusterMap.has(node.id)) {
+      assignCluster(node.id, currentCluster++);
+    }
+  });
+  
+  // External nodes get their own "external" cluster
+  nodes.filter(n => n.type === 'external').forEach(node => {
+    nodeClusterMap.set(node.id, 9999); // Special external cluster
+  });
+  
+  // Update nodes with cluster assignments
+  nodes.forEach(node => {
+    node.cluster = nodeClusterMap.get(node.id) || 0;
+  });
+  
+  // Build cluster objects
+  const clusterMap = new Map<number, Node3D[]>();
+  nodes.forEach(node => {
+    const cId = node.cluster || 0;
+    if (!clusterMap.has(cId)) clusterMap.set(cId, []);
+    clusterMap.get(cId)!.push(node);
+  });
+  
+  const clusterColors = [
+    '#3b82f6', // Blue
+    '#10b981', // Green
+    '#f59e0b', // Amber
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+    '#14b8a6', // Teal
+  ];
+  
+  const clusters: Cluster[] = [];
+  clusterMap.forEach((clusterNodes, clusterId) => {
+    if (clusterNodes.length === 0) return;
+    
+    // Calculate cluster center
+    const centerX = clusterNodes.reduce((sum, n) => sum + (n.x || 0), 0) / clusterNodes.length;
+    const centerY = clusterNodes.reduce((sum, n) => sum + (n.y || 0), 0) / clusterNodes.length;
+    const centerZ = clusterNodes.reduce((sum, n) => sum + (n.z || 0), 0) / clusterNodes.length;
+    
+    const isExternal = clusterId === 9999;
+    const type = isExternal ? 'external' : 
+                 clusterNodes.some(n => n.anomalyScore > 0.5) ? 'dmz' : 'internal_room';
+    
+    clusters.push({
+      id: clusterId,
+      nodes: clusterNodes,
+      center: { x: centerX, y: centerY, z: centerZ },
+      color: isExternal ? '#64748b' : clusterColors[clusterId % clusterColors.length],
+      name: isExternal ? 'External Network' : `Room ${clusterId + 1} (${clusterNodes.length} hosts)`,
+      type
+    });
+  });
+  
+  return clusters;
+}
+
+// Physical Room Detection - Groups nodes by subnet/zone
+function detectPhysicalRooms(nodes: Node3D[]): PhysicalRoom[] {
+  const roomMap = new Map<string, Node3D[]>();
+  
+  // Group nodes by physical_room attribute
+  nodes.forEach(node => {
+    const roomName = node.physical_room || 'Unknown';
+    if (!roomMap.has(roomName)) {
+      roomMap.set(roomName, []);
+    }
+    roomMap.get(roomName)!.push(node);
+  });
+  
+  const roomColors = [
+    '#3b82f6', // Blue - Workstations
+    '#10b981', // Green - Servers
+    '#f59e0b', // Amber - DMZ
+    '#8b5cf6', // Purple - IoT
+    '#ec4899', // Pink - Admin
+    '#14b8a6', // Teal - Development
+    '#f97316', // Orange - Production
+    '#06b6d4', // Cyan - Management
+  ];
+  
+  const rooms: PhysicalRoom[] = [];
+  let colorIndex = 0;
+  
+  roomMap.forEach((roomNodes, roomName) => {
+    if (roomNodes.length === 0) return;
+    
+    // Calculate center
+    const centerX = roomNodes.reduce((sum, n) => sum + (n.x || 0), 0) / roomNodes.length;
+    const centerY = roomNodes.reduce((sum, n) => sum + (n.y || 0), 0) / roomNodes.length;
+    const centerZ = roomNodes.reduce((sum, n) => sum + (n.z || 0), 0) / roomNodes.length;
+    
+    // Calculate bounding box
+    const bounds = {
+      minX: Math.min(...roomNodes.map(n => n.x || 0)),
+      maxX: Math.max(...roomNodes.map(n => n.x || 0)),
+      minY: Math.min(...roomNodes.map(n => n.y || 0)),
+      maxY: Math.max(...roomNodes.map(n => n.y || 0)),
+      minZ: Math.min(...roomNodes.map(n => n.z || 0)),
+      maxZ: Math.max(...roomNodes.map(n => n.z || 0)),
+    };
+    
+    // Assign color (external gets gray, others get vibrant colors)
+    const color = roomName === 'External Network' ? '#64748b' : roomColors[colorIndex++ % roomColors.length];
+    
+    rooms.push({
+      name: roomName,
+      nodes: roomNodes,
+      center: { x: centerX, y: centerY, z: centerZ },
+      color,
+      bounds
+    });
+  });
+  
+  return rooms;
+}
+
+// Physical Room Boundary Component (Translucent Box)
+function PhysicalRoomBoundary({ room }: { room: PhysicalRoom }) {
+  const width = (room.bounds.maxX - room.bounds.minX) + 120; // Increased padding
+  const height = (room.bounds.maxY - room.bounds.minY) + 120;
+  const depth = (room.bounds.maxZ - room.bounds.minZ) + 120;
+  
+  // Don't render if room is too small
+  if (width < 20 || height < 20 || depth < 20) return null;
+  
+  return (
+    <group position={[room.center.x, room.center.y, room.center.z]}>
+      {/* Translucent box with stronger color */}
+      <mesh>
+        <boxGeometry args={[width, height, depth]} />
+        <meshStandardMaterial
+          color={room.color}
+          transparent
+          opacity={0.18}
+          wireframe={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Clear wireframe edges */}
+      <lineSegments>
+        <edgesGeometry args={[new THREE.BoxGeometry(width, height, depth)]} />
+        <lineBasicMaterial color={room.color} linewidth={3} opacity={0.8} transparent />
+      </lineSegments>
+      {/* Room label at top corner */}
+      <Html center distanceFactor={30} position={[0, height / 2 + 15, 0]}>
+        <div 
+          className="text-white text-sm font-bold whitespace-nowrap px-3 py-1.5 rounded-lg shadow-lg border-2"
+          style={{ 
+            backgroundColor: room.color + 'F0',
+            borderColor: room.color,
+            backdropFilter: 'blur(8px)'
+          }}
+        >
+          📍 {room.name} ({room.nodes.length} hosts)
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+// Cluster Visualization Component
+function ClusterBoundary({ cluster }: { cluster: Cluster }) {
+  const boundary = useMemo(() => {
+    if (cluster.nodes.length < 3) return null;
+    
+    // Calculate bounding sphere radius
+    const maxDist = cluster.nodes.reduce((max, node) => {
+      const dx = (node.x || 0) - cluster.center.x;
+      const dy = (node.y || 0) - cluster.center.y;
+      const dz = (node.z || 0) - cluster.center.z;
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      return Math.max(max, dist);
+    }, 0);
+    
+    const radius = maxDist + 30; // Add padding
+    
+    return { center: cluster.center, radius };
+  }, [cluster]);
+  
+  if (!boundary) return null;
+  
+  return (
+    <group position={[boundary.center.x, boundary.center.y, boundary.center.z]}>
+      {/* Semi-transparent sphere boundary */}
+      <mesh>
+        <sphereGeometry args={[boundary.radius, 16, 16]} />
+        <meshBasicMaterial
+          color={cluster.color}
+          transparent
+          opacity={0.1}
+          wireframe={false}
+        />
+      </mesh>
+      {/* Wireframe outline */}
+      <mesh>
+        <sphereGeometry args={[boundary.radius + 2, 16, 16]} />
+        <meshBasicMaterial
+          color={cluster.color}
+          transparent
+          opacity={0.3}
+          wireframe={true}
+        />
+      </mesh>
+      {/* Cluster label */}
+      <Html center distanceFactor={20}>
+        <div 
+          className="text-white text-sm font-semibold whitespace-nowrap px-3 py-1 rounded-full shadow-lg"
+          style={{ 
+            backgroundColor: cluster.color + 'CC',
+            border: `2px solid ${cluster.color}`
+          }}
+        >
+          {cluster.name}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
 export default function ThreeDTopologyView() {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState<Node3D | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [physicalRooms, setPhysicalRooms] = useState<PhysicalRoom[]>([]);
+  const [showClusters, setShowClusters] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('hybrid'); // semantic, physical, or hybrid
+  const [showLabels, setShowLabels] = useState(false); // Labels off by default for performance
   
   const [filters, setFilters] = useState<TopologyFilters>({
     showInternal: true,
@@ -140,6 +434,15 @@ export default function ThreeDTopologyView() {
         if (data.nodes && data.links) {
           // Run force simulation to calculate positions
           const processedData = await runSimulation(data.nodes, data.links);
+          
+          // Detect semantic clusters (communication-based "rooms")
+          const detectedClusters = detectClusters(processedData.nodes, processedData.links);
+          setClusters(detectedClusters);
+          
+          // Detect physical rooms (subnet-based zones)
+          const detectedRooms = detectPhysicalRooms(processedData.nodes);
+          setPhysicalRooms(detectedRooms);
+          
           setGraphData(processedData);
         } else {
           throw new Error('Invalid data format from server');
@@ -161,11 +464,26 @@ export default function ThreeDTopologyView() {
     return () => clearInterval(interval);
   }, []);
 
-  // Run 3D force simulation
+  // Run 3D force simulation with physical room awareness
   const runSimulation = async (nodes: Node3D[], links: Link3D[]): Promise<GraphData> => {
     return new Promise((resolve) => {
-      // Create a simple force simulation
-      const width = 800, height = 600, depth = 600;
+      // Group nodes by physical room for spatial separation
+      const roomOffsets = new Map<string, { x: number; y: number; z: number }>();
+      const uniqueRooms = Array.from(new Set(nodes.map(n => n.physical_room || 'Unknown')));
+      
+      // Create spatial layout for rooms (arrange in a grid pattern with more spacing)
+      const roomsPerRow = Math.ceil(Math.sqrt(uniqueRooms.length));
+      const roomSpacing = 600;  // Increased spacing to prevent overlap
+      
+      uniqueRooms.forEach((room, index) => {
+        const row = Math.floor(index / roomsPerRow);
+        const col = index % roomsPerRow;
+        roomOffsets.set(room, {
+          x: (col - roomsPerRow / 2) * roomSpacing,
+          y: 0,
+          z: (row - roomsPerRow / 2) * roomSpacing
+        });
+      });
       
       // Initialize positions
       nodes.forEach((node) => {
@@ -179,15 +497,19 @@ export default function ThreeDTopologyView() {
           node.y = radius * Math.cos(phi);
           node.z = radius * Math.sin(phi) * Math.sin(theta);
         } else {
-          // Random initial position for internal nodes
-          node.x = (Math.random() - 0.5) * width;
-          node.y = (Math.random() - 0.5) * height;
-          node.z = (Math.random() - 0.5) * depth;
+          // Position within physical room zone
+          const roomOffset = roomOffsets.get(node.physical_room || 'Unknown') || { x: 0, y: 0, z: 0 };
+          node.x = roomOffset.x + (Math.random() - 0.5) * 200;
+          node.y = roomOffset.y + (Math.random() - 0.5) * 200;
+          node.z = roomOffset.z + (Math.random() - 0.5) * 200;
         }
       });
 
-      // Simple attraction/repulsion simulation
-      for (let i = 0; i < 100; i++) {
+      // Optimized force simulation - reduced from 100 to 50 iterations
+      // Still provides good layout but 2x faster initial load
+      const iterations = Math.min(50, nodes.length > 50 ? 30 : 50);
+      
+      for (let i = 0; i < iterations; i++) {
         // Repulsion between all nodes
         for (let j = 0; j < nodes.length; j++) {
           for (let k = j + 1; k < nodes.length; k++) {
@@ -275,8 +597,8 @@ export default function ThreeDTopologyView() {
 
   return (
     <div className="w-full h-full bg-base flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-panel">
+      {/* Header - Higher z-index to prevent overlap */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-panel relative z-20">
         <div className="flex items-center gap-3">
           <Activity className="w-6 h-6 text-info" />
           <h1 className="text-xl font-bold text-text">3D Network Topology</h1>
@@ -286,6 +608,43 @@ export default function ThreeDTopologyView() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 bg-panel-hover rounded p-1">
+            <button
+              onClick={() => setViewMode('semantic')}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                viewMode === 'semantic' 
+                  ? 'bg-info text-base shadow' 
+                  : 'text-text hover:bg-border'
+              }`}
+              title="Show communication-based clusters"
+            >
+              💬 Semantic
+            </button>
+            <button
+              onClick={() => setViewMode('physical')}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                viewMode === 'physical' 
+                  ? 'bg-info text-base shadow' 
+                  : 'text-text hover:bg-border'
+              }`}
+              title="Show subnet-based physical rooms"
+            >
+              📍 Physical
+            </button>
+            <button
+              onClick={() => setViewMode('hybrid')}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                viewMode === 'hybrid' 
+                  ? 'bg-info text-base shadow' 
+                  : 'text-text hover:bg-border'
+              }`}
+              title="Show both layers"
+            >
+              🔀 Hybrid
+            </button>
+          </div>
+          
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-2 rounded flex items-center gap-2 transition-colors ${
@@ -336,7 +695,16 @@ export default function ThreeDTopologyView() {
           )}
 
           {!isLoading && !error && filteredData.nodes.length > 0 && (
-            <Canvas camera={{ position: [0, 0, 500], fov: 75 }}>
+            <Canvas 
+              camera={{ position: [0, 0, 500], fov: 75 }}
+              performance={{ min: 0.5 }}
+              dpr={[1, 2]}
+              gl={{ 
+                antialias: false,
+                powerPreference: 'high-performance',
+                alpha: false
+              }}
+            >
               <color attach="background" args={['#0b1220']} />
               <ambientLight intensity={0.5} />
               <pointLight position={[100, 100, 100]} intensity={1} />
@@ -354,47 +722,86 @@ export default function ThreeDTopologyView() {
                 <NetworkLink key={i} link={link} />
               ))}
 
+              {/* Render semantic cluster boundaries (communication-based) */}
+              {showClusters && (viewMode === 'semantic' || viewMode === 'hybrid') && clusters.map((cluster) => (
+                <ClusterBoundary key={`cluster-${cluster.id}`} cluster={cluster} />
+              ))}
+
+              {/* Render physical room boundaries (subnet-based) */}
+              {showClusters && (viewMode === 'physical' || viewMode === 'hybrid') && physicalRooms.map((room) => (
+                <PhysicalRoomBoundary key={`room-${room.name}`} room={room} />
+              ))}
+
               {/* Render nodes */}
               {filteredData.nodes.map((node) => (
                 <NetworkNode
                   key={node.id}
                   node={node}
                   onClick={() => setSelectedNode(node)}
+                  showLabels={showLabels}
                 />
               ))}
             </Canvas>
           )}
 
-          {/* Legend */}
-          <div className="absolute bottom-4 left-4 bg-panel/90 backdrop-blur-sm border border-border rounded-lg p-4 text-xs">
-            <div className="font-semibold text-text mb-3">Legend</div>
+          {/* Legend - Enhanced visibility */}
+          <div className="absolute bottom-4 left-4 bg-panel/95 backdrop-blur-md border-2 border-border rounded-lg p-4 text-xs max-w-xs shadow-2xl">
+            <div className="font-bold text-text mb-3 text-sm">Legend</div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-blue-500" />
-                <span className="text-text-dim">Internal Host</span>
+                <div className="w-4 h-4 rounded-full bg-blue-500 border border-blue-300" />
+                <span className="text-text">Internal Host</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-green-500" />
-                <span className="text-text-dim">External Host</span>
+                <div className="w-4 h-4 rounded-full bg-green-500 border border-green-300" />
+                <span className="text-text">External Host</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-amber-500" />
-                <span className="text-text-dim">Warning (0.4-0.7)</span>
+                <div className="w-4 h-4 rounded-full bg-amber-500 border border-amber-300" />
+                <span className="text-text">Warning (0.4-0.7)</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-red-500" />
-                <span className="text-text-dim">Critical (&gt;0.7)</span>
+                <div className="w-4 h-4 rounded-full bg-red-500 border border-red-300" />
+                <span className="text-text">Critical (&gt;0.7)</span>
               </div>
+              {viewMode !== 'physical' && (
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-text font-medium text-xs mb-1">💬 Semantic Clusters</div>
+                  <div className="text-text-dim text-[10px]">Spheres = Heavy communication</div>
+                </div>
+              )}
+              {viewMode !== 'semantic' && (
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-text font-medium text-xs mb-1">📍 Physical Rooms</div>
+                  <div className="text-text-dim text-[10px]">Boxes = Subnet zones</div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Controls hint */}
-          <div className="absolute bottom-4 right-4 bg-panel/90 backdrop-blur-sm border border-border rounded-lg p-3 text-xs text-text-dim">
-            <div className="font-semibold mb-2">Controls</div>
-            <div>🖱️ Left drag: Rotate</div>
-            <div>🖱️ Right drag: Pan</div>
-            <div>🖱️ Scroll: Zoom</div>
-            <div>🖱️ Click node: Details</div>
+          {/* Controls hint - repositioned to top-right to avoid overlaps */}
+          <div className="absolute top-20 right-4 bg-panel/95 backdrop-blur-md border-2 border-border rounded-lg p-3 text-xs shadow-2xl">
+            <div className="font-bold text-text mb-2 text-sm">Controls</div>
+            <div className="text-text">🖱️ Left: Rotate</div>
+            <div className="text-text">🖱️ Right: Pan</div>
+            <div className="text-text">🖱️ Scroll: Zoom</div>
+            <div className="text-text">🖱️ Click: Details</div>
+            
+            {/* Performance toggle */}
+            <div className="mt-3 pt-3 border-t border-border">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showLabels}
+                  onChange={(e) => setShowLabels(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-text text-xs">Show IP Labels</span>
+              </label>
+              <div className="text-text-dim text-[10px] mt-1">
+                ⚡ Disable for better performance
+              </div>
+            </div>
           </div>
         </div>
 
@@ -432,6 +839,38 @@ export default function ThreeDTopologyView() {
                 />
                 <span className="text-sm text-text-dim">External</span>
               </label>
+            </div>
+            
+            {/* Room Boundaries Toggle */}
+            <div className="mb-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showClusters}
+                  onChange={(e) => setShowClusters(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm font-medium text-text">Show Boundaries</span>
+              </label>
+              <p className="text-xs text-text-dim mt-1 ml-6">
+                {viewMode === 'semantic' && 'Visualize communication patterns'}
+                {viewMode === 'physical' && 'Visualize subnet-based zones'}
+                {viewMode === 'hybrid' && 'Show both semantic & physical layers'}
+              </p>
+            </div>
+
+            {/* View Mode Info */}
+            <div className="mb-4 p-3 bg-info/10 border border-info/30 rounded text-xs">
+              <div className="font-medium text-info mb-1">
+                {viewMode === 'semantic' && '💬 Semantic View'}
+                {viewMode === 'physical' && '📍 Physical View'}
+                {viewMode === 'hybrid' && '🔀 Hybrid View'}
+              </div>
+              <div className="text-text-dim">
+                {viewMode === 'semantic' && 'Groups nodes by communication patterns (who talks to whom)'}
+                {viewMode === 'physical' && 'Groups nodes by IP subnet (192.168.1.x, 10.0.0.x, etc.)'}
+                {viewMode === 'hybrid' && 'Shows both communication clusters and physical subnets'}
+              </div>
             </div>
 
             {/* Anomaly Score Filter */}
@@ -514,6 +953,15 @@ export default function ThreeDTopologyView() {
                   {selectedNode.type === 'internal' ? 'Internal' : 'External'}
                 </div>
               </div>
+
+              {selectedNode.physical_room && (
+                <div>
+                  <div className="text-xs text-text-dim mb-1">Physical Room</div>
+                  <div className="text-sm text-text bg-panel-hover px-2 py-1 rounded">
+                    📍 {selectedNode.physical_room}
+                  </div>
+                </div>
+              )}
 
               {selectedNode.lat !== undefined && selectedNode.lon !== undefined && (
                 <div>
