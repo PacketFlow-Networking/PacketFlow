@@ -129,13 +129,13 @@ class AIConfig:
         # AI Mode: 'local' or 'remote'
         self.mode: Literal['local', 'remote'] = os.getenv('AI_MODE', 'local')
         
-        # Local Ollama settings
-        self.ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
-        self.local_model = os.getenv('LOCAL_AI_MODEL', 'mistral:7b')
+        # Local Ollama settings (OpenAI-compatible endpoint)
+        self.ollama_url = os.getenv('OLLAMA_URL', 'https://chatucy.cs.ucy.ac.cy/ollama/v1')
+        self.local_model = os.getenv('LOCAL_AI_MODEL', 'mistral')
         
-        # Remote UCY server settings
-        self.remote_url = os.getenv('REMOTE_AI_URL', 'https://chatucy.cs.ucy.ac.cy/api/send_message')
-        self.remote_model = os.getenv('REMOTE_AI_MODEL', 'llama3.1:latest')
+        # Remote UCY server settings (same endpoint with OpenAI-compatible format)
+        self.remote_url = os.getenv('REMOTE_AI_URL', 'https://chatucy.cs.ucy.ac.cy/ollama/v1')
+        self.remote_model = os.getenv('REMOTE_AI_MODEL', 'llama3')
         self.remote_websearch = os.getenv('REMOTE_WEBSEARCH', 'false').lower() == 'true'
         self.remote_client_rag = os.getenv('REMOTE_CLIENT_RAG', 'false').lower() == 'true'
         

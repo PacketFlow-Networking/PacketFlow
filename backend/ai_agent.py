@@ -16,6 +16,11 @@ from collections import deque
 from datetime import datetime
 import aiohttp
 import json
+import httpx
+from openai import AsyncOpenAI
+import instructor
+
+from schemas import AIExplanationResponse, ChatResponse, EventQueryResponse
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +83,9 @@ class AIAgent:
         self.query_count = 0
         self.error_count = 0
         self.incidents_detected = 0
+        
+        # Instructor-patched AsyncOpenAI client for structured outputs
+        self.openai_client: Optional[AsyncOpenAI] = None
 
         # Queue-based AI query system - ensures only ONE outgoing call at a time
         # New requests wait for the current one to finish before proceeding
@@ -114,8 +122,25 @@ Be direct and actionable. Avoid unnecessary hedging."""
             timeout=aiohttp.ClientTimeout(total=self.timeout)
         )
         
+        # Initialize instructor-patched OpenAI client
+        # Use same base URL for both local and remote (both use OpenAI-compatible endpoint)
+        base_url = self.remote_url if self.mode == 'remote' else self.ollama_url
+        
+        self.openai_client = AsyncOpenAI(
+            base_url=base_url,
+            api_key="ollama",  # Can be any string for Ollama
+            http_client=httpx.AsyncClient(verify=False)  # Disable SSL verification for self-signed certs
+        )
+        
+        # Patch with instructor for structured outputs
+        self.openai_client = instructor.patch(
+            self.openai_client,
+            mode=instructor.Mode.JSON
+        )
+        
         logger.info(f"Enhanced AI Agent initialized in {self.mode.upper()} mode")
         logger.info(f"Correlation window: {self.correlation_window}s, Max memory: {self.max_memory_events} events")
+        logger.info(f"Using Instructor for structured outputs (base_url: {base_url})")
         
         # Test connection
         try:
@@ -126,24 +151,26 @@ Be direct and actionable. Avoid unnecessary hedging."""
     
     async def _test_connection(self):
         """Test connection to AI service."""
-        if self.mode == 'local':
-            async with self.session.get(f"{self.ollama_url}/api/tags") as response:
-                if response.status == 200:
-                    data = await response.json()
-                    models = [m["name"] for m in data.get("models", [])]
-                    logger.info(f"Connected to Ollama. Available models: {models}")
-                    
-                    model_exists = any(self.local_model in m for m in models)
-                    if not model_exists:
-                        logger.warning(
-                            f"Model '{self.local_model}' not found. "
-                            f"Run: ollama pull {self.local_model}"
-                        )
-                else:
-                    raise Exception(f"HTTP {response.status}")
-        else:
-            logger.info(f"Remote mode configured: {self.remote_url}")
-            logger.info(f"Model: {self.remote_model}")
+        # Both local and remote now use OpenAI-compatible endpoint
+        base_url = self.remote_url if self.mode == 'remote' else self.ollama_url
+        model = self.remote_model if self.mode == 'remote' else self.local_model
+        
+        logger.info(f"{self.mode.upper()} mode configured: {base_url}")
+        logger.info(f"Model: {model}")
+        logger.info(f"Using OpenAI-compatible endpoint with Instructor for structured outputs")
+        
+        # Try a simple test query to verify connectivity
+        try:
+            test_response = await self.openai_client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": "Test connection"}],
+                max_tokens=10,
+                timeout=10.0
+            )
+            logger.info(f" Connection test successful")
+        except Exception as e:
+            logger.warning(f" Connection test failed: {e}")
+            logger.warning(f"AI explanations will be disabled until service is available.")
     
     async def process_events(
         self,
@@ -196,6 +223,9 @@ Be direct and actionable. Avoid unnecessary hedging."""
                     event["ai_threat_level"] = explanation["threat_level"]
                     event["ai_recommendations"] = explanation["recommendations"]
                     event["ai_evidence"] = explanation["evidence"]
+                    event["ai_important_factors"] = explanation.get("important_factors", [])
+                    event["ai_payload_evidence"] = explanation.get("payload_evidence", [])
+                    event["ai_counterfactual"] = explanation.get("counterfactual_reasoning", "")
                     event["ai_correlated_events"] = len(correlated_events)
                     event["ai_processed"] = True
                     event["ai_mode"] = self.mode
@@ -283,24 +313,38 @@ Be direct and actionable. Avoid unnecessary hedging."""
         try:
             prompt = self._build_structured_prompt(event, correlated_events)
             
+            # Get structured response from instructor-patched client
             if self.mode == 'local':
-                raw_response = await self._query_local(prompt)
+                ai_response: AIExplanationResponse = await self._query_local(prompt, AIExplanationResponse)
             else:
-                raw_response = await self._query_remote(prompt)
+                ai_response: AIExplanationResponse = await self._query_remote(prompt, AIExplanationResponse)
             
-            structured = self._parse_ai_response(raw_response, event, correlated_events)
+            # Convert Pydantic model to dict format expected by downstream code
+            evidence = self._extract_evidence(event, correlated_events)
             
-            return structured
+            return {
+                "text": ai_response.explanation,
+                "confidence": ai_response.confidence,
+                "threat_level": ai_response.threat_level,
+                "recommendations": ai_response.recommendations,
+                "evidence": evidence,
+                "important_factors": ai_response.important_factors,
+                "payload_evidence": ai_response.payload_evidence or [],
+                "counterfactual_reasoning": ai_response.counterfactual_reasoning or ""
+            }
             
         except Exception as e:
-            # Log full traceback to aid debugging (some exceptions had empty str())
+            # Log full traceback to aid debugging
             logger.exception("AI generation error")
             return {
                 "text": f"AI analysis failed: {str(e)[:50]}",
                 "confidence": "low",
                 "threat_level": "unknown",
                 "recommendations": ["Review manually"],
-                "evidence": self._extract_evidence(event)
+                "evidence": self._extract_evidence(event),
+                "important_factors": [],
+                "payload_evidence": [],
+                "counterfactual_reasoning": ""
             }
     
     def _build_structured_prompt(self, event: Dict, correlated: List[Dict]) -> str:
@@ -437,28 +481,83 @@ Detection Methods: {', '.join(detection_methods) if detection_methods else 'None
                 if ce_threats:
                     prompt += f" | Threats: {ce_threats}"
         
+        # EXPLAINABLE AI: Include actual payload samples for forensic analysis
+        if "sample_payloads" in event and event["sample_payloads"]:
+            prompt += f"\n\n=== PAYLOAD EVIDENCE (Forensic Data) ==="
+            payload_samples = event["sample_payloads"][:3]  # First 3 samples
+            
+            for i, sample in enumerate(payload_samples, 1):
+                prompt += f"\n\nSample {i} (Length: {sample.get('length', 0)} bytes):"
+                
+                # Show decoded text payload if available
+                if "payload_text" in sample and sample["payload_text"]:
+                    text = sample["payload_text"][:300]  # First 300 chars
+                    prompt += f"\n  Text Content: {repr(text)}"
+                
+                # Show protocol-specific parsed data
+                if "dns" in sample:
+                    dns = sample["dns"]
+                    if "query_name" in dns:
+                        prompt += f"\n  DNS Query: {dns['query_name']}"
+                    if "query_type" in dns:
+                        prompt += f"\n  DNS Type: {dns['query_type']}"
+                
+                if "http" in sample:
+                    http = sample["http"]
+                    if "method" in http and "uri" in http:
+                        prompt += f"\n  HTTP: {http['method']} {http['uri']}"
+                    if "host" in http:
+                        prompt += f"\n  Host: {http['host']}"
+                    if "user_agent" in http:
+                        prompt += f"\n  User-Agent: {http['user_agent'][:100]}"
+                
+                if "tls" in sample:
+                    tls = sample["tls"]
+                    if "server_name" in tls:
+                        prompt += f"\n  TLS SNI: {tls['server_name']}"
+                    if "version" in tls:
+                        prompt += f"\n  TLS Version: {tls['version']}"
+                
+                if "tcp_flags" in sample:
+                    flags = sample["tcp_flags"]
+                    flag_str = ",".join([k.upper() for k, v in flags.items() if v])
+                    prompt += f"\n  TCP Flags: [{flag_str}]"
+        
         # Protocol-specific analysis
         if "protocol_stats" in event:
             stats = event["protocol_stats"]
+            prompt += f"\n\n=== PROTOCOL STATISTICS ==="
             
             if "dns" in stats:
                 dns = stats["dns"]
                 unique_queries = len(dns.get("query_names", []))
                 if unique_queries > 0:
-                    prompt += f"\n\n DNS Analysis: {unique_queries} unique domains queried"
+                    prompt += f"\n DNS: {unique_queries} unique domains queried"
                     # Show sample queries if available
-                    sample_queries = dns.get("query_names", [])[:3]
+                    sample_queries = dns.get("query_names", [])[:5]
                     if sample_queries:
-                        prompt += f"\n  Sample queries: {', '.join(sample_queries)}"
+                        prompt += f"\n  Domains: {', '.join(sample_queries)}"
             
             if "http" in stats:
                 http = stats["http"]
                 methods = http.get("methods", {})
                 if methods:
-                    prompt += f"\n\n HTTP Analysis: Methods used: {dict(methods)}"
+                    prompt += f"\n HTTP Methods: {dict(methods)}"
                 hosts = http.get("hosts", [])
                 if hosts:
-                    prompt += f"\n  Target hosts: {', '.join(hosts[:3])}"
+                    prompt += f"\n  Target Hosts: {', '.join(list(hosts)[:5])}"
+                user_agents = http.get("user_agents", [])
+                if user_agents:
+                    prompt += f"\n  User Agents: {len(user_agents)} unique"
+            
+            if "tls" in stats:
+                tls = stats["tls"]
+                versions = tls.get("versions", {})
+                if versions:
+                    prompt += f"\n TLS Versions: {dict(versions)}"
+                servers = tls.get("server_names", [])
+                if servers:
+                    prompt += f"\n  Server Names: {', '.join(list(servers)[:5])}"
         
         # Add context for specific attack types
         if 'DNS_TUNNELING' in threat_indicators:
@@ -473,101 +572,34 @@ Detection Methods: {', '.join(detection_methods) if detection_methods else 'None
             prompt += "\n\n Context: Command & Control beacon traffic shows regular periodic communication patterns typical of compromised systems."
         
         prompt += """\n\n=== ANALYSIS REQUEST ===
-Provide your analysis in this CONTRASTIVE and SELECTIVE format:
+You MUST respond with valid JSON matching the AIExplanationResponse schema:
 
-EXPLANATION: [2-3 sentences explaining WHY this is anomalous INSTEAD OF being normal traffic. Reference the specific deviations from baseline and why alternative explanations were rejected.]
+{
+  "explanation": "2-3 sentences explaining WHY this is anomalous INSTEAD OF normal traffic",
+  "important_factors": ["Top factor 1", "Top factor 2", "Top factor 3"],
+  "threat_level": "low|medium|high|critical",
+  "confidence": "low|medium|high",
+  "recommendations": ["Action 1", "Action 2"],
+  "evidence_summary": "Brief summary of key evidence (optional)",
+  "payload_evidence": ["Specific suspicious pattern 1", "Pattern 2"],
+  "counterfactual_reasoning": "What would make this normal traffic"
+}
 
-MOST IMPORTANT FACTORS (Selective - top 3 only):
-1. [Factor]: [Why this is critical]
-2. [Factor]: [Why this is critical]
-3. [Factor]: [Why this is critical]
+EXPLAINABLE AI Requirements:
+- explanation: 2-3 sentences with CONTRASTIVE reasoning (why anomaly vs normal)
+- important_factors: Exactly 1-3 most critical factors FROM THE DATA ABOVE
+- payload_evidence: Quote SPECIFIC suspicious strings/patterns from payload samples (if provided)
+- counterfactual_reasoning: "This would be normal if: [specific conditions]"
+- threat_level: Must be one of: low, medium, high, critical
+- confidence: Must be one of: low, medium, high (based on evidence quality)
+- recommendations: 1-3 specific actionable steps
 
-THREAT ASSESSMENT: [low/medium/high/critical]
-
-CONFIDENCE: [low/medium/high]
-
-RECOMMENDATIONS:
-1. [Immediate action to take]
-2. [Follow-up investigation step]
-
-Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the top factors)."""
+Return ONLY valid JSON. No markdown, no code blocks, just the JSON object."""
         
         return prompt
     
-    def _parse_ai_response(
-        self, 
-        raw_response: str, 
-        event: Dict,
-        correlated: List[Dict]
-    ) -> Dict:
-        """Parse AI response into structured format with contrastive reasoning."""
-        lines = raw_response.strip().split('\n')
-        
-        explanation = ""
-        threat_level = "medium"
-        confidence = "medium"
-        recommendations = []
-        important_factors = []
-        
-        current_section = None
-        
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            
-            if line.upper().startswith("EXPLANATION:"):
-                current_section = "explanation"
-                explanation = line.split(":", 1)[1].strip() if ":" in line else ""
-            elif "MOST IMPORTANT" in line.upper() or "IMPORTANT FACTORS" in line.upper():
-                current_section = "factors"
-            elif line.upper().startswith("THREAT") and "ASSESSMENT" in line.upper():
-                current_section = "threat"
-                for level in ["critical", "high", "medium", "low"]:
-                    if level in line.lower():
-                        threat_level = level
-                        break
-            elif line.upper().startswith("CONFIDENCE:"):
-                current_section = "confidence"
-                for level in ["high", "medium", "low"]:
-                    if level in line.lower():
-                        confidence = level
-                        break
-            elif line.upper().startswith("RECOMMENDATION"):
-                current_section = "recommendations"
-            elif current_section == "explanation" and not any(keyword in line.upper() for keyword in ["MOST IMPORTANT", "THREAT", "CONFIDENCE", "RECOMMENDATION"]):
-                explanation += " " + line
-            elif current_section == "factors":
-                line_clean = line.lstrip("123456789.-) ")
-                if line_clean and len(line_clean) > 5:
-                    important_factors.append(line_clean)
-            elif current_section == "recommendations":
-                line_clean = line.lstrip("123456789.-) ")
-                if line_clean and len(line_clean) > 5:
-                    recommendations.append(line_clean)
-        
-        explanation = explanation.strip()
-        if not explanation:
-            explanation = self._clean_explanation(raw_response)
-            if any(word in raw_response.lower() for word in ["critical", "severe", "attack"]):
-                threat_level = "high"
-            if any(word in raw_response.lower() for word in ["definitely", "clearly", "certainly"]):
-                confidence = "high"
-        
-        evidence = self._extract_evidence(event, correlated)
-        
-        return {
-            "text": explanation,
-            "confidence": confidence,
-            "threat_level": threat_level,
-            "recommendations": recommendations if recommendations else ["Review event manually", "Check source host logs"],
-            "evidence": evidence,
-            "important_factors": important_factors[:3] if important_factors else [
-                f"Flow volume {event.get('flows')} vs baseline {int(event.get('baseline_avg', 0))}",
-                f"Anomaly score: {event.get('anomaly_score', 0):.2f}",
-                f"Detection: {', '.join(event.get('detection_methods', ['Unknown']))}"
-            ]
-        }
+    # _parse_ai_response is no longer needed with Instructor's structured outputs
+    # The Pydantic models handle validation and structure automatically
     
     def _extract_evidence(self, event: Dict, correlated: List[Dict] = None) -> Dict:
         """Extract evidence references from event."""
@@ -658,107 +690,32 @@ Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the t
         except:
             return "unknown"
     
-    async def _query_local(self, prompt: str) -> str:
-        """Query local Ollama instance with enhanced error handling."""
-        payload = {
-            "model": self.local_model,
-            "prompt": f"{self.system_prompt}\n\n{prompt}",
-            "stream": False,
-            "options": {
-                "temperature": 0.7,
-                "num_predict": self.max_tokens,  # Use configured max_tokens
-            }
-        }
-        
-        # Custom timeout: 2 minutes for first byte
-        timeout = aiohttp.ClientTimeout(
-            total=None,        # No total timeout
-            sock_connect=10,   # 10s to establish connection
-            sock_read=120      # 2 minutes to receive first byte
-        )
-        
+    async def _query_local(self, prompt: str, response_model=AIExplanationResponse) -> Any:
+        """Query using instructor-patched OpenAI client with structured output."""
         try:
-            async with self.session.post(
-                f"{self.ollama_url}/api/generate",
-                json=payload,
-                timeout=timeout
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    return data.get("response", "").strip()
-                else:
-                    error_text = await response.text()
-                    logger.error(f"Ollama API error: {response.status} - {error_text}")
-                    return f"Ollama API returned status {response.status}. Check if the model '{self.local_model}' is available."
-        except asyncio.TimeoutError:
-            logger.error(f"Ollama connection timeout (2 minute first-byte timeout)")
-            raise Exception(f"OLLAMA_TIMEOUT: Connection to Ollama at {self.ollama_url} timed out. Check if Ollama is running and responsive.")
-        except aiohttp.ClientConnectorError as e:
-            logger.error(f"Cannot connect to Ollama: {e}")
-            raise Exception(f"OLLAMA_CONNECTION_REFUSED: Cannot connect to Ollama at {self.ollama_url}. Make sure Ollama is running (try: ollama serve)")
-        except aiohttp.ClientError as e:
-            logger.error(f"Ollama client error: {e}")
-            raise Exception(f"OLLAMA_CLIENT_ERROR: {str(e)}")
+            response = await self.openai_client.chat.completions.create(
+                model=self.local_model,
+                response_model=response_model,
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_retries=2,
+                timeout=120.0  # 2 minutes
+            )
+            return response
+        except Exception as e:
+            logger.error(f"Structured query error: {e}")
+            raise Exception(f"AI_QUERY_ERROR: {str(e)[:200]}")
     
-    async def _query_remote(self, prompt: str) -> str:
-        """Query remote UCY server."""
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": prompt}
-        ]
+    async def _query_remote(self, prompt: str, response_model=AIExplanationResponse) -> Any:
+        """Query using instructor-patched OpenAI client with structured output.
         
-        payload = {
-            "model": self.remote_model,
-            "messages": messages,
-            "websearch": self.remote_websearch,
-            "clientSideRag": self.remote_client_rag
-        }
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "*/*",
-        }
-        
-        # Custom timeout: 2 minutes (120s) to wait for first byte to arrive
-        # This allows slow AI models time to start responding while still having a limit
-        # sock_read = timeout for reading each chunk (first byte triggers this)
-        timeout = aiohttp.ClientTimeout(
-            total=None,        # No total timeout
-            sock_connect=10,   # 10s to establish connection
-            sock_read=120      # 2 minutes to receive first byte, then per-chunk
-        )
-        
-        try:
-            async with self.session.post(
-                self.remote_url,
-                json=payload,
-                headers=headers,
-                timeout=timeout
-            ) as response:
-                if response.status == 200:
-                    content = await response.text()
-                    
-                    try:
-                        data = json.loads(content)
-                        if isinstance(data, dict):
-                            return data.get("response", data.get("content", content)).strip()
-                        else:
-                            return content.strip()
-                    except json.JSONDecodeError:
-                        return content.strip()
-                else:
-                    error_text = await response.text()
-                    logger.error(f"Remote API error: {response.status} - {error_text}")
-                    return "Remote AI analysis failed"
-        except asyncio.TimeoutError:
-            logger.error(f"Remote API timeout after {self.timeout}s")
-            raise Exception(f"REMOTE_TIMEOUT: Connection to {self.remote_url} timed out after {self.timeout}s. The remote AI service may be overloaded.")
-        except aiohttp.ClientConnectorError as e:
-            logger.error(f"Cannot connect to remote API: {e}")
-            raise Exception(f"REMOTE_CONNECTION_REFUSED: Cannot connect to {self.remote_url}. Check your network connection.")
-        except aiohttp.ClientError as e:
-            logger.error(f"Remote API client error: {e}")
-            raise Exception(f"REMOTE_CLIENT_ERROR: {str(e)}")
+        Note: Both local and remote now use the same OpenAI-compatible endpoint,
+        so this method is now identical to _query_local.
+        """
+        return await self._query_local(prompt, response_model)
 
     
     def _clean_explanation(self, explanation: str) -> str:
@@ -835,43 +792,30 @@ Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the t
             else:
                 context_parts.append("(No recent anomalies detected)")
             
-            # Add instructions for AI
-            context_parts.extend([
-                "",
-                "=== INSTRUCTIONS ===",
-                "Provide a concise, actionable answer based on the network activity above.",
-                "Reference specific events if relevant. Be direct and helpful."
-            ])
-            
             context = "\n".join(context_parts)
             
-            # Query AI
+            # Query AI with structured ChatResponse
             if self.mode == 'local':
-                response = await self._query_local(context)
+                chat_response: ChatResponse = await self._query_local(context, ChatResponse)
             else:
-                response = await self._query_remote(context)
-            
-            response = self._clean_explanation(response)
+                chat_response: ChatResponse = await self._query_remote(context, ChatResponse)
             
             # Extract event IDs/timestamps mentioned in context
             event_ids = [e.get('timestamp', e.get('id')) for e in recent_events if e.get('timestamp') or e.get('id')]
-            
-            # Determine confidence based on available context
-            confidence = 'high' if len(recent_events) >= 5 else \
-                        'medium' if len(recent_events) > 0 else 'low'
             
             self.query_count += 1
             
             return {
                 'type': 'chat_response',
                 'query': query,
-                'response': response,
+                'response': chat_response.answer,
                 'event_ids': event_ids[:20],  # Link to relevant events (max 20)
                 'timestamp': datetime.now().isoformat(),
                 'model': self.remote_model if self.mode == 'remote' else self.local_model,
                 'ai_mode': self.mode,
-                'confidence': confidence,
-                'events_analyzed': len(recent_events)
+                'confidence': chat_response.confidence,
+                'events_analyzed': len(recent_events),
+                'follow_up_suggestions': chat_response.follow_up_suggestions or []
             }
             
         except Exception as e:
@@ -889,42 +833,25 @@ Be CONTRASTIVE (explain why anomaly instead of normal) and SELECTIVE (only the t
     async def query_chat(self, user_message: str, context_events: List[Dict] = None) -> str:
         """
         DEPRECATED: Use process_chat_query() instead.
-        Kept for backward compatibility.
+        Kept for backward compatibility - returns string instead of dict.
         """
         logger.warning("query_chat() is deprecated. Use process_chat_query() instead.")
         try:
-            context = "Recent network activity:\n"
-            events_to_use = context_events if context_events else list(self.recent_events)[-10:]
-            
-            for event in events_to_use:
-                if event.get("is_anomaly"):
-                    context += f"- {event.get('summary', 'Anomaly')}\n"
-            
-            prompt = f"""{context}
-
-User Question: {user_message}
-
-Provide a helpful answer based on the network activity above. Be specific and reference particular events if relevant."""
-            
-            if self.mode == 'local':
-                response = await self._query_local(prompt)
-            else:
-                response = await self._query_remote(prompt)
-            
-            self.query_count += 1
-            return self._clean_explanation(response)
+            # Use the new structured method and extract just the response text
+            result = await self.process_chat_query(user_message, include_events=True)
+            return result.get('response', 'Error processing query')
             
         except Exception as e:
             logger.error(f"Chat query error: {e}")
             return f"Error: {str(e)[:100]}"
     
-    async def query_event(self, event: Dict, user_question: str = None) -> str:
-        """Query AI about a specific event on-demand."""
+    async def query_event(self, event: Dict, user_question: str = None) -> Dict[str, Any]:
+        """Query AI about a specific event on-demand with structured response."""
         try:
             if user_question:
                 prompt = f"""Event Details:
-- Source: {event.get('src')}:{event.get('src_port')}
-- Destination: {event.get('dst')}:{event.get('dst_port')}
+- Source: {event.get('src')}:{event.get('src_port', 'N/A')}
+- Destination: {event.get('dst')}:{event.get('dst_port', 'N/A')}
 - Protocol: {event.get('proto')}
 - Packets: {event.get('flows')}
 - Bytes: {event.get('total_bytes')}
@@ -933,31 +860,55 @@ Provide a helpful answer based on the network activity above. Be specific and re
 
 User Question: {user_question}
 
-Provide a concise answer (2-3 sentences)."""
+Provide a concise, structured analysis."""
             else:
                 prompt = self._build_structured_prompt(event, [])
             
+            # Get structured EventQueryResponse
             if self.mode == 'local':
-                response = await self._query_local(prompt)
+                event_response: EventQueryResponse = await self._query_local(prompt, EventQueryResponse)
             else:
-                response = await self._query_remote(prompt)
+                event_response: EventQueryResponse = await self._query_remote(prompt, EventQueryResponse)
             
             self.query_count += 1
-            return response
+            
+            return {
+                'type': 'event_query_response',
+                'analysis': event_response.analysis,
+                'severity_assessment': event_response.severity_assessment,
+                'next_steps': event_response.next_steps,
+                'confidence': event_response.confidence,
+                'event_timestamp': event.get('timestamp')
+            }
             
         except Exception as e:
             logger.error(f"On-demand query error: {e}")
-            return f"Error querying AI: {str(e)[:100]}"
+            return {
+                'type': 'event_query_response',
+                'analysis': f"Error querying AI: {str(e)[:100]}",
+                'severity_assessment': 'unknown',
+                'next_steps': ['Review manually'],
+                'confidence': 'low'
+            }
     
     async def close(self):
-        """Close HTTP session."""
+        """Close HTTP sessions."""
         if self.session:
             await self.session.close()
-            logger.info(
-                f"Enhanced AI Agent ({self.mode}) closed. "
-                f"Queries: {self.query_count}, Incidents: {self.incidents_detected}, "
-                f"Errors: {self.error_count}"
-            )
+        
+        if self.openai_client and hasattr(self.openai_client, 'close'):
+            try:
+                # Close the underlying httpx client
+                if hasattr(self.openai_client, '_client') and hasattr(self.openai_client._client, 'close'):
+                    await self.openai_client._client.aclose()
+            except Exception as e:
+                logger.warning(f"Error closing OpenAI client: {e}")
+        
+        logger.info(
+            f"Enhanced AI Agent ({self.mode}) closed. "
+            f"Queries: {self.query_count}, Incidents: {self.incidents_detected}, "
+            f"Errors: {self.error_count}"
+        )
     
     def get_stats(self) -> Dict:
         """Get enhanced agent statistics."""

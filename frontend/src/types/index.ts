@@ -28,6 +28,17 @@ export interface NetworkEvent {
   // Related context
   related_event_ids?: string[];
   tags?: string[];
+  // Explainable AI fields
+  ai_explanation?: string;
+  ai_confidence?: 'low' | 'medium' | 'high';
+  ai_threat_level?: 'low' | 'medium' | 'high' | 'critical';
+  ai_recommendations?: string[];
+  ai_important_factors?: string[];
+  ai_payload_evidence?: string[];
+  ai_counterfactual?: string;
+  ai_evidence?: Record<string, any>;
+  ai_processed?: boolean;
+  ai_mode?: 'local' | 'remote';
 }
 
 export interface AIMessage {

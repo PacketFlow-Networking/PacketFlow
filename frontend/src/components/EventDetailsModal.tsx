@@ -348,6 +348,97 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
               </section>
             )}
 
+            {/* Explainable AI Section */}
+            {event.ai_processed && event.ai_explanation && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-4 h-4 text-info" />
+                  <h3 className="font-semibold text-text">AI Explainability</h3>
+                  <span className="badge badge-info text-xs">{event.ai_mode}</span>
+                </div>
+                
+                {/* Main Explanation */}
+                <div className="panel p-4 bg-panel-hover mb-3">
+                  <p className="text-text leading-relaxed">{event.ai_explanation}</p>
+                  <div className="flex gap-2 mt-3">
+                    {event.ai_confidence && (
+                      <span className={`badge text-xs ${
+                        event.ai_confidence === 'high' ? 'badge-ok' : 
+                        event.ai_confidence === 'medium' ? 'badge-info' : 'badge-warn'
+                      }`}>
+                        Confidence: {event.ai_confidence}
+                      </span>
+                    )}
+                    {event.ai_threat_level && (
+                      <span className={`badge text-xs ${
+                        event.ai_threat_level === 'critical' ? 'badge-critical' : 
+                        event.ai_threat_level === 'high' ? 'badge-warn' : 
+                        event.ai_threat_level === 'medium' ? 'badge-info' : 'badge-ok'
+                      }`}>
+                        Threat: {event.ai_threat_level}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Important Factors */}
+                {event.ai_important_factors && event.ai_important_factors.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-sm text-text-dim mb-2 font-medium">🔍 Key Factors:</p>
+                    <ul className="space-y-2">
+                      {event.ai_important_factors.map((factor, idx) => (
+                        <li key={idx} className="panel p-3 text-sm text-text flex items-start gap-2">
+                          <span className="text-info font-bold">{idx + 1}.</span>
+                          <span>{factor}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Payload Evidence */}
+                {event.ai_payload_evidence && event.ai_payload_evidence.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-sm text-text-dim mb-2 font-medium">🔬 Payload Evidence:</p>
+                    <div className="panel p-3 bg-critical/5 border border-critical/20">
+                      <ul className="space-y-1">
+                        {event.ai_payload_evidence.map((evidence, idx) => (
+                          <li key={idx} className="text-sm text-critical font-mono">
+                            • {evidence}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Counterfactual Reasoning */}
+                {event.ai_counterfactual && (
+                  <div className="mb-3">
+                    <p className="text-sm text-text-dim mb-2 font-medium">💭 Would be Normal if:</p>
+                    <div className="panel p-3 bg-ok/5 border border-ok/20">
+                      <p className="text-sm text-text italic">{event.ai_counterfactual}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {event.ai_recommendations && event.ai_recommendations.length > 0 && (
+                  <div>
+                    <p className="text-sm text-text-dim mb-2 font-medium">✅ Recommended Actions:</p>
+                    <ol className="space-y-2">
+                      {event.ai_recommendations.map((rec, idx) => (
+                        <li key={idx} className="panel p-3 text-sm text-text flex items-start gap-2">
+                          <span className="text-ok font-bold">{idx + 1}.</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* User Feedback - IUI Feature */}
             {event.anomaly_score > 0.3 && (
               <section>

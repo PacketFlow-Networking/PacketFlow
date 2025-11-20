@@ -16,6 +16,13 @@ from typing import Dict, Optional
 from datetime import datetime
 import urllib.request
 
+try:
+    from scapy.all import rdpcap, Ether, IP, IPv6, TCP, UDP, DNS, Raw, DNSQR, DNSRR
+    SCAPY_AVAILABLE = True
+except ImportError:
+    SCAPY_AVAILABLE = False
+    logger.warning("Scapy not available. Install with: pip install scapy")
+
 logger = logging.getLogger(__name__)
 
 
@@ -76,9 +83,15 @@ class PacketCapture:
             await self._real_capture(queue)
     
     async def _pcap_replay(self, queue: asyncio.Queue):
-        """Replay packets from a PCAP file."""
+        """Replay packets from a PCAP file using native Python scapy library."""
         if not os.path.exists(self.pcap_file):
             logger.error(f"PCAP file not found: {self.pcap_file}")
+            logger.info("Falling back to mock mode...")
+            await self._mock_capture(queue)
+            return
+        
+        if not SCAPY_AVAILABLE:
+            logger.error("Scapy not installed. Install with: pip install scapy")
             logger.info("Falling back to mock mode...")
             await self._mock_capture(queue)
             return
@@ -90,75 +103,43 @@ class PacketCapture:
                 loop_count += 1
                 logger.info(f"Playing PCAP file (loop {loop_count})...")
                 
-                # Use TShark to read PCAP file
-                cmd = [
-                    "tshark",
-                    "-r", self.pcap_file,  # Read from file
-                    "-T", "ek",            # Elasticsearch format
-                    "-x",                  # Include hex dump
-                ]
+                # Read PCAP file using scapy (handles both .pcap and .pcapng)
+                logger.info(f"Reading PCAP file with scapy: {self.pcap_file}")
+                packets = await asyncio.to_thread(rdpcap, self.pcap_file)
                 
-                # Add filter if specified
-                if self.capture_filter:
-                    cmd.extend(["-Y", self.capture_filter])  # Display filter for pcap files
-                
-                logger.info(f"Reading PCAP with TShark: {' '.join(cmd)}")
-                
-                # Start TShark process with larger buffer
-                process = await asyncio.create_subprocess_exec(
-                    *cmd,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    limit=10 * 1024 * 1024  # 10MB buffer for large packets
-                )
+                logger.info(f"Loaded {len(packets)} packets from PCAP")
                 
                 packet_count_loop = 0
                 last_packet_time = None
                 
-                # Read packets line by line
-                async for line in process.stdout:
+                # Process each packet
+                for pkt in packets:
                     try:
-                        line_str = line.decode('utf-8').strip()
+                        parsed = self._parse_scapy_packet(pkt)
                         
-                        # Skip empty lines and index lines
-                        if not line_str or line_str.startswith('{"index"'):
-                            continue
-                        
-                        # Parse JSON packet
-                        try:
-                            packet_data = orjson.loads(line_str)
-                            parsed = self._parse_ek_packet(packet_data)
+                        if parsed:
+                            # Add realistic timing based on packet timestamps
+                            if hasattr(pkt, 'time') and last_packet_time and self.pcap_speed > 0:
+                                delay = (pkt.time - last_packet_time) / self.pcap_speed
+                                
+                                # Limit delay to reasonable bounds (0-10 seconds)
+                                if 0 < delay < 10:
+                                    await asyncio.sleep(delay)
                             
-                            if parsed:
-                                # Add realistic timing based on pcap timestamps
-                                if last_packet_time and self.pcap_speed > 0:
-                                    # Calculate delay to maintain relative timing
-                                    current_time = float(parsed.get("timestamp", 0))
-                                    delay = (current_time - last_packet_time) / self.pcap_speed
-                                    
-                                    # Limit delay to reasonable bounds
-                                    if 0 < delay < 10:
-                                        await asyncio.sleep(delay)
-                                
-                                last_packet_time = float(parsed.get("timestamp", 0))
-                                
-                                # Update timestamp to current time for realistic processing
-                                parsed["timestamp"] = datetime.now().isoformat()
-                                
-                                await queue.put(parsed)
-                                self.packet_count += 1
-                                packet_count_loop += 1
-                                
-                                # Log progress every 100 packets
-                                if packet_count_loop % 100 == 0:
-                                    logger.info(f"Replayed {packet_count_loop} packets from PCAP (total: {self.packet_count})")
-                        except json.JSONDecodeError:
-                            continue
+                            if hasattr(pkt, 'time'):
+                                last_packet_time = pkt.time
                             
+                            await queue.put(parsed)
+                            self.packet_count += 1
+                            packet_count_loop += 1
+                            
+                            # Log progress every 100 packets
+                            if packet_count_loop % 100 == 0:
+                                logger.info(f"Replayed {packet_count_loop} packets from PCAP (total: {self.packet_count})")
+                    
                     except Exception as e:
-                        logger.debug(f"Error processing line: {e}")
-                
-                await process.wait()
+                        logger.debug(f"Error parsing packet: {e}")
+                        continue
                 
                 logger.info(f"PCAP replay complete: {packet_count_loop} packets from loop {loop_count}")
                 
@@ -170,10 +151,6 @@ class PacketCapture:
                 # Small delay between loops
                 await asyncio.sleep(2)
                 
-        except FileNotFoundError:
-            logger.error("TShark not found. Please install Wireshark/TShark.")
-            logger.info("Falling back to mock mode...")
-            await self._mock_capture(queue)
         except Exception as e:
             logger.error(f"PCAP replay error: {e}")
             logger.info("Falling back to mock mode...")
@@ -476,6 +453,135 @@ class PacketCapture:
             
         except Exception as e:
             logger.debug(f"Parse error: {e}")
+            return None
+    
+    def _parse_scapy_packet(self, pkt) -> Optional[Dict]:
+        """
+        Parse a scapy packet into our standard format.
+        
+        Args:
+            pkt: Scapy packet object
+            
+        Returns:
+            Parsed packet dictionary or None
+        """
+        try:
+            # Must have IP layer
+            if not (pkt.haslayer(IP) or pkt.haslayer(IPv6)):
+                return None
+            
+            # Extract IP info
+            if pkt.haslayer(IP):
+                ip = pkt[IP]
+                src = ip.src
+                dst = ip.dst
+                proto_num = ip.proto
+            else:  # IPv6
+                ip = pkt[IPv6]
+                src = ip.src
+                dst = ip.dst
+                proto_num = ip.nh
+            
+            # Map protocol number to name
+            proto_map = {
+                1: "ICMP", 6: "TCP", 17: "UDP", 41: "IPv6",
+                47: "GRE", 50: "ESP", 58: "ICMPv6", 89: "OSPF"
+            }
+            proto = proto_map.get(proto_num, f"IP_{proto_num}")
+            
+            # Get packet timestamp
+            timestamp = datetime.fromtimestamp(float(pkt.time)) if hasattr(pkt, 'time') else datetime.now()
+            
+            # Base packet info
+            result = {
+                "timestamp": timestamp.isoformat(),
+                "src": src,
+                "dst": dst,
+                "proto": proto,
+                "src_port": 0,
+                "dst_port": 0,
+                "length": len(pkt),
+            }
+            
+            # TCP specifics
+            if pkt.haslayer(TCP):
+                tcp = pkt[TCP]
+                result["src_port"] = tcp.sport
+                result["dst_port"] = tcp.dport
+                result["tcp_flags"] = {
+                    "syn": bool(tcp.flags.S),
+                    "ack": bool(tcp.flags.A),
+                    "fin": bool(tcp.flags.F),
+                    "rst": bool(tcp.flags.R),
+                    "psh": bool(tcp.flags.P),
+                }
+                result["tcp_seq"] = tcp.seq
+                result["tcp_ack"] = tcp.ack
+                
+                # Extract payload
+                if pkt.haslayer(Raw) and self.capture_payload:
+                    raw_data = bytes(pkt[Raw])
+                    if len(raw_data) > self.max_payload_bytes:
+                        raw_data = raw_data[:self.max_payload_bytes]
+                    
+                    result["payload_base64"] = base64.b64encode(raw_data).decode('ascii')
+                    
+                    try:
+                        text = raw_data.decode('utf-8', errors='ignore')
+                        text = ''.join(c for c in text if c.isprintable() or c in '\n\r\t')
+                        if text:
+                            result["payload_text"] = text
+                    except:
+                        pass
+            
+            # UDP specifics
+            elif pkt.haslayer(UDP):
+                udp = pkt[UDP]
+                result["src_port"] = udp.sport
+                result["dst_port"] = udp.dport
+                
+                # DNS parsing
+                if pkt.haslayer(DNS):
+                    dns = pkt[DNS]
+                    dns_data = {}
+                    
+                    if dns.qd:  # Query
+                        dns_data["query_name"] = dns.qd.qname.decode('utf-8', errors='ignore').rstrip('.')
+                        dns_data["query_type"] = dns.qd.qtype
+                        dns_data["transaction_id"] = dns.id
+                    
+                    if dns.an:  # Answer
+                        dns_data["response_code"] = dns.rcode
+                        answers = []
+                        for i in range(dns.ancount):
+                            if dns.an[i].type == 1:  # A record
+                                answers.append(dns.an[i].rdata)
+                        if answers:
+                            dns_data["answers"] = str(answers[0]) if len(answers) == 1 else str(answers)
+                    
+                    if dns_data:
+                        result["dns"] = dns_data
+                
+                # Extract UDP payload
+                if pkt.haslayer(Raw) and self.capture_payload and not pkt.haslayer(DNS):
+                    raw_data = bytes(pkt[Raw])
+                    if len(raw_data) > self.max_payload_bytes:
+                        raw_data = raw_data[:self.max_payload_bytes]
+                    
+                    result["payload_base64"] = base64.b64encode(raw_data).decode('ascii')
+                    
+                    try:
+                        text = raw_data.decode('utf-8', errors='ignore')
+                        text = ''.join(c for c in text if c.isprintable() or c in '\n\r\t')
+                        if text:
+                            result["payload_text"] = text
+                    except:
+                        pass
+            
+            return result
+            
+        except Exception as e:
+            logger.debug(f"Error parsing scapy packet: {e}")
             return None
             
     async def _mock_capture(self, queue: asyncio.Queue):
