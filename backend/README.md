@@ -28,6 +28,33 @@ The backend follows a **7-tier functional architecture** designed for scalabilit
 
 ---
 
+## 📂 Root Directory Structure
+
+**Key directories:**
+- `config/` - Configuration management
+- `core/` - Business logic (capture, condense, AI)
+- `api/` - REST/WebSocket API layer
+- `persistence/` - Database operations
+- `observability/` - Metrics and monitoring
+- `infrastructure/` - Tasks and lifecycle management
+- `tests/` - Test suite
+- `utils/` - Development utilities
+- `docs/` - Documentation
+- `test-data/` - PCAP files for testing
+- `logs/` - Generated runtime files (database, logs)
+- `_deprecated/` - Legacy code reference
+
+**Root configuration files:**
+- `.env` - Main configuration
+- `.env.enhanced` - Alternative configuration
+- `main.py` - Application entry point
+- `README.md` - This file
+- `pyproject.toml` - Python project metadata
+- `requirements.txt` - Python dependencies
+- `Dockerfile` - Container configuration
+
+---
+
 ## 📁 Directory Structure & Components
 
 ### **1. `config/` - Configuration Management**

@@ -1,0 +1,7 @@
+# This directory stores runtime-generated files:
+# - packetflow.db - SQLite database (auto-generated)
+# - packetflow.log - Application logs (auto-generated)
+# - packetflow.db-shm, packetflow.db-wal - SQLite temporary files (auto-generated)
+#
+# All files are generated automatically when the backend runs.
+# Do not commit these files to version control.
