@@ -10,14 +10,14 @@ from pathlib import Path
 
 import uvicorn
 
-from capture import PacketCapture
-from condense_enhanced import FlowCondenser
-from ai_agent import AIAgent
-from websocket_server import WebSocketServer
+from core.capture import PacketCapture
+from core.condense import FlowCondenser
+from core.ai import AIAgent
+from api.websocket_server import WebSocketServer
 from config import config, validate_config
-from task_manager import run_with_restart, task_monitor
-from metrics import packets_captured, packets_dropped, active_flows, warmup_complete
-from database import initialize_database, get_db
+from infrastructure.tasks import run_with_restart, task_monitor
+from observability import packets_captured, packets_dropped, active_flows, warmup_complete
+from persistence import Database, initialize_database, get_db
 
 
 # Configure logging
