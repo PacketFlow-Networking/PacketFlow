@@ -1,5 +1,5 @@
 """
-format_logs.py - Pretty log formatter for AINetUI
+format_logs.py - Pretty log formatter for PacketFlow
 Converts ANSI escape codes and formats log output nicely
 """
 

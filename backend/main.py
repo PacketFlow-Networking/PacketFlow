@@ -1,5 +1,5 @@
 """
-main.py - Enhanced AINetUI Backend Entry Point
+main.py - Enhanced PacketFlow Backend Entry Point
 Features: metrics, security, task restart, monitoring, resilience
 """
 
@@ -34,7 +34,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class AINetUIBackend:
+class PacketFlowBackend:
     """Enhanced main backend orchestrator with monitoring and resilience."""
     
     def __init__(self):
@@ -122,7 +122,7 @@ class AINetUIBackend:
     async def start(self):
         """Start all backend components with resilience and monitoring."""
         logger.info("=" * 80)
-        logger.info(" Starting AINetUI Backend (Enhanced)")
+        logger.info(" Starting PacketFlow Backend (Enhanced)")
         logger.info("=" * 80)
         
         # Print configuration
@@ -286,7 +286,7 @@ async def main():
         sys.exit(1)
     
     # Create and start backend
-    backend = AINetUIBackend()
+    backend = PacketFlowBackend()
     await backend.start()
 
 

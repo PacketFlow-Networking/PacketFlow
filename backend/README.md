@@ -1,4 +1,4 @@
-# AINetUI Backend
+# PacketFlow Backend
 
 **Enterprise-grade real-time network security monitoring engine** with local AI reasoning, packet capture, flow aggregation, and anomaly detection. Privacy-first, no cloud dependencies.
 
@@ -249,7 +249,7 @@ Recommend: Block source IP, investigate compromised host, check for C2 callbacks
 **Configuration:**
 ```env
 DB_ENABLED=true
-DB_PATH=ainetui.db
+DB_PATH=packetflow.db
 DB_RETENTION_DAYS=7              # Keep data for 7 days
 DB_BATCH_SIZE=100                # Insert 100 events per transaction
 DB_CLEANUP_INTERVAL_HOURS=24     # Run cleanup daily
@@ -316,7 +316,7 @@ PROMETHEUS_PORT=8001             # Metrics endpoint: :8001/metrics
 **Configuration:**
 ```env
 LOG_LEVEL=INFO
-LOG_FILE=ainetui.log
+LOG_FILE=packetflow.log
 ```
 
 ---
@@ -537,11 +537,11 @@ AI_MODE=local                        # local|remote|mock
 SERVER_HOST=0.0.0.0
 SERVER_PORT=8000
 LOG_LEVEL=INFO
-LOG_FILE=ainetui.log
+LOG_FILE=packetflow.log
 
 # DATABASE CONFIGURATION
 DB_ENABLED=true
-DB_PATH=ainetui.db
+DB_PATH=packetflow.db
 DB_RETENTION_DAYS=7
 DB_BATCH_SIZE=100
 DB_CLEANUP_INTERVAL_HOURS=24
@@ -603,7 +603,7 @@ curl http://localhost:8000/metrics  # Prometheus format
 ### **No events appearing**
 1. Check backend is running: `curl http://localhost:8000/status`
 2. Verify `.env` configuration (especially `MOCK_MODE`)
-3. Check logs: `tail -f ainetui.log`
+3. Check logs: `tail -f packetflow.log`
 4. If using live capture, verify TShark is installed and you have admin rights
 
 ### **AI explanations not appearing**
@@ -615,7 +615,7 @@ curl http://localhost:8000/metrics  # Prometheus format
 ### **Database is locked**
 1. Ensure only one backend instance is running
 2. Close any SQLite browser tools accessing the database
-3. Delete `ainetui.db-shm` and `ainetui.db-wal` files if stuck
+3. Delete `packetflow.db-shm` and `packetflow.db-wal` files if stuck
 
 ### **High memory usage**
 1. Enable database storage: `DB_ENABLED=true`

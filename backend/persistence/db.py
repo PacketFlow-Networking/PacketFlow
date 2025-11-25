@@ -26,7 +26,7 @@ class Database:
     
     def __init__(
         self,
-        db_path: str = "ainetui.db",
+        db_path: str = "packetflow.db",
         enabled: bool = True,
         retention_days: int = 7,
         batch_size: int = 100
@@ -637,7 +637,7 @@ def get_db() -> Database:
 
 
 async def initialize_database(
-    db_path: str = "ainetui.db",
+    db_path: str = "packetflow.db",
     enabled: bool = True,
     retention_days: int = 7,
     batch_size: int = 100

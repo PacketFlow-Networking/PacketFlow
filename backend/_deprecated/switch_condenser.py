@@ -104,7 +104,7 @@ def show_status():
     version = get_current_version()
     
     print("=" * 60)
-    print(" AINetUI Condenser Version Status")
+    print(" PacketFlow Condenser Version Status")
     print("=" * 60)
     
     if version == 'enhanced':
@@ -188,7 +188,7 @@ def show_comparison():
 def show_help():
     """Show help message."""
     print("""
-AINetUI Condenser Version Switcher
+PacketFlow Condenser Version Switcher
 ===================================
 
 Usage:

@@ -125,10 +125,10 @@ def list_pcaps():
 def download_recommended():
     """Download recommended PCAP files for testing."""
     print("\n" + "="*80)
-    print(" Downloading Recommended PCAPs for AINetUI")
+    print(" Downloading Recommended PCAPs for PacketFlow")
     print("="*80)
     
-    # These are the best for testing AINetUI
+    # These are the best for testing PacketFlow
     recommended = ["http", "dns_attack", "port_scan"]
     
     print("\nRecommended for testing:")
@@ -156,7 +156,7 @@ def download_recommended():
 
 def main():
     """Main function."""
-    print("\n AINetUI PCAP Downloader")
+    print("\n PacketFlow PCAP Downloader")
     
     if len(sys.argv) > 1:
         command = sys.argv[1].lower()

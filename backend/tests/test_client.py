@@ -1,5 +1,5 @@
 """
-test_client.py - WebSocket test client for AINetUI backend
+"""test_client.py - WebSocket test client for PacketFlow backend
 """
 
 import asyncio
@@ -13,7 +13,7 @@ async def test_websocket():
     uri = "ws://localhost:8000/ws/updates"
     
     print("=" * 70)
-    print("AINetUI WebSocket Test Client")
+    print("PacketFlow WebSocket Test Client")
     print("=" * 70)
     print(f"Connecting to {uri}...\n")
     

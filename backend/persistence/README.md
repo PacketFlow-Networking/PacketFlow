@@ -2,7 +2,7 @@
 
 ## Overview
 
-AINetUI now includes **optional persistent storage** using SQLite - a lightweight, file-based database that requires no separate server installation. Data is stored locally in a single `ainetui.db` file.
+PacketFlow now includes **optional persistent storage** using SQLite - a lightweight, file-based database that requires no separate server installation. Data is stored locally in a single `packetflow.db` file.
 
 ## Features
 
@@ -43,7 +43,7 @@ All settings are in `backend/.env`:
 DB_ENABLED=true
 
 # Database file location
-DB_PATH=ainetui.db
+DB_PATH=packetflow.db
 
 # Keep data for 7 days (0 = forever)
 DB_RETENTION_DAYS=7
@@ -71,7 +71,7 @@ pip install -r requirements.txt  # Installs aiosqlite
 python main.py
 ```
 
-The database file `ainetui.db` will be created automatically in the backend folder.
+The database file `packetflow.db` will be created automatically in the backend folder.
 
 ### Query Stored Events via REST API
 
@@ -102,7 +102,7 @@ Returns:
 ```json
 {
   "enabled": true,
-  "path": "ainetui.db",
+  "path": "packetflow.db",
   "events_count": 15420,
   "incidents_count": 3,
   "queries_count": 47,
@@ -272,7 +272,7 @@ If you see "database is locked" errors:
 # https://sqlitebrowser.org/
 
 # Or use CLI
-sqlite3 ainetui.db
+sqlite3 packetflow.db
 .tables
 SELECT COUNT(*) FROM events;
 SELECT * FROM events WHERE is_anomaly=1 LIMIT 10;
@@ -282,10 +282,10 @@ SELECT * FROM events WHERE is_anomaly=1 LIMIT 10;
 
 ```powershell
 # Simple file copy (stop backend first)
-copy ainetui.db ainetui_backup.db
+copy packetflow.db packetflow_backup.db
 
 # Or use SQLite backup
-sqlite3 ainetui.db ".backup ainetui_backup.db"
+sqlite3 packetflow.db ".backup packetflow_backup.db"
 ```
 
 ### Custom Queries

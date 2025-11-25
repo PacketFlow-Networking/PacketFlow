@@ -168,7 +168,7 @@ def recommend_solution():
     print("="*80)
     
     print("""
-For testing the AINetUI enhancements:
+For testing the PacketFlow enhancements:
  RECOMMENDED: Use Mock Mode
     Edit .env file: MOCK_MODE=true
     Generates realistic simulated traffic
@@ -190,7 +190,7 @@ You should see packets being captured within seconds.
 
 def main():
     """Run all diagnostics."""
-    print("\n AINetUI Packet Capture Diagnostics")
+    print("\n PacketFlow Packet Capture Diagnostics")
     print(f"Running on: {sys.platform}")
     print()
     

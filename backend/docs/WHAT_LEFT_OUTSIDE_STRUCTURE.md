@@ -63,10 +63,10 @@ backend/
 - **1 container file** - Docker build configuration
 
 ### ✅ Cleaned Up (Removed 4 files)
-- `ainetui.db` - Generated at runtime (regenerates automatically)
-- `ainetui.db-shm` - Generated at runtime (regenerates automatically)
-- `ainetui.db-wal` - Generated at runtime (regenerates automatically)
-- `ainetui.log` - Generated at runtime (regenerates automatically)
+- `packetflow.db` - Generated at runtime (regenerates automatically)
+- `packetflow.db-shm` - Generated at runtime (regenerates automatically)
+- `packetflow.db-wal` - Generated at runtime (regenerates automatically)
+- `packetflow.log` - Generated at runtime (regenerates automatically)
 
 ## Why These 9 Files Must Be at Root
 
@@ -128,13 +128,13 @@ source .venv/bin/activate
 python main.py
 ```
 
-Note: Runtime files (ainetui.db, ainetui.log) will be created when the application runs.
+Note: Runtime files (packetflow.db, packetflow.log) will be created when the application runs.
 
 ## Files You Can Safely Ignore
 
 These are generated at runtime and can be deleted:
-- `ainetui.db*` - SQLite database files
-- `ainetui.log` - Application log
+- `packetflow.db*` - SQLite database files
+- `packetflow.log` - Application log
 
 They will regenerate automatically when the application runs.
 
@@ -153,8 +153,8 @@ These are essential for the project:
 Recommended `.gitignore` additions:
 ```
 # Generated files
-ainetui.db*
-ainetui.log
+packetflow.db*
+packetflow.log
 __pycache__/
 *.pyc
 .pytest_cache/

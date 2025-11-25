@@ -1,5 +1,5 @@
 """
-config.py - Configuration management for AINetUI
+config.py - Configuration management for PacketFlow
 """
 import os
 from typing import Dict, Any, List, Literal
@@ -177,7 +177,7 @@ class ServerConfig:
         self.port = int(os.getenv('SERVER_PORT', '8000'))
         self.log_level = os.getenv('LOG_LEVEL', 'INFO')
         self.debug = os.getenv('DEBUG', 'false').lower() == 'true'
-        self.log_file = os.getenv('LOG_FILE', 'ainetui.log')
+        self.log_file = os.getenv('LOG_FILE', 'packetflow.log')
         
         # CORS settings
         cors_origins_str = os.getenv('CORS_ORIGINS', 
@@ -202,7 +202,7 @@ class DatabaseConfig:
     
     def __init__(self):
         self.enabled = os.getenv('DB_ENABLED', 'true').lower() == 'true'
-        self.path = os.getenv('DB_PATH', 'ainetui.db')
+        self.path = os.getenv('DB_PATH', 'packetflow.db')
         self.retention_days = int(os.getenv('DB_RETENTION_DAYS', '7'))
         self.batch_size = int(os.getenv('DB_BATCH_SIZE', '100'))
         self.cleanup_interval_hours = int(os.getenv('DB_CLEANUP_INTERVAL_HOURS', '24'))

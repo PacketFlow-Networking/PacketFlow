@@ -62,7 +62,7 @@ class WebSocketServer:
     def __init__(self):
         """Initialize FastAPI application."""
         self.app = FastAPI(
-            title="AINetUI Backend",
+            title="PacketFlow Backend",
             description="AI-Augmented Network Analysis Interface",
             version="1.0.0"
         )
@@ -137,7 +137,7 @@ class WebSocketServer:
         async def root():
             """Public root endpoint."""
             return {
-                "service": "AINetUI Backend",
+                "service": "PacketFlow Backend",
                 "status": "running",
                 "version": "1.0.0",
                 "timestamp": datetime.now().isoformat(),
@@ -492,7 +492,7 @@ class WebSocketServer:
         # Send welcome message
         await websocket.send_json({
             "type": "connected",
-            "message": "Connected to AINetUI Backend",
+            "message": "Connected to PacketFlow Backend",
             "timestamp": datetime.now().isoformat()
         })
         websocket_messages_sent.labels(message_type='connected').inc()

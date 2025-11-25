@@ -1,5 +1,5 @@
 """
-check_system.py - System readiness checker for AINetUI
+check_system.py - System readiness checker for PacketFlow
 Verifies all dependencies and configuration before running
 """
 
@@ -257,7 +257,7 @@ def check_ai_endpoint(config):
 
 def main():
     """Run all system checks"""
-    print_header("AINetUI System Readiness Check")
+    print_header("PacketFlow System Readiness Check")
     print("Checking dependencies and configuration...\n")
     
     results = {}
@@ -292,7 +292,7 @@ def main():
     print(f"   Failed: {failed}")
     
     if failed == 0:
-        print(f"\n  \033[92m System is ready to run AINetUI!\033[0m")
+        print(f"\n  \033[92m System is ready to run PacketFlow!\033[0m")
         print(f"\n  Start the backend with: python main.py")
         print(f"  Or use the launcher: run.bat")
         return 0

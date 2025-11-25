@@ -1,5 +1,5 @@
 """
-test_improvements.py - Test script for enhanced AINetUI features
+"""test_improvements.py - Test script for enhanced PacketFlow features
 Demonstrates all new capabilities: structured explanations, correlation, chat, search
 """
 
@@ -10,8 +10,8 @@ from datetime import datetime
 from typing import Dict, List
 
 
-class AINetUITester:
-    """Test client for AINetUI enhanced features."""
+class PacketFlowTester:
+    """Test client for PacketFlow enhanced features."""
     
     def __init__(self, base_url: str = "http://localhost:8000"):
         self.base_url = base_url
@@ -325,7 +325,7 @@ class AINetUITester:
     async def run_all_tests(self):
         """Run all tests in sequence."""
         print("\n" + "="*80)
-        print(" AINetUI ENHANCEMENT TEST SUITE")
+        print(" PacketFlow ENHANCEMENT TEST SUITE")
         print("="*80)
         print(f"Testing backend at: {self.base_url}")
         print(f"Time: {datetime.now().isoformat()}")
@@ -384,7 +384,7 @@ async def main():
     
     base_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
     
-    print("\n Starting AINetUI Enhancement Tests...")
+    print("\n Starting PacketFlow Enhancement Tests...")
     print(f"   Backend URL: {base_url}")
     print("\n Make sure the backend is running: python main.py")
     print("   Press Ctrl+C to cancel, or wait 3 seconds to continue...")
@@ -395,7 +395,7 @@ async def main():
         print("\n\n Tests cancelled by user")
         return
     
-    async with AINetUITester(base_url) as tester:
+    async with PacketFlowTester(base_url) as tester:
         await tester.run_all_tests()
 
 

@@ -83,10 +83,10 @@ def test_prometheus_metrics():
             
             # Check for key metrics
             expected_metrics = [
-                'ainetui_packets_total',
-                'ainetui_active_flows',
-                'ainetui_websocket_clients',
-                'ainetui_queue_depth',
+                'packetflow_packets_total',
+                'packetflow_active_flows',
+                'packetflow_websocket_clients',
+                'packetflow_queue_depth',
             ]
             
             found_metrics = []
@@ -277,7 +277,7 @@ def test_queue_monitoring():
             
             queue_metrics = []
             for line in metrics_text.split('\n'):
-                if 'ainetui_queue_depth' in line and not line.startswith('#'):
+                if 'packetflow_queue_depth' in line and not line.startswith('#'):
                     queue_metrics.append(line.strip())
             
             if queue_metrics:
@@ -335,7 +335,7 @@ def test_websocket_metrics():
             
             # Look for websocket_clients metric
             for line in metrics_text.split('\n'):
-                if 'ainetui_websocket_clients' in line and not line.startswith('#'):
+                if 'packetflow_websocket_clients' in line and not line.startswith('#'):
                     print_success("WebSocket client tracking enabled")
                     print_info(line.strip())
                     return True
@@ -384,7 +384,7 @@ def test_cors_configuration():
 def run_all_tests():
     """Run all tests and provide summary"""
     print(f"\n{Colors.BOLD}{'='*60}")
-    print(f"  AINetUI Enhanced Backend Test Suite")
+    print(f"  PacketFlow Enhanced Backend Test Suite")
     print(f"  Sprint 1 Implementation Validation")
     print(f"{'='*60}{Colors.ENDC}\n")
     
