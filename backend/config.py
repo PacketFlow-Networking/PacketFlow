@@ -130,11 +130,15 @@ class AIConfig:
         self.mode: Literal['local', 'remote'] = os.getenv('AI_MODE', 'local')
         
         # Local Ollama settings (OpenAI-compatible endpoint)
-        self.ollama_url = os.getenv('OLLAMA_URL', 'https://chatucy.cs.ucy.ac.cy/ollama/v1')
+        # OLLAMA_BASE_URL: base URL for AsyncOpenAI client (e.g., https://host/ollama)
+        # OLLAMA_API_URL: full endpoint for direct HTTP calls (e.g., https://host/ollama/v1/chat/completions)
+        self.ollama_base_url = os.getenv('OLLAMA_BASE_URL', 'https://chatucy.cs.ucy.ac.cy/ollama')
+        self.ollama_url = os.getenv('OLLAMA_URL', 'https://chatucy.cs.ucy.ac.cy/ollama/v1/chat/completions')
         self.local_model = os.getenv('LOCAL_AI_MODEL', 'mistral')
         
         # Remote UCY server settings (same endpoint with OpenAI-compatible format)
-        self.remote_url = os.getenv('REMOTE_AI_URL', 'https://chatucy.cs.ucy.ac.cy/ollama/v1')
+        self.remote_base_url = os.getenv('REMOTE_BASE_URL', 'https://chatucy.cs.ucy.ac.cy/ollama')
+        self.remote_url = os.getenv('REMOTE_AI_URL', 'https://chatucy.cs.ucy.ac.cy/ollama/v1/chat/completions')
         self.remote_model = os.getenv('REMOTE_AI_MODEL', 'llama3')
         self.remote_websearch = os.getenv('REMOTE_WEBSEARCH', 'false').lower() == 'true'
         self.remote_client_rag = os.getenv('REMOTE_CLIENT_RAG', 'false').lower() == 'true'
@@ -144,6 +148,10 @@ class AIConfig:
         self.temperature = float(os.getenv('AI_TEMPERATURE', '0.7'))
         self.max_tokens = int(os.getenv('AI_MAX_TOKENS', '250'))
         self.mock_mode = os.getenv('AI_MOCK_MODE', 'false').lower() == 'true'
+        
+        # Throttling settings (prevent server spam)
+        self.max_pending_requests = int(os.getenv('AI_MAX_PENDING_REQUESTS', '3'))
+        self.min_request_interval = float(os.getenv('AI_MIN_REQUEST_INTERVAL', '0.5'))
         
         # System prompt for network analysis
         self.system_prompt = os.getenv('AI_SYSTEM_PROMPT', 
@@ -155,8 +163,13 @@ class AIConfig:
     
     @property
     def current_url(self) -> str:
-        """Get current AI URL based on mode."""
+        """Get current AI URL based on mode (full endpoint for direct HTTP)."""
         return self.remote_url if self.mode == 'remote' else self.ollama_url
+    
+    @property
+    def current_base_url(self) -> str:
+        """Get current base URL for AsyncOpenAI client (without /chat/completions)."""
+        return self.remote_base_url if self.mode == 'remote' else self.ollama_base_url
     
     @property
     def current_model(self) -> str:

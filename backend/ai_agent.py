@@ -45,7 +45,10 @@ class AIAgent:
         system_prompt: str = None,
         # Correlation settings
         correlation_window: int = 300,  # 5 minutes
-        max_memory_events: int = 100
+        max_memory_events: int = 100,
+        # Throttling settings (prevent server spam)
+        max_pending_requests: int = 3,  # Drop requests if more are waiting
+        min_request_interval: float = 0.5  # Minimum seconds between requests
     ):
         """
         Initialize enhanced AI agent.
@@ -87,11 +90,13 @@ class AIAgent:
         # Instructor-patched AsyncOpenAI client for structured outputs
         self.openai_client: Optional[AsyncOpenAI] = None
 
-        # Queue-based AI query system - ensures only ONE outgoing call at a time
-        # New requests wait for the current one to finish before proceeding
-        self.ai_query_queue: asyncio.Queue = asyncio.Queue()
+        # Advanced throttling system - prevents server spam
         self.ai_query_lock = asyncio.Lock()
-        self._ai_worker_task: Optional[asyncio.Task] = None
+        self.pending_requests = 0
+        self.max_pending_requests = max_pending_requests
+        self.min_request_interval = min_request_interval
+        self.last_request_time = 0.0
+        self.dropped_requests = 0
         
     def _default_system_prompt(self) -> str:
         """Generate default system prompt for network security analysis."""
@@ -123,14 +128,28 @@ Be direct and actionable. Avoid unnecessary hedging."""
         )
         
         # Initialize instructor-patched OpenAI client
-        # Use same base URL for both local and remote (both use OpenAI-compatible endpoint)
-        base_url = self.remote_url if self.mode == 'remote' else self.ollama_url
+        # CRITICAL: Use base URL WITH /v1 but WITHOUT /chat/completions (client appends it)
+        # For UCY server: use 'https://chatucy.cs.ucy.ac.cy/ollama/v1' 
+        # AsyncOpenAI will make it: 'https://chatucy.cs.ucy.ac.cy/ollama/v1/chat/completions'
         
+        # Get base URL from config (constructor parameters passed from main.py)
+        if self.mode == 'remote':
+            # Use remote_url but strip /chat/completions to get base
+            base_url = self.remote_url.replace('/chat/completions', '').replace('/v1/chat/completions', '/v1')
+        else:
+            # Use ollama_url but strip /chat/completions to get base
+            base_url = self.ollama_url.replace('/chat/completions', '').replace('/v1/chat/completions', '/v1')
+        
+        logger.info(f"[STARTUP] Creating AsyncOpenAI client with base_url: {base_url}")
+        
+        # Create AsyncOpenAI client with custom base URL and disabled SSL verification
         self.openai_client = AsyncOpenAI(
             base_url=base_url,
-            api_key="ollama",  # Can be any string for Ollama
-            http_client=httpx.AsyncClient(verify=False)  # Disable SSL verification for self-signed certs
+            api_key="ollama",
+            http_client=httpx.AsyncClient(verify=False, timeout=120.0)
         )
+        
+        logger.info(f"[STARTUP] AsyncOpenAI client created with base_url: {self.openai_client.base_url}")
         
         # Patch with instructor for structured outputs
         self.openai_client = instructor.patch(
@@ -138,21 +157,32 @@ Be direct and actionable. Avoid unnecessary hedging."""
             mode=instructor.Mode.JSON
         )
         
+        logger.info(f"[STARTUP] AsyncOpenAI client patched with instructor (JSON mode)")
         logger.info(f"Enhanced AI Agent initialized in {self.mode.upper()} mode")
         logger.info(f"Correlation window: {self.correlation_window}s, Max memory: {self.max_memory_events} events")
-        logger.info(f"Using Instructor for structured outputs (base_url: {base_url})")
+        logger.info(f"Base URL: {base_url}")
         
-        # Test connection
+        # Test connection at startup - exit if fails
+        logger.info("Testing connection to AI service...")
         try:
-            await self._test_connection()
+            connection_ok = await self._test_connection()
+            if not connection_ok:
+                logger.error("❌ FATAL: Could not connect to AI service at startup")
+                logger.error(f"Base URL: {base_url}")
+                logger.error(f"Model: {self.remote_model if self.mode == 'remote' else self.local_model}")
+                raise RuntimeError(f"Failed to connect to AI service at {base_url}")
         except Exception as e:
-            logger.warning(f"Could not connect to AI service: {e}")
-            logger.warning("AI explanations will be disabled until service is available.")
+            logger.error(f"❌ FATAL: AI connection test failed: {e}")
+            raise
     
     async def _test_connection(self):
-        """Test connection to AI service."""
-        # Both local and remote now use OpenAI-compatible endpoint
-        base_url = self.remote_url if self.mode == 'remote' else self.ollama_url
+        """Test connection to AI service (called on-demand, not at startup)."""
+        # Get base URL from config
+        if self.mode == 'remote':
+            base_url = self.remote_url.replace('/chat/completions', '').replace('/v1/chat/completions', '/v1')
+        else:
+            base_url = self.ollama_url.replace('/chat/completions', '').replace('/v1/chat/completions', '/v1')
+        
         model = self.remote_model if self.mode == 'remote' else self.local_model
         
         logger.info(f"{self.mode.upper()} mode configured: {base_url}")
@@ -165,12 +195,13 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 model=model,
                 messages=[{"role": "user", "content": "Test connection"}],
                 max_tokens=10,
-                timeout=10.0
+                timeout=5.0  # Shorter timeout for test
             )
-            logger.info(f" Connection test successful")
+            logger.info(f"✓ Connection test successful")
+            return True
         except Exception as e:
-            logger.warning(f" Connection test failed: {e}")
-            logger.warning(f"AI explanations will be disabled until service is available.")
+            logger.error(f"✗ Connection test failed: {e}")
+            return False
     
     async def process_events(
         self,
@@ -294,15 +325,57 @@ Be direct and actionable. Avoid unnecessary hedging."""
         correlated_events: List[Dict]
     ) -> Dict:
         """
-        Queue-based wrapper for AI queries - ensures only ONE outgoing call at a time.
-        Subsequent requests wait for the current one to finish.
+        Throttled wrapper for AI queries - prevents server spam.
+        
+        Features:
+        - Only ONE active request at a time (lock-based)
+        - Drops requests if too many are pending (max 3 waiting)
+        - Enforces minimum 500ms interval between requests
+        - Tracks dropped requests for monitoring
         """
-        async with self.ai_query_lock:
-            # Only one query can pass through this lock at a time
-            logger.debug(f"AI query starting (queue position acquired)")
-            result = await self._generate_structured_explanation(event, correlated_events)
-            logger.debug(f"AI query completed")
-            return result
+        # Check if too many requests are pending - drop this one to prevent spam
+        if self.pending_requests >= self.max_pending_requests:
+            self.dropped_requests += 1
+            logger.warning(
+                f"⚠️ AI request DROPPED (too many pending: {self.pending_requests}). "
+                f"Total dropped: {self.dropped_requests}"
+            )
+            return {
+                "text": "AI analysis skipped (rate limited)",
+                "confidence": "low",
+                "threat_level": "unknown",
+                "recommendations": ["Review manually"],
+                "evidence": self._extract_evidence(event),
+                "important_factors": [],
+                "payload_evidence": [],
+                "counterfactual_reasoning": ""
+            }
+        
+        # Increment pending counter
+        self.pending_requests += 1
+        
+        try:
+            async with self.ai_query_lock:
+                # Enforce minimum interval between requests
+                current_time = asyncio.get_event_loop().time()
+                time_since_last = current_time - self.last_request_time
+                
+                if time_since_last < self.min_request_interval:
+                    wait_time = self.min_request_interval - time_since_last
+                    logger.debug(f"⏱️ Rate limiting: waiting {wait_time:.2f}s before next request")
+                    await asyncio.sleep(wait_time)
+                
+                # Only one query can pass through this lock at a time
+                logger.debug(f"🔄 AI query starting (pending: {self.pending_requests})")
+                result = await self._generate_structured_explanation(event, correlated_events)
+                
+                self.last_request_time = asyncio.get_event_loop().time()
+                logger.debug(f"✅ AI query completed")
+                
+                return result
+        finally:
+            # Always decrement pending counter
+            self.pending_requests -= 1
     
     async def _generate_structured_explanation(
         self, 
@@ -542,7 +615,11 @@ Detection Methods: {', '.join(detection_methods) if detection_methods else 'None
                 http = stats["http"]
                 methods = http.get("methods", {})
                 if methods:
-                    prompt += f"\n HTTP Methods: {dict(methods)}"
+                    # Handle both dict and list types
+                    if isinstance(methods, dict):
+                        prompt += f"\n HTTP Methods: {methods}"
+                    else:
+                        prompt += f"\n HTTP Methods: {list(methods)}"
                 hosts = http.get("hosts", [])
                 if hosts:
                     prompt += f"\n  Target Hosts: {', '.join(list(hosts)[:5])}"
@@ -554,7 +631,11 @@ Detection Methods: {', '.join(detection_methods) if detection_methods else 'None
                 tls = stats["tls"]
                 versions = tls.get("versions", {})
                 if versions:
-                    prompt += f"\n TLS Versions: {dict(versions)}"
+                    # Handle both dict and list types
+                    if isinstance(versions, dict):
+                        prompt += f"\n TLS Versions: {versions}"
+                    else:
+                        prompt += f"\n TLS Versions: {list(versions)}"
                 servers = tls.get("server_names", [])
                 if servers:
                     prompt += f"\n  Server Names: {', '.join(list(servers)[:5])}"
@@ -906,8 +987,8 @@ Provide a concise, structured analysis."""
         
         logger.info(
             f"Enhanced AI Agent ({self.mode}) closed. "
-            f"Queries: {self.query_count}, Incidents: {self.incidents_detected}, "
-            f"Errors: {self.error_count}"
+            f"Queries: {self.query_count}, Dropped: {self.dropped_requests}, "
+            f"Incidents: {self.incidents_detected}, Errors: {self.error_count}"
         )
     
     def get_stats(self) -> Dict:
@@ -916,11 +997,17 @@ Provide a concise, structured analysis."""
             "mode": self.mode,
             "model": self.remote_model if self.mode == 'remote' else self.local_model,
             "queries_processed": self.query_count,
+            "queries_dropped": self.dropped_requests,
+            "pending_requests": self.pending_requests,
             "incidents_detected": self.incidents_detected,
             "errors": self.error_count,
             "url": self.remote_url if self.mode == 'remote' else self.ollama_url,
             "correlation_window": self.correlation_window,
-            "events_in_memory": len(self.recent_events)
+            "events_in_memory": len(self.recent_events),
+            "throttle_config": {
+                "max_pending": self.max_pending_requests,
+                "min_interval_ms": int(self.min_request_interval * 1000)
+            }
         }
     
     def switch_mode(self, new_mode: Literal['local', 'remote']):

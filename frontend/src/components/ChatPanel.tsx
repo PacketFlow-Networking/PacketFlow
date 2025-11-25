@@ -25,7 +25,8 @@ const ChatPanel = () => {
     feedback, 
     setFeedback,
     focusedMessageId,
-    events
+    events,
+    selectEvent
   } = useStore();
   
   const { queryAI } = useApi();
@@ -247,14 +248,34 @@ const ChatPanel = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <HelpCircle className="w-4 h-4 text-text-dim" />
                   <span className="text-xs text-text-dim">References:</span>
-                  {aiMessage.event_ids.slice(0, 3).map(eventId => (
-                    <button
-                      key={eventId}
-                      className="text-xs px-2 py-1 bg-base rounded hover:bg-panel-hover transition-colors text-info border border-info/30"
-                    >
-                      {eventId.slice(-8)}
-                    </button>
-                  ))}
+                  {aiMessage.event_ids.slice(0, 3).map(eventId => {
+                    // Find the actual event by timestamp or id
+                    const referencedEvent = events.find(e => 
+                      e.timestamp === eventId || e.id === eventId
+                    );
+                    
+                    return (
+                      <button
+                        key={eventId}
+                        onClick={() => {
+                          if (referencedEvent) {
+                            selectEvent(referencedEvent.id);
+                          } else {
+                            console.warn(`Referenced event not found: ${eventId}`);
+                          }
+                        }}
+                        className={`text-xs px-2 py-1 rounded transition-colors border ${
+                          referencedEvent 
+                            ? 'bg-base hover:bg-panel-hover text-info border-info/30 hover:border-info cursor-pointer'
+                            : 'bg-base/50 text-text-dim border-text-dim/20 cursor-not-allowed opacity-50'
+                        }`}
+                        title={referencedEvent ? `View event: ${referencedEvent.src} → ${referencedEvent.dst}` : 'Event not in memory (may have expired)'}
+                        disabled={!referencedEvent}
+                      >
+                        {eventId.slice(-8)}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 

@@ -17,6 +17,7 @@ import GlossaryPanel from './components/GlossaryPanel';
 import OnboardingModal from './components/OnboardingModal';
 import PacketFlowIntro from './components/PacketFlowIntro';
 import ThreeDTopologyModal from './components/ThreeDTopologyModal';
+import { EventDetailsModal } from './components/EventDetailsModal';
 import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network, Box } from 'lucide-react';
 
 function App() {
@@ -45,7 +46,10 @@ function App() {
     userProfile,
     trackViewSwitch,
     inferCognitiveStyle,
-    dismissTooltip
+    dismissTooltip,
+    selectedEventId,
+    selectEvent,
+    events
   } = useStore();
   const { showInfo } = useToast();
   
@@ -368,6 +372,13 @@ function App() {
 
       {/* Glossary Panel - IUI Feature */}
       <GlossaryPanel />
+      
+      {/* Event Details Modal - Shows when event is selected */}
+      <EventDetailsModal
+        event={selectedEventId ? events.find(e => e.id === selectedEventId) || null : null}
+        isOpen={!!selectedEventId}
+        onClose={() => selectEvent(null)}
+      />
       
       {/* Floating hint - positioned bottom-center to avoid panel interference */}
       {!showShortcutsHelp && !showAlertConfig && (

@@ -813,9 +813,24 @@ class PacketCapture:
     async def stop(self):
         """Stop the packet capture process."""
         if self.process:
-            self.process.terminate()
-            await self.process.wait()
-            logger.info(f"Capture stopped. Total packets: {self.packet_count}")
+            try:
+                self.process.terminate()
+                await asyncio.wait_for(self.process.wait(), timeout=5.0)
+            except ProcessLookupError:
+                # Process already terminated - this is fine
+                logger.debug("Process already terminated")
+            except asyncio.TimeoutError:
+                # Force kill if it doesn't terminate gracefully
+                logger.warning("Process didn't terminate gracefully, forcing kill")
+                try:
+                    self.process.kill()
+                    await self.process.wait()
+                except ProcessLookupError:
+                    pass
+            except Exception as e:
+                logger.warning(f"Error stopping capture process: {e}")
+            finally:
+                logger.info(f"Capture stopped. Total packets: {self.packet_count}")
 
 
 async def download_sample_pcap(url: str, dest_path: str):

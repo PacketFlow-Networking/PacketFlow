@@ -78,7 +78,10 @@ class AINetUIBackend:
             # Common settings
             timeout=config.ai.timeout,
             max_tokens=config.ai.max_tokens,
-            system_prompt=config.ai.system_prompt
+            system_prompt=config.ai.system_prompt,
+            # Throttling settings (prevent server spam)
+            max_pending_requests=getattr(config.ai, 'max_pending_requests', 3),
+            min_request_interval=getattr(config.ai, 'min_request_interval', 0.5)
         )
         
         self.websocket_server = WebSocketServer()
