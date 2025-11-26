@@ -18,7 +18,7 @@
 ## CRITICAL BUGS
 
 ### 1. **Race Condition in Flow Data Reset** (HIGH - Data Loss)
-**File:** `backend/condense_enhanced.py`, line 500-510  
+**File:** `backend/core/condense/condenser.py`, line 500-510  
 **Severity:** CRITICAL
 
 **Issue:**
@@ -50,7 +50,7 @@ async with self._flow_lock:
 ---
 
 ### 2. **Incorrect Baseline Update Frequency** (HIGH - Detection Inaccuracy)
-**File:** `backend/condense_enhanced.py`, `_update_baseline()` method  
+**File:** `backend/core/condense/condenser.py`, `_update_baseline()` method  
 **Severity:** CRITICAL
 
 **Issue:**
@@ -73,7 +73,7 @@ def _condense_flows(self) -> List[Dict]:
 ---
 
 ### 3. **WebSocket Broadcast Missing Error Handling** (HIGH - Server Crash)
-**File:** `backend/websocket_server.py`, `broadcast_event()` method  
+**File:** `backend/api/websocket_server.py`, `broadcast_event()` method  
 **Severity:** CRITICAL
 
 **Issue:**
@@ -103,7 +103,7 @@ for websocket in disconnected:
 ---
 
 ### 4. **AI Agent Memory Leak in Event Correlation** (HIGH - Memory)
-**File:** `backend/ai_agent.py`, line 30-40  
+**File:** `backend/core/ai/ai_agent.py`, line 30-40  
 **Severity:** CRITICAL
 
 **Issue:**
@@ -127,7 +127,7 @@ self.incident_clusters = deque(maxlen=50)
 ---
 
 ### 5. **Missing Timeout in AI Query Loop** (HIGH - Hanging Requests)
-**File:** `backend/ai_agent.py`, `process_events()` method  
+**File:** `backend/core/ai/ai_agent.py`, `process_events()` method  
 **Severity:** CRITICAL
 
 **Issue:**
@@ -160,7 +160,7 @@ except asyncio.TimeoutError:
 ## MAJOR BUGS
 
 ### 6. **Port Scan Tracker Time Window Mismatch** (MEDIUM - Logic Error)
-**File:** `backend/condense_enhanced.py`, line ~590-610  
+**File:** `backend/core/condense/condenser.py`, line ~590-610  
 **Severity:** MAJOR
 
 **Issue:**
@@ -186,7 +186,7 @@ This can cause port scans to go undetected if the cleanup runs at an unfortunate
 ---
 
 ### 7. **Inconsistent Packet Queue Error Handling** (MEDIUM - Silent Failures)
-**File:** `backend/capture.py`, `_real_capture()` method  
+**File:** `backend/core/capture/capture.py`, `_real_capture()` method  
 **Severity:** MAJOR
 
 **Issue:**
@@ -226,7 +226,7 @@ except asyncio.TimeoutError:
 ---
 
 ### 8. **Database Batch Insert Never Flushes** (MEDIUM - Data Loss)
-**File:** `backend/database.py`, batch insertion logic  
+**File:** `backend/persistence/db.py`, batch insertion logic  
 **Severity:** MAJOR
 
 **Issue:**
@@ -251,7 +251,7 @@ async def start_flush_task(self, interval: int = 60):
 ---
 
 ### 9. **WebSocket Connection Cleanup Not Atomic** (MEDIUM - Connection Leak)
-**File:** `backend/websocket_server.py`, `disconnect()` method  
+**File:** `backend/api/websocket_server.py`, `disconnect()` method  
 **Severity:** MAJOR
 
 **Issue:**
@@ -280,7 +280,7 @@ async with self._connection_lock:
 ---
 
 ### 10. **Configuration Validation Missing Edge Cases** (MEDIUM - Runtime Errors)
-**File:** `backend/config.py`, `validate()` method  
+**File:** `backend/config/settings.py`, `validate()` method  
 **Severity:** MAJOR
 
 **Issue:**
@@ -316,7 +316,7 @@ if self.condenser.window_size < 1:
 ## MINOR BUGS
 
 ### 11. **Metric Recording Loses Detections** (LOW - Observability)
-**File:** `backend/condense_enhanced.py`, `_periodic_emission()` method  
+**File:** `backend/core/condense/condenser.py`, `_periodic_emission()` method  
 **Severity:** MINOR
 
 **Issue:**
@@ -341,7 +341,7 @@ The metric was never recorded, so `DetectionMetrics` shows incomplete data.
 ---
 
 ### 12. **Protocol Stats Serialization Can Fail** (LOW - JSON Errors)
-**File:** `backend/condense_enhanced.py`, `_serialize_protocol_stats()` method  
+**File:** `backend/core/condense/condenser.py`, `_serialize_protocol_stats()` method  
 **Severity:** MINOR
 
 **Issue:**
@@ -365,7 +365,7 @@ When `event["protocol_stats"] = self._serialize_protocol_stats(...)` is called a
 ---
 
 ### 13. **TShark Stderr Monitoring Race Condition** (LOW - Packet Drop Accuracy)
-**File:** `backend/capture.py`, `_monitor_tshark_errors()` method  
+**File:** `backend/core/capture/capture.py`, `_monitor_tshark_errors()` method  
 **Severity:** MINOR
 
 **Issue:**
@@ -390,7 +390,7 @@ async def _monitor_tshark_errors(self):
 ---
 
 ### 14. **Empty Payload Detection Missing** (LOW - Logic)
-**File:** `backend/capture.py`, `_parse_ek_packet()` method  
+**File:** `backend/core/capture/capture.py`, `_parse_ek_packet()` method  
 **Severity:** MINOR
 
 **Issue:**
@@ -416,7 +416,7 @@ if payload_text is not None:
 ---
 
 ### 15. **Flow Key Collision Possible** (LOW - Edge Case)
-**File:** `backend/condense_enhanced.py`, `_create_flow_key()` method  
+**File:** `backend/core/condense/condenser.py`, `_create_flow_key()` method  
 **Severity:** MINOR
 
 **Issue:**
@@ -449,7 +449,7 @@ if packet.get("src") is None or packet.get("dst") is None:
 ## POTENTIAL ISSUES & EDGE CASES
 
 ### 16. **Warmup Period Can Be Skipped** (Edge Case)
-**File:** `backend/condense_enhanced.py`, line 380-385  
+**File:** `backend/core/condense/condenser.py`, line 380-385  
 **Severity:** MEDIUM (Edge Case)
 
 **Issue:**
@@ -473,7 +473,7 @@ The warmup counter increments in `_periodic_emission()`, but this task is only c
 ---
 
 ### 17. **AI Explanation Processing Order Not Guaranteed** (Edge Case)
-**File:** `backend/ai_agent.py`, event processing  
+**File:** `backend/core/ai/ai_agent.py`, event processing  
 **Severity:** LOW (Edge Case)
 
 **Issue:**
@@ -491,7 +491,7 @@ Frontend receives events in different order than they occurred. While not a bug 
 ---
 
 ### 18. **Database Connection Timeout Not Handled** (Edge Case)
-**File:** `backend/database.py`, initialization  
+**File:** `backend/persistence/db.py`, initialization  
 **Severity:** LOW (Edge Case)
 
 **Issue:**
@@ -514,7 +514,7 @@ If the database file is on a network drive that becomes unavailable during start
 ## PERFORMANCE & MEMORY CONCERNS
 
 ### 19. **No Query Result Pagination Limit** (PERFORMANCE)
-**File:** `backend/websocket_server.py`, `/api/events` endpoint  
+**File:** `backend/api/websocket_server.py`, `/api/events` endpoint  
 **Severity:** MEDIUM
 
 **Issue:**
@@ -543,7 +543,7 @@ if limit > 10000:
 ---
 
 ### 20. **Unbounded Event Samples in Payload** (MEMORY)
-**File:** `backend/condense_enhanced.py`, `max_sample_payloads`  
+**File:** `backend/core/condense/condenser.py`, `max_sample_payloads`  
 **Severity:** MEDIUM
 
 **Issue:**
@@ -562,7 +562,7 @@ Each flow stores up to 5 payload samples. With 1000 active flows:
 ---
 
 ### 21. **Stats Dictionary Unbounded Growth** (MEMORY)
-**File:** `backend/condense_enhanced.py`, global_stats  
+**File:** `backend/core/condense/condenser.py`, global_stats  
 **Severity:** MEDIUM
 
 **Issue:**
@@ -591,7 +591,7 @@ But `protocol_distribution` is never cleared. Over days/weeks, it contains every
 ## SECURITY CONCERNS
 
 ### 22. **API Key Hardcoded Default** (SECURITY)
-**File:** `backend/websocket_server.py`, line ~30  
+**File:** `backend/api/websocket_server.py`, line ~30  
 **Severity:** HIGH
 
 **Issue:**
@@ -614,7 +614,7 @@ if not API_KEY:
 ---
 
 ### 23. **CORS Origins Not Validated** (SECURITY)
-**File:** `backend/config.py`, ServerConfig  
+**File:** `backend/config/settings.py`, ServerConfig  
 **Severity:** MEDIUM
 
 **Issue:**
@@ -651,7 +651,7 @@ for origin in self.cors_origins:
 ---
 
 ### 24. **Database File Permissions** (SECURITY)
-**File:** `backend/database.py`, initialization  
+**File:** `backend/persistence/db.py`, initialization  
 **Severity:** MEDIUM
 
 **Issue:**
@@ -672,7 +672,7 @@ os.chmod(db_path, 0o600)  # rw-------
 ---
 
 ### 25. **SQL Injection Risk in Event Queries** (SECURITY)
-**File:** `backend/database.py`, `get_events()` method  
+**File:** `backend/persistence/db.py`, `get_events()` method  
 **Severity:** MEDIUM
 
 **Issue:**
@@ -711,11 +711,11 @@ The code appears to use proper parameterized queries, but without seeing the ful
 5. **API Key hardcoded default** (Bug #22) - Security exposure
 
 ### Files Needing Most Attention
-- `backend/condense_enhanced.py` - 5 bugs
-- `backend/ai_agent.py` - 2 bugs  
-- `backend/websocket_server.py` - 4 bugs
-- `backend/capture.py` - 2 bugs
-- `backend/database.py` - 2 bugs
+- `backend/core/condense/condenser.py` - 5 bugs
+- `backend/core/ai/ai_agent.py` - 2 bugs  
+- `backend/api/websocket_server.py` - 4 bugs
+- `backend/core/capture/capture.py` - 2 bugs
+- `backend/persistence/db.py` - 2 bugs
 
 ---
 
