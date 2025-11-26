@@ -12,7 +12,7 @@
 
 // === IMPORTS TO ADD ===
 
-import TopologyDemo from './components/topology/TopologyDemo';
+// import TopologyDemo from './components/topology/TopologyDemo';
 
 // Add this line after your existing imports in App.tsx
 
