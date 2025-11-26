@@ -2,6 +2,15 @@
 
 > Intelligent User Interface for real-time network analysis with AI-powered insights
 
+## 📚 Documentation
+
+**All documentation has been organized into the [`docs/`](./docs/) folder.**
+
+- **[Documentation Index](./docs/INDEX.md)** - Complete navigation guide
+- **[Feature Progress](./docs/PROGRESS.md)** - Track completion status (9/25 features = 36%)
+- **[Code Quality Audit](./docs/FRONTEND_AUDIT_REPORT.md)** - TypeScript strictness & architecture review
+- **[Architecture Overview](./docs/DATA_FLOW_EXPLAINED.md)** - Data flow and state management
+
 ##  Overview
 
 This is the frontend for PacketFlow - a modern, explainable, real-time UI for network monitoring and AI-assisted analysis. Built with React, TypeScript, and Tailwind CSS for performance and developer experience.
