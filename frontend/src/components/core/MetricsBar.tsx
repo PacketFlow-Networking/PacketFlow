@@ -1,5 +1,6 @@
 import { Activity, Wifi, WifiOff, AlertTriangle, Bell } from 'lucide-react';
 import { useStore } from '../../context/store';
+import { Logo } from '../shared';
 
 const MetricsBar = () => {
   const { status, connected, mockMode } = useStore();
@@ -20,7 +21,7 @@ const MetricsBar = () => {
     <div className="panel px-6 py-3 flex items-center justify-between border-b border-border">
       {/* Left: Title and Connection Status */}
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold text-text">PacketFlow</h1>
+        <Logo variant="long" size="md" theme="dark" />
         <div className="flex items-center gap-2">
           {connected ? (
             <>
