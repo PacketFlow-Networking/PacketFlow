@@ -380,6 +380,18 @@ class Database:
         if not self.enabled:
             return
         
+        # VALIDATION: Check severity is one of allowed values
+        valid_severities = ["critical", "high", "medium", "low", "info"]
+        if incident.get('severity') not in valid_severities:
+            logger.error(f"Invalid incident severity: {incident.get('severity')}. Must be one of {valid_severities}")
+            incident['severity'] = 'medium'  # Default to medium if invalid
+        
+        # VALIDATION: Check status is one of allowed values
+        valid_statuses = ["open", "investigating", "resolved", "false_positive"]
+        if incident.get('status') not in valid_statuses:
+            logger.error(f"Invalid incident status: {incident.get('status')}. Must be one of {valid_statuses}")
+            incident['status'] = 'open'  # Default to open if invalid
+        
         try:
             await self.db.execute("""
                 INSERT OR REPLACE INTO incidents (

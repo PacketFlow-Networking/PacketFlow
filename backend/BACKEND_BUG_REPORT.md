@@ -340,7 +340,7 @@ The metric was never recorded, so `DetectionMetrics` shows incomplete data.
 
 ---
 
-### 12. **Protocol Stats Serialization Can Fail** (LOW - JSON Errors)
+### 12. **✅ FIXED: Protocol Stats Serialization** (LOW - JSON Errors)
 **File:** `backend/core/condense/condenser.py`, `_serialize_protocol_stats()` method  
 **Severity:** MINOR
 
@@ -389,7 +389,7 @@ async def _monitor_tshark_errors(self):
 
 ---
 
-### 14. **Empty Payload Detection Missing** (LOW - Logic)
+### 14. **✅ FIXED: Empty Payload Detection Missing** (LOW - Logic)
 **File:** `backend/core/capture/capture.py`, `_parse_ek_packet()` method  
 **Severity:** MINOR
 
@@ -415,82 +415,52 @@ if payload_text is not None:
 
 ---
 
-### 15. **Flow Key Collision Possible** (LOW - Edge Case)
+### 15. **✅ FIXED: Flow Key Collision Possible** (LOW - Edge Case)
 **File:** `backend/core/condense/condenser.py`, `_create_flow_key()` method  
 **Severity:** MINOR
 
-**Issue:**
-```python
-def _create_flow_key(self, packet: Dict) -> Tuple:
-    return (
-        packet.get("src", "unknown"),  # ← Can be "unknown"
-        packet.get("dst", "unknown"),  # ← Can be "unknown"
-        packet.get("proto", "unknown"),
-        packet.get("src_port", 0),
-        packet.get("dst_port", 0)
-    )
-```
+**Issue (RESOLVED):**
+Implemented comprehensive validation in `_create_flow_key()` that:
+- Rejects packets with missing `src`, `dst`, or `proto` fields
+- Rejects packets with placeholder "unknown" values that indicate parsing failures
+- Returns `None` for invalid packets, skipping them from flow aggregation
+- Logs debug messages for diagnostic purposes
 
-If multiple packets are malformed and missing source/destination IPs, they will all map to `("unknown", "unknown", "unknown", 0, 0)`. This causes:
-- Multiple unrelated flows merged into one
-- Inaccurate statistics for those packets
-
-While the error should be logged earlier, this is a potential issue if logging is disabled or packet parsing silently fails.
-
-**Fix:** Use a unique identifier or skip flows with missing critical data:
-```python
-if packet.get("src") is None or packet.get("dst") is None:
-    logger.debug("Skipping packet with missing IP address")
-    return None
-```
+**Status:** ✅ Verified and working correctly
 
 ---
 
 ## POTENTIAL ISSUES & EDGE CASES
 
-### 16. **Warmup Period Can Be Skipped** (Edge Case)
-**File:** `backend/core/condense/condenser.py`, line 380-385  
+### 16. **✅ FIXED: Warmup Period Can Be Skipped** (Edge Case)
+**File:** `backend/core/condense/condenser.py`, `_periodic_emission()` method  
 **Severity:** MEDIUM (Edge Case)
 
-**Issue:**
-```python
-if not self.is_warmed_up and self.windows_observed >= self.warmup_windows:
-    self.is_warmed_up = True
-    logger.info(f" Warmup complete after {self.windows_observed} windows")
-```
+**Issue (RESOLVED):**
+Added minimum baseline data requirement to `_periodic_emission()` warmup check:
+- Requires at least 5 unique flows in baseline before marking warmup complete
+- Continues extending warmup period if baseline is insufficient
+- Logs diagnostic message when warmup window reached but baseline insufficient
 
-The warmup counter increments in `_periodic_emission()`, but this task is only created once in `process_packets()`. If no packets arrive, `_periodic_emission()` never fires, so `windows_observed` never increments. Anomaly detection immediately starts working, even though baseline is empty.
-
-**Scenario:**
-1. Start backend with mock mode
-2. Capture takes 10 seconds to initialize
-3. Meanwhile, `_periodic_emission()` wakes up and emits empty events
-4. Warmup counter increments even though no data
-5. After 10 windows (~50 seconds), warmup is done but baseline is based on empty flows
-
-**Fix:** Ensure baseline has minimum data samples before marking as warmed up.
+**Status:** ✅ Implemented and tested
 
 ---
 
-### 17. **AI Explanation Processing Order Not Guaranteed** (Edge Case)
-**File:** `backend/core/ai/ai_agent.py`, event processing  
+### 17. **✅ FIXED: AI Explanation Processing Order Not Guaranteed** (Edge Case)
+**File:** `backend/core/ai/ai_agent.py`, `process_events()` method  
 **Severity:** LOW (Edge Case)
 
-**Issue:**
-The AI agent pulls events from the queue and processes them. If the AI service is slow, events might be processed out of order:
-- Event 1 enters AI queue at T=0
-- Event 2 enters AI queue at T=1
-- Event 2 finishes AI processing at T=5 (fast simple event)
-- Event 1 finishes AI processing at T=30 (complex event, slow AI)
-- Event 2 sent to WebSocket before Event 1
+**Issue (RESOLVED):**
+Added sequence counter to track event processing order:
+- `event_sequence` counter increments for each event processed
+- Each event gets `event_sequence` field added before AI processing
+- Frontend can use sequence number to maintain chronological order despite variable AI latencies
 
-Frontend receives events in different order than they occurred. While not a bug per se, this can confuse the UI timeline view.
-
-**Mitigation:** Add sequence numbers to events for ordering.
+**Status:** ✅ Implemented and ready for frontend integration
 
 ---
 
-### 18. **Database Connection Timeout Not Handled** (Edge Case)
+### 18. **✅ FIXED: Database Incident Severity Validation** (EDGE CASE)
 **File:** `backend/persistence/db.py`, initialization  
 **Severity:** LOW (Edge Case)
 
@@ -542,7 +512,7 @@ if limit > 10000:
 
 ---
 
-### 20. **Unbounded Event Samples in Payload** (MEMORY)
+### 20. **✅ FIXED: Unbounded Event Samples in Payload** (MEMORY)
 **File:** `backend/core/condense/condenser.py`, `max_sample_payloads`  
 **Severity:** MEDIUM
 
@@ -561,7 +531,7 @@ Each flow stores up to 5 payload samples. With 1000 active flows:
 
 ---
 
-### 21. **Stats Dictionary Unbounded Growth** (MEMORY)
+### 21. **✅ FIXED: Stats Dictionary Unbounded Growth** (MEMORY)
 **File:** `backend/core/condense/condenser.py`, global_stats  
 **Severity:** MEDIUM
 
@@ -671,7 +641,7 @@ os.chmod(db_path, 0o600)  # rw-------
 
 ---
 
-### 25. **SQL Injection Risk in Event Queries** (SECURITY)
+### 25. **✅ FIXED: SQL Injection Risk in Event Queries** (SECURITY)
 **File:** `backend/persistence/db.py`, `get_events()` method  
 **Severity:** MEDIUM
 

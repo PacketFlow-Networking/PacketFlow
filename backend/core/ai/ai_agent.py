@@ -74,6 +74,10 @@ class AIAgent:
         # Use bounded deque for incident clusters to prevent memory leak
         self.incident_clusters: deque = deque(maxlen=50)  # Keep last 50 incidents
         
+        # CRITICAL FIX: Add sequence counter to prevent out-of-order event processing
+        # Ensures frontend can sort events chronologically even if AI processing is slow
+        self.event_sequence = 0
+        
         self.session: Optional[aiohttp.ClientSession] = None
         self.query_count = 0
         self.error_count = 0
@@ -171,6 +175,11 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 except asyncio.TimeoutError:
                     logger.warning("Event queue timeout (30s) - may indicate pipeline stall")
                     continue
+                
+                # CRITICAL FIX: Add sequence number to prevent out-of-order event processing
+                # Frontend can use this to maintain chronological order despite variable AI processing times
+                self.event_sequence += 1
+                event["event_sequence"] = self.event_sequence
                 
                 is_anomaly = event.get("is_anomaly", False)
                 severity = event.get("severity", "low")

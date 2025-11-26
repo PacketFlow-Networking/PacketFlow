@@ -267,7 +267,12 @@ class FlowCondenser:
                     if len(self.global_stats["connection_matrix"][src]) == 0:
                         del self.global_stats["connection_matrix"][src]
                 
-                logger.info(f" Cleanup complete: {cleaned_ports} old ports, {cleaned_conns} low-count connections removed")
+                # BUG FIX: Clear protocol distribution to prevent unbounded growth
+                # Keep only protocols seen in current window by resetting
+                logger.debug(f"   Protocol distribution before reset: {len(self.global_stats['protocol_distribution'])} protocols tracked")
+                self.global_stats["protocol_distribution"] = defaultdict(int)
+                
+                logger.info(f" Cleanup complete: {cleaned_ports} old ports, {cleaned_conns} low-count connections removed, stats reset")
                 
                 self.last_cleanup = current_time
                 
@@ -383,10 +388,15 @@ class FlowCondenser:
                 
                 self.windows_observed += 1
                 
+                # CRITICAL FIX: Only mark warmup complete if we have minimum baseline data
+                # Prevents anomaly detection from starting with empty or insufficient baseline
                 if not self.is_warmed_up and self.windows_observed >= self.warmup_windows:
-                    self.is_warmed_up = True
-                    logger.info(f" Warmup complete after {self.windows_observed} windows")
-                    logger.info(f" Baseline established for {len(self.baseline)} flows")
+                    min_baseline_entries = 5  # At least 5 unique flows required
+                    if len(self.baseline) >= min_baseline_entries:
+                        self.is_warmed_up = True
+                        logger.info(f" Warmup complete after {self.windows_observed} windows with {len(self.baseline)} baseline flows")
+                    else:
+                        logger.debug(f" Warmup window {self.windows_observed} reached but insufficient baseline ({len(self.baseline)}/{min_baseline_entries}), continuing...")
                 
                 events = await self._condense_flows()
                 

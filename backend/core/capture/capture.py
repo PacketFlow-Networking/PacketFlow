@@ -451,9 +451,10 @@ class PacketCapture:
             
             # Add payload data if captured
             if self.capture_payload:
-                if payload_data:
+                # BUG FIX: Check 'is not None' instead of truthiness to allow empty payloads
+                if payload_data is not None:
                     result["payload_base64"] = payload_data  # Binary-safe base64
-                if payload_text:
+                if payload_text is not None:
                     result["payload_text"] = payload_text  # Human-readable text
             
             # Add protocol-specific data
