@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  # AINetUI App (Frontend + Backend in one container)
+  # PacketFlow App (Frontend + Backend in one container)
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ainetui-app
+    container_name: packetflow-app
     ports:
       - "80:80"        # Frontend (Nginx)
       - "5173:80"      # Alternative frontend port for dev compatibility
@@ -49,7 +49,7 @@ services:
       ollama:
         condition: service_healthy
     networks:
-      - ainetui-network
+      - packetflow-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health", "&&", "curl", "-f", "http://localhost/"]
@@ -61,13 +61,13 @@ services:
   # Ollama service for local LLM
   ollama:
     image: ollama/ollama:latest
-    container_name: ainetui-ollama
+    container_name: packetflow-ollama
     ports:
       - "11434:11434"
     volumes:
       - ollama-data:/root/.ollama
     networks:
-      - ainetui-network
+      - packetflow-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "ollama", "list"]
@@ -81,5 +81,5 @@ volumes:
     driver: local
 
 networks:
-  ainetui-network:
+  packetflow-network:
     driver: bridge
