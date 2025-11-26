@@ -2,7 +2,8 @@ import { useEffect, useCallback } from 'react';
 import { useStore } from '../context/store';
 import type { SystemStatus } from '../types';
 
-const API_BASE = 'http://localhost:8000';  // Direct URL instead of proxy
+// Use environment variable or fallback to localhost
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 const STATUS_POLL_INTERVAL = 3000; // 3 seconds
 
 export const useApi = () => {
@@ -73,7 +74,20 @@ export const useApi = () => {
           // AI agent not available
           return `[INFO] AI agent is currently unavailable. Please make sure Ollama is running or remote AI is configured.`;
         }
-        throw new Error(`Query failed: ${response.status}`);
+        
+        // Try to parse error response if available
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            const errorData = await response.json();
+            const errorMsg = errorData.error || errorData.message || `Error: ${response.status}`;
+            return `[ERROR] ${errorMsg}`;
+          }
+        } catch {
+          // Response body not JSON, use status code
+        }
+        
+        return `[ERROR] Query failed: ${response.status} ${response.statusText}`;
       }
       
       const data = await response.json();

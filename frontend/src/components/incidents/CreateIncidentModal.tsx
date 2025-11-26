@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useStore } from '../../context/store';
 import { useToast } from '../../context/ToastContext';
@@ -19,6 +19,20 @@ export const CreateIncidentModal = ({ isOpen, onClose, preselectedEventIds = [] 
   const [severity, setSeverity] = useState<IncidentSeverity>('medium');
   const [tags, setTags] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

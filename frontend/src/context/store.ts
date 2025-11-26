@@ -95,6 +95,7 @@ interface UIState {
   clearOldPredictions: (maxAge: number) => void;
   markConceptSeen: (concept: string) => void;
   dismissTooltip: (tooltipId: string) => void;
+  clearChat: () => void; // Clear chat messages (privacy)
 }
 
 export const useStore = create<UIState>()(
@@ -409,7 +410,12 @@ export const useStore = create<UIState>()(
         tooltips_dismissed: [...new Set([...state.userProfile.learning_progress.tooltips_dismissed, tooltipId])]
       }
     }
-  }))
+  })),
+
+  clearChat: () => set({
+    aiMessages: [],
+    userMessages: []
+  })
     }),
     {
       name: 'packetflow-store',

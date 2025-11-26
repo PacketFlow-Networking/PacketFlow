@@ -3,7 +3,8 @@ import { useStore } from '../context/store';
 import { useToast } from '../context/ToastContext';
 import type { NetworkEvent, AIMessage } from '../types';
 
-const WS_URL = 'ws://localhost:8000/ws/updates';
+// Use environment variable or fallback to localhost
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/updates';
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 10;
 
@@ -66,9 +67,9 @@ export const useWebSocket = () => {
             // Network event from backend
             const eventData = message.data;
             
-            // Create NetworkEvent with required fields
+            // Create NetworkEvent with required fields using cryptographically unique ID
             const networkEvent: NetworkEvent = {
-              id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              id: `evt-${crypto.randomUUID()}`, // Collision-resistant unique identifier
               timestamp: eventData.timestamp || new Date().toISOString(),
               src: eventData.src || 'unknown',
               dst: eventData.dst || 'unknown',

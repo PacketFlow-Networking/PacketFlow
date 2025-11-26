@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Search, Filter, X, Clock } from 'lucide-react';
 import { useStore } from '../../context/store';
 import type { SeverityLevel } from '../../types';
@@ -6,6 +6,7 @@ import type { SeverityLevel } from '../../types';
 const FilterBar = () => {
   const { filters, setFilters, resetFilters } = useStore();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const severityOptions: SeverityLevel[] = ['critical', 'high', 'medium', 'low', 'normal'];
   const protocolOptions = ['TCP', 'UDP', 'ICMP', 'DNS', 'HTTP', 'HTTPS'];
@@ -60,6 +61,7 @@ const FilterBar = () => {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-dim" />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search by IP, port, or keywords..."
             value={filters.searchQuery}

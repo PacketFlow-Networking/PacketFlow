@@ -1,4 +1,5 @@
 import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target } from 'lucide-react';
+import { useEffect } from 'react';
 import { NetworkEvent } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import AIExplanationPanel from '../panels/AIExplanationPanel';
@@ -18,6 +19,20 @@ interface EventDetailsModalProps {
 
 export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }: EventDetailsModalProps) => {
   const { showSuccess, showError } = useToast();
+  
+  // Handle escape key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
   
   if (!isOpen || !event) return null;
 
