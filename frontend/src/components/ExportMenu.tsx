@@ -16,16 +16,16 @@ const ExportMenu = ({ events, filteredCount }: ExportMenuProps) => {
     
     switch (format) {
       case 'csv':
-        exportToCSV(events, generateFilename('ainetui-events', 'csv'));
+        exportToCSV(events, generateFilename('packetflow-events', 'csv'));
         break;
       case 'json':
-        exportToJSON(events, generateFilename('ainetui-events', 'json'));
+        exportToJSON(events, generateFilename('packetflow-events', 'json'));
         break;
       case 'text':
-        exportToText(events, generateFilename('ainetui-report', 'txt'));
+        exportToText(events, generateFilename('packetflow-report', 'txt'));
         break;
       case 'stats':
-        exportStatsSummary(events, generateFilename('ainetui-stats', 'txt'));
+        exportStatsSummary(events, generateFilename('packetflow-stats', 'txt'));
         break;
     }
     

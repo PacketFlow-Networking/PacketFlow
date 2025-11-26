@@ -78,7 +78,7 @@ export const exportToText = (events: NetworkEvent[], filename: string = 'events.
 
   const lines = [
     '='.repeat(80),
-    'AINetUI Network Events Report',
+    'PacketFlow Network Events Report',
     '='.repeat(80),
     `Generated: ${new Date().toLocaleString()}`,
     `Total Events: ${events.length}`,
@@ -159,7 +159,7 @@ export const exportStatsSummary = (events: NetworkEvent[], filename: string = 's
   // Build report
   const lines = [
     '='.repeat(80),
-    'AINetUI Statistics Summary',
+    'PacketFlow Statistics Summary',
     '='.repeat(80),
     `Generated: ${new Date().toLocaleString()}`,
     `Time Period: ${new Date(events[events.length - 1].timestamp).toLocaleString()} - ${new Date(events[0].timestamp).toLocaleString()}`,

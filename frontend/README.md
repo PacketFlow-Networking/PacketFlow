@@ -1,10 +1,10 @@
-# AINetUI Frontend
+# PacketFlow Frontend
 
 > Intelligent User Interface for real-time network analysis with AI-powered insights
 
 ##  Overview
 
-This is the frontend for AINetUI - a modern, explainable, real-time UI for network monitoring and AI-assisted analysis. Built with React, TypeScript, and Tailwind CSS for performance and developer experience.
+This is the frontend for PacketFlow - a modern, explainable, real-time UI for network monitoring and AI-assisted analysis. Built with React, TypeScript, and Tailwind CSS for performance and developer experience.
 
 ##  Architecture
 

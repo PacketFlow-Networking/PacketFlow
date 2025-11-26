@@ -204,7 +204,7 @@ const ChatPanel = () => {
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Bot className="w-16 h-16 text-text-dim mb-4" />
-            <p className="text-text mb-2">Welcome to AINetUI</p>
+            <p className="text-text mb-2">Welcome to PacketFlow</p>
             <p className="text-sm text-text-dim max-w-md">
               I'm your AI assistant for network analysis. Ask me about traffic patterns, 
               anomalies, or specific events.

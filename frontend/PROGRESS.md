@@ -1,6 +1,6 @@
 # Frontend Enhancement Progress Tracker
 
-**Project**: AINetUI Frontend Improvements  
+**Project**: PacketFlow Frontend Improvements  
 **Started**: October 15, 2025  
 **Status**:  In Progress
 

@@ -392,7 +392,7 @@ export const useStore = create<UIState>()(
   }))
     }),
     {
-      name: 'ainetui-store',
+      name: 'packetflow-store',
       partialize: (state) => ({ 
         alertConfig: state.alertConfig,
         mockMode: state.mockMode,

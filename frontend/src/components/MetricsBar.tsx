@@ -23,7 +23,7 @@ const MetricsBar = () => {
     <div className="panel px-6 py-3 flex items-center justify-between border-b border-border">
       {/* Left: Title and Connection Status */}
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold text-text">AINetUI</h1>
+        <h1 className="text-xl font-bold text-text">PacketFlow</h1>
         <div className="flex items-center gap-2">
           {connected ? (
             <>
