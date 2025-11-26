@@ -71,7 +71,8 @@ class AIAgent:
         self.correlation_window = correlation_window
         self.max_memory_events = max_memory_events
         self.recent_events = deque(maxlen=max_memory_events)
-        self.incident_clusters: List[Dict] = []
+        # Use bounded deque for incident clusters to prevent memory leak
+        self.incident_clusters: deque = deque(maxlen=50)  # Keep last 50 incidents
         
         self.session: Optional[aiohttp.ClientSession] = None
         self.query_count = 0
@@ -120,20 +121,30 @@ Be direct and actionable. Avoid unnecessary hedging."""
     async def _test_connection(self):
         """Test connection to AI service."""
         if self.mode == 'local':
-            async with self.session.get(f"{self.ollama_url}/api/tags") as response:
-                if response.status == 200:
-                    data = await response.json()
-                    models = [m["name"] for m in data.get("models", [])]
-                    logger.info(f"Connected to Ollama. Available models: {models}")
-                    
-                    model_exists = any(self.local_model in m for m in models)
-                    if not model_exists:
-                        logger.warning(
-                            f"Model '{self.local_model}' not found. "
-                            f"Run: ollama pull {self.local_model}"
-                        )
-                else:
-                    raise Exception(f"HTTP {response.status}")
+            try:
+                async with self.session.get(f"{self.ollama_url}/api/tags", timeout=aiohttp.ClientTimeout(total=5)) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        models = [m["name"] for m in data.get("models", [])]
+                        logger.info(f"Connected to Ollama. Available models: {models}")
+                        
+                        model_exists = any(self.local_model in m for m in models)
+                        if not model_exists:
+                            logger.warning(
+                                f"Model '{self.local_model}' not found. "
+                                f"Run: ollama pull {self.local_model}"
+                            )
+                    else:
+                        logger.error(f"Ollama API returned status {response.status}")
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout connecting to Ollama at {self.ollama_url} (is it running?)")
+                raise
+            except aiohttp.ClientConnectionError as e:
+                logger.error(f"Connection refused to Ollama at {self.ollama_url}: {e}")
+                raise
+            except Exception as e:
+                logger.error(f"Error testing Ollama connection: {type(e).__name__}: {e}")
+                raise
         else:
             logger.info(f"Remote mode configured: {self.remote_url}")
             logger.info(f"Model: {self.remote_model}")
@@ -154,7 +165,12 @@ Be direct and actionable. Avoid unnecessary hedging."""
         
         while True:
             try:
-                event = await event_queue.get()
+                # Add timeout to prevent hanging if event_queue is stuck
+                try:
+                    event = await asyncio.wait_for(event_queue.get(), timeout=30.0)
+                except asyncio.TimeoutError:
+                    logger.warning("Event queue timeout (30s) - may indicate pipeline stall")
+                    continue
                 
                 is_anomaly = event.get("is_anomaly", False)
                 severity = event.get("severity", "low")
@@ -165,6 +181,7 @@ Be direct and actionable. Avoid unnecessary hedging."""
                     event["ai_explanation"] = None
                     event["ai_processed"] = False
                     event["ai_mode"] = None
+                    event["ai_timestamp"] = None
                     await output_queue.put(event)
                     continue
                 
@@ -192,6 +209,7 @@ Be direct and actionable. Avoid unnecessary hedging."""
                     event["ai_correlated_events"] = len(correlated_events)
                     event["ai_processed"] = True
                     event["ai_mode"] = self.mode
+                    event["ai_timestamp"] = datetime.now().isoformat()
                     
                     self.query_count += 1
                     
@@ -205,6 +223,7 @@ Be direct and actionable. Avoid unnecessary hedging."""
                     # Normal traffic - no AI analysis needed
                     event["ai_explanation"] = None
                     event["ai_processed"] = False
+                    event["ai_timestamp"] = None
                 
                 await output_queue.put(event)
                 
@@ -215,6 +234,7 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 # Forward event without AI
                 event["ai_explanation"] = "AI analysis unavailable"
                 event["ai_processed"] = False
+                event["ai_timestamp"] = datetime.now().isoformat()
                 await output_queue.put(event)
                 
                 await asyncio.sleep(1)

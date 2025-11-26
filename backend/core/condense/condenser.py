@@ -149,6 +149,9 @@ class FlowCondenser:
         # NEW: Detection metrics
         self.metrics = DetectionMetrics()
         
+        # NEW: Lock for thread-safe flow data access
+        self._flow_lock = asyncio.Lock()
+        
         self.condensed_count = 0
         self.anomaly_count = 0
         self.last_cleanup = datetime.now()
@@ -172,6 +175,11 @@ class FlowCondenser:
                 packet = await packet_queue.get()
                 
                 flow_key = self._create_flow_key(packet)
+                
+                # Skip invalid packets
+                if flow_key is None:
+                    continue
+                
                 flow = self.flows[flow_key]
                 
                 # Update flow statistics
@@ -380,7 +388,7 @@ class FlowCondenser:
                     logger.info(f" Warmup complete after {self.windows_observed} windows")
                     logger.info(f" Baseline established for {len(self.baseline)} flows")
                 
-                events = self._condense_flows()
+                events = await self._condense_flows()
                 
                 if self.is_warmed_up:
                     logger.info(f" Emitting {len(events)} events")
@@ -405,17 +413,36 @@ class FlowCondenser:
             except Exception as e:
                 logger.error(f" Error in emission: {e}")
     
-    def _create_flow_key(self, packet: Dict) -> Tuple:
-        """Create 5-tuple flow key."""
+    def _create_flow_key(self, packet: Dict) -> Optional[Tuple]:
+        """
+        Create validated 5-tuple flow key.
+        
+        Returns:
+            Tuple of (src, dst, proto, src_port, dst_port) or None if invalid
+        """
+        src = packet.get("src")
+        dst = packet.get("dst")
+        proto = packet.get("proto")
+        
+        # VALIDATION: Skip packets with missing critical fields
+        if not src or not dst or not proto:
+            logger.debug(f"Skipping packet with missing critical fields: src={src}, dst={dst}, proto={proto}")
+            return None
+        
+        # VALIDATION: Reject "unknown" placeholders that indicate parsing failures
+        if src == "unknown" or dst == "unknown" or proto == "unknown":
+            logger.debug(f"Skipping packet with placeholder fields: src={src}, dst={dst}, proto={proto}")
+            return None
+        
         return (
-            packet.get("src", "unknown"),
-            packet.get("dst", "unknown"),
-            packet.get("proto", "unknown"),
+            src,
+            dst,
+            proto,
             packet.get("src_port", 0),
             packet.get("dst_port", 0)
         )
     
-    def _condense_flows(self) -> List[Dict]:
+    async def _condense_flows(self) -> List[Dict]:
         """Condense flows with enhanced detection."""
         events = []
         current_time = datetime.now()
@@ -455,8 +482,11 @@ class FlowCondenser:
             anomaly_reason = anomaly_results["reason"]
             threat_indicators = anomaly_results.get("threat_indicators", [])
             
-            # Update baseline
-            self._update_baseline(baseline, packet_count, total_bytes, flow_data)
+            # CRITICAL FIX: Only update baseline from non-anomalous flows
+            # During warmup, include all data to establish baseline
+            # After warmup, only update from normal flows to prevent drift
+            if not is_anomaly or not self.is_warmed_up:
+                self._update_baseline(baseline, packet_count, total_bytes, flow_data)
             
             # Prepare protocol stats
             protocol_stats = self._serialize_protocol_stats(flow_data["protocol_stats"])
@@ -497,13 +527,19 @@ class FlowCondenser:
             event["behavioral_metrics"] = self._calculate_behavioral_metrics(flow_data)
             
             events.append(event)
-            
-            # Reset flow counters
-            flow_data["packet_count"] = 0
-            flow_data["total_bytes"] = 0
-            flow_data["packets"] = []
-            flow_data["sample_payloads"] = []
-            flow_data["protocol_stats"] = {}
+        
+        # CRITICAL FIX: Use lock to prevent race condition when resetting flow counters
+        # While we're reading flow data, process_packets() may still be writing to it
+        async with self._flow_lock:
+            for flow_key, flow_data in self.flows.items():
+                # Only reset flows that were processed
+                if any(e for e in events if (e["src"], e["dst"], e["proto"], e["src_port"], e["dst_port"]) == flow_key):
+                    # Reset flow counters atomically
+                    flow_data["packet_count"] = 0
+                    flow_data["total_bytes"] = 0
+                    flow_data["packets"] = []
+                    flow_data["sample_payloads"] = []
+                    flow_data["protocol_stats"] = {}
         
         # Clean up old flows
         for flow_key in flows_to_remove:

@@ -66,6 +66,10 @@ class Database:
             self.db = await aiosqlite.connect(str(self.db_path))
             self.db.row_factory = aiosqlite.Row
             
+            # Set restrictive file permissions (rw-------)
+            import os
+            os.chmod(self.db_path, 0o600)
+            
             # Enable WAL mode for better concurrent access
             await self.db.execute("PRAGMA journal_mode=WAL")
             await self.db.execute("PRAGMA synchronous=NORMAL")
@@ -73,6 +77,9 @@ class Database:
             
             # Create schema
             await self._create_schema()
+            
+            # Start periodic flush task to prevent buffer overflow on shutdown
+            asyncio.create_task(self._start_periodic_flush())
             
             logger.info(f"Database connected: {self.db_path}")
             
@@ -257,6 +264,26 @@ class Database:
             
         except Exception as e:
             logger.error(f"Error flushing event buffer: {e}")
+    
+    async def _start_periodic_flush(self, interval: int = 60):
+        """
+        Periodically flush event buffer to prevent data loss on shutdown.
+        
+        Args:
+            interval: Flush interval in seconds (default: 60s)
+        """
+        while True:
+            try:
+                await asyncio.sleep(interval)
+                
+                # Flush any pending events in buffer
+                if self._event_buffer:
+                    logger.debug(f"Periodic flush: {len(self._event_buffer)} pending events")
+                    async with self._buffer_lock:
+                        await self._flush_event_buffer()
+                        
+            except Exception as e:
+                logger.error(f"Error in periodic flush task: {e}")
     
     async def get_events(
         self,

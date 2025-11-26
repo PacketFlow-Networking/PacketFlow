@@ -9,6 +9,7 @@ from typing import Dict, Set, Optional
 from datetime import datetime
 import os
 import time
+import urllib.parse
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Security, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,6 +29,54 @@ from observability.metrics import (
 logger = logging.getLogger(__name__)
 
 
+def validate_cors_origin(origin: str) -> bool:
+    """
+    Validate CORS origin URL for security.
+    
+    Rules:
+    - Must have a valid scheme (http, https)
+    - Must have a valid netloc (domain or IP)
+    - Must not be wildcard alone
+    - Must be properly formatted URL
+    
+    Args:
+        origin: Origin URL string to validate
+        
+    Returns:
+        True if valid, False otherwise
+    """
+    origin = origin.strip()
+    
+    # Reject wildcards
+    if origin == "*" or origin == "*.":
+        logger.warning(f"Rejected wildcard CORS origin: {origin}")
+        return False
+    
+    try:
+        parsed = urllib.parse.urlparse(origin)
+        
+        # Must have scheme and netloc
+        if not parsed.scheme or not parsed.netloc:
+            logger.warning(f"Invalid CORS origin format: {origin} (missing scheme or netloc)")
+            return False
+        
+        # Scheme must be http or https
+        if parsed.scheme not in ("http", "https"):
+            logger.warning(f"Invalid CORS origin scheme: {parsed.scheme} (only http/https allowed)")
+            return False
+        
+        # Check for suspicious patterns
+        netloc_lower = parsed.netloc.lower()
+        if any(x in netloc_lower for x in ["*", "..*", "...", "localhost.."]):
+            logger.warning(f"Suspicious CORS netloc: {parsed.netloc}")
+            return False
+        
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to validate CORS origin '{origin}': {e}")
+        return False
+
+
 # Pydantic Models for Request Validation
 class QueryEventRequest(BaseModel):
     """Request model for querying AI about an event"""
@@ -43,7 +92,15 @@ class QueryEventRequest(BaseModel):
 
 
 # API Key Security
-API_KEY = os.getenv("API_KEY", "change-me-in-production")
+API_KEY = os.getenv("API_KEY")
+if not API_KEY:
+    raise ValueError(
+        "FATAL: API_KEY environment variable must be set in production. "
+        "Set it before starting the backend:\n"
+        "  export API_KEY='your-secure-api-key'\n"
+        "Or set it in .env file"
+    )
+
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
@@ -72,9 +129,24 @@ class WebSocketServer:
         self.app.state.limiter = self.limiter
         self.app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
         
-        # CORS - Configure for production
-        cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000')
-        origins_list = [origin.strip() for origin in cors_origins.split(',')]
+        # CORS - Configure for production with validation
+        cors_origins_str = os.getenv('CORS_ORIGINS', 'http://localhost:5173,http://localhost:3000')
+        raw_origins = [origin.strip() for origin in cors_origins_str.split(',')]
+        
+        # Validate each origin
+        origins_list = []
+        for origin in raw_origins:
+            if validate_cors_origin(origin):
+                origins_list.append(origin)
+            else:
+                logger.error(f"Skipping invalid CORS origin: {origin}")
+        
+        # Ensure we have at least one valid origin
+        if not origins_list:
+            logger.error("No valid CORS origins configured! Using localhost only.")
+            origins_list = ["http://localhost:5173"]
+        
+        logger.info(f"CORS configured for origins: {origins_list}")
         
         self.app.add_middleware(
             CORSMiddleware,
@@ -374,6 +446,16 @@ class WebSocketServer:
             """Get stored events from database with filtering."""
             if not self.database or not self.database.enabled:
                 raise HTTPException(status_code=501, detail="Database not enabled")
+            
+            # Cap maximum limit to prevent memory exhaustion
+            MAX_LIMIT = 10000
+            if limit > MAX_LIMIT:
+                limit = MAX_LIMIT
+                logger.warning(f"Query limit capped to {MAX_LIMIT}")
+            if limit < 1:
+                limit = 1
+            if offset < 0:
+                offset = 0
             
             try:
                 events = await self.database.get_events(
