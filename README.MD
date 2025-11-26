@@ -1,5 +1,9 @@
 # PacketFlow - AI-Powered Network Security Monitoring
 
+<div align="center">
+  <img src="./frontend/public/images/logo/light/packetflow-long-light.svg" alt="PacketFlow Logo" width="300">
+</div>
+
 **Privacy-First Network Intelligence with Local LLM Reasoning**
 
 PacketFlow is a real-time network security monitoring interface that combines live packet capture with local AI analysis. Think: "Wireshark meets ChatGPT, but entirely offline." The system captures network packets, detects anomalies using 8 statistical methods, and generates human-readable security insights—all locally with zero cloud dependencies.
