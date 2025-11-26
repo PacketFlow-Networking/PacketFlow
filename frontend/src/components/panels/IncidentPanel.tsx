@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { AlertTriangle, Plus, Search, Clock, User, MessageSquare } from 'lucide-react';
-import { useStore } from '../context/store';
-import { CreateIncidentModal } from './incidents/CreateIncidentModal';
-import { IncidentDetailsModal } from './incidents/IncidentDetailsModal';
-import type { IncidentStatus } from '../types';
+import { useStore } from '../../context/store';
+import { CreateIncidentModal } from '../incidents/CreateIncidentModal';
+import { IncidentDetailsModal } from '../incidents/IncidentDetailsModal';
+import type { IncidentStatus } from '../../types';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 

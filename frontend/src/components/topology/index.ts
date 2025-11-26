@@ -6,12 +6,11 @@
  * @module topology
  */
 
-export { default as TopologyView } from '../TopologyView';
-export { default as TopologyDemo } from './TopologyDemo';
+export { default as TopologyView } from '../core/TopologyView';
 
 // Type exports for external use
 export type {
   TopologyNode,
   TopologyLink,
   TopologyFilters,
-} from '../TopologyView';
+} from '../core/TopologyView';

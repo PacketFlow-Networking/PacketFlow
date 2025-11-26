@@ -36,11 +36,40 @@ frontend/
 │   ├── PROGRESS.md         # Completion tracker
 │   └── ...more docs...
 ├── src/
-│   ├── components/         # React components (20+ components)
-│   │   ├── alerts/        # Alert configuration system
-│   │   ├── incidents/     # Incident management
-│   │   ├── topology/      # Network topology visualization
-│   │   └── Toast/         # Toast notifications
+│   ├── components/         # React components (organized, 39 files)
+│   │   ├── core/          # 📌 Core UI layout components (4 files)
+│   │   │   ├── ChatPanel.tsx
+│   │   │   ├── MetricsBar.tsx
+│   │   │   ├── StatsDashboard.tsx
+│   │   │   ├── TopologyView.tsx
+│   │   │   └── index.ts
+│   │   ├── events/        # 📊 Event handling components (5 files)
+│   │   │   ├── EventStream.tsx
+│   │   │   ├── FilterBar.tsx
+│   │   │   ├── GraphView.tsx
+│   │   │   ├── ExportMenu.tsx
+│   │   │   └── index.ts
+│   │   ├── modals/        # 🔲 Reusable modal components (4 files)
+│   │   │   ├── AIDetailsModal.tsx
+│   │   │   ├── EventDetailsModal.tsx
+│   │   │   ├── TooltipModal.tsx
+│   │   │   └── index.ts
+│   │   ├── panels/        # 📋 Side panel components (6 files)
+│   │   │   ├── AIExplanationPanel.tsx
+│   │   │   ├── FeedbackPanel.tsx
+│   │   │   ├── GlossaryPanel.tsx
+│   │   │   ├── IncidentPanel.tsx
+│   │   │   ├── ProactiveSuggestions.tsx
+│   │   │   └── index.ts
+│   │   ├── shared/        # 🔧 Shared utility components (4 files)
+│   │   │   ├── ExpandableText.tsx
+│   │   │   ├── KeyboardShortcuts.tsx
+│   │   │   ├── ShortcutHint.tsx
+│   │   │   └── index.ts
+│   │   ├── alerts/        # ⚙️ Alert configuration system (7 files)
+│   │   ├── incidents/     # 📌 Incident management (2 files)
+│   │   ├── topology/      # 🌐 Network topology visualization (1 file)
+│   │   └── Toast/         # 🔔 Toast notifications (5 files)
 │   ├── hooks/             # Custom hooks
 │   │   ├── useWebSocket.ts    # Auto-reconnecting WebSocket
 │   │   └── useApi.ts          # REST API layer
@@ -57,8 +86,8 @@ frontend/
 │   ├── config/            # App configuration
 │   └── App.tsx            # Main component
 ├── package.json           # Dependencies (0 vulnerabilities ✅)
-├── vite.config.ts         # Vite configuration (updated)
-├── tsconfig.json          # TypeScript config (ignoreDeprecations set)
+├── vite.config.ts         # Vite configuration (optimized)
+├── tsconfig.json          # TypeScript config (strict mode, no unused checks)
 └── index.html             # HTML entry point
 ```
 
@@ -225,6 +254,159 @@ Edit `tailwind.config.js` or `src/styles/globals.css`:
 }
 ```
 
+## 📦 Component Organization
+
+### Architecture Overview
+
+Components are organized into **6 logical categories** for maintainability and scalability:
+
+```
+src/components/
+├── core/           # Main layout & stateful containers
+├── events/         # Event display & filtering
+├── modals/         # Reusable dialog components
+├── panels/         # Sidebar panel components
+├── shared/         # Utility & helper components
+├── alerts/         # Alert configuration UI
+├── incidents/      # Incident management UI
+├── topology/       # Network visualization
+└── Toast/          # Notification system
+```
+
+### Core Components (`core/`)
+**Purpose:** Main application layout and dashboard containers
+
+| Component | Purpose |
+|-----------|---------|
+| `ChatPanel` | AI chat interface for natural language queries |
+| `MetricsBar` | Top status bar with connection & performance metrics |
+| `StatsDashboard` | System statistics with charts (packets, flows, protocols) |
+| `TopologyView` | D3 force-directed network graph visualization |
+
+**Usage:**
+```typescript
+import { ChatPanel, MetricsBar, StatsDashboard } from '@/components/core';
+```
+
+### Events Components (`events/`)
+**Purpose:** Display, filter, and export network events
+
+| Component | Purpose |
+|-----------|---------|
+| `EventStream` | Main event list with real-time updates |
+| `FilterBar` | Search, severity, protocol, time range filters |
+| `GraphView` | 60-point timeline with anomaly markers |
+| `ExportMenu` | CSV/JSON/text export functionality |
+
+**Usage:**
+```typescript
+import { EventStream, FilterBar, GraphView, ExportMenu } from '@/components/events';
+```
+
+### Modal Components (`modals/`)
+**Purpose:** Reusable dialog windows for detailed views
+
+| Component | Purpose |
+|-----------|---------|
+| `EventDetailsModal` | Full event metadata with AI insights |
+| `AIDetailsModal` | Detailed AI message with reasoning |
+| `TooltipModal` | Contextual information popups |
+
+**Usage:**
+```typescript
+import { EventDetailsModal, AIDetailsModal } from '@/components/modals';
+```
+
+### Panel Components (`panels/`)
+**Purpose:** Left/right sidebar panels with related information
+
+| Component | Purpose |
+|-----------|---------|
+| `IncidentPanel` | Create/track security incidents |
+| `ChatPanel` | AI chat with message history |
+| `AIExplanationPanel` | Detailed anomaly explanations |
+| `FeedbackPanel` | Event labeling (true/false positive) |
+| `GlossaryPanel` | Security & network term definitions |
+| `ProactiveSuggestions` | Context-aware recommendations |
+
+**Usage:**
+```typescript
+import { 
+  IncidentPanel, 
+  AIExplanationPanel, 
+  FeedbackPanel, 
+  GlossaryPanel,
+  ProactiveSuggestions 
+} from '@/components/panels';
+```
+
+### Shared Components (`shared/`)
+**Purpose:** Reusable utility and helper components
+
+| Component | Purpose |
+|-----------|---------|
+| `ExpandableText` | Collapsible text sections |
+| `KeyboardShortcuts` | Shortcut help modal |
+| `ShortcutHint` | Bottom-right shortcut indicator |
+
+**Usage:**
+```typescript
+import { ExpandableText, KeyboardShortcutsHelp, ShortcutHint } from '@/components/shared';
+```
+
+### Feature-Specific Directories
+
+#### `alerts/` - Alert Configuration System
+- `SensitivityPanel` - Global anomaly threshold slider
+- `ThresholdsPanel` - Custom metric thresholds
+- `RulesPanel` - Custom alert rule builder
+- `IPListPanel` - Whitelist/blacklist management
+- `NotificationsPanel` - Sound & toast settings
+
+#### `incidents/` - Incident Management
+- `CreateIncidentModal` - New incident form
+- `IncidentDetailsModal` - View/edit incident details
+
+#### `topology/` - Network Visualization
+- `TopologyView` - (moved to `core/`) D3 force-directed graph
+
+#### `Toast/` - Notification System
+- `Toast` - Individual notification component
+- `ToastContainer` - Container for multiple toasts
+- `ToastContext` - Global toast state
+
+### Import Patterns
+
+**Prefer folder imports with index.ts:**
+```typescript
+// ✅ GOOD - Clean, organized
+import { ChatPanel, MetricsBar } from '@/components/core';
+import { EventStream, FilterBar } from '@/components/events';
+
+// ❌ AVOID - Direct file imports
+import ChatPanel from '@/components/core/ChatPanel';
+import MetricsBar from '@/components/core/MetricsBar';
+```
+
+### Adding New Components
+
+1. **Identify category** - Which folder does it belong in?
+2. **Create component** - Add `.tsx` file to appropriate folder
+3. **Export from index.ts** - Add to folder's `index.ts`
+4. **Update imports** - Use folder imports in App.tsx
+
+Example:
+```typescript
+// src/components/panels/CustomPanel.tsx
+export const CustomPanel = () => { /* ... */ };
+
+// src/components/panels/index.ts
+export { CustomPanel } from './CustomPanel';
+
+// src/App.tsx
+import { CustomPanel } from '@/components/panels';
+```
+
 ##  API Integration
 
 ### WebSocket Messages
@@ -345,19 +527,28 @@ npm run lint      # Run ESLint checks
   - See [package.json](./package.json) for versions
 
 - ✅ TypeScript configuration
-  - Added `ignoreDeprecations: "6.0"` for baseUrl
+  - Removed `ignoreDeprecations` (caused build errors)
   - Configured path alias `@/*` for imports
   - Full type safety enabled (strict: true)
+  - Added `vite/client` types for import.meta support
 
 - ✅ Module imports
-  - Fixed Vite config path resolution
-  - Using relative path aliases (`@: /src`)
+  - Fixed Vite config path resolution using `node:path`
+  - Using relative path aliases (`@/*: ./src/*`)
   - ES module compatibility
 
 - ✅ Documentation organization
   - Consolidated 19 markdown files to `docs/` folder
   - Created INDEX.md navigation
   - Clean root directory structure
+
+- ✅ **Component Reorganization** (NEW!)
+  - Organized 39 components into 6 logical categories
+  - Created `core/`, `events/`, `modals/`, `panels/`, `shared/` folders
+  - Added index.ts files for clean imports
+  - Updated all 50+ import paths across codebase
+  - Build succeeds: 2.90s, optimized chunks (851 kB total, 251 kB gzip)
+  - See [Component Organization](#-component-organization) section for details
 
 ### Mock Mode
 

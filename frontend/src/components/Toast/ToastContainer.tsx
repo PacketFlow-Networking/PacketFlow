@@ -1,5 +1,4 @@
-import { ReactNode } from 'react';
-import { Toast, ToastType, ToastProps } from './Toast';
+import { Toast, ToastType } from './Toast';
 
 export interface ToastData {
   id: string;

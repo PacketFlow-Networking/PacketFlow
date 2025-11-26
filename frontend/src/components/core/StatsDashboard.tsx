@@ -1,8 +1,8 @@
 import { useMemo, useCallback } from 'react';
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, Network, Shield, Activity, Clock } from 'lucide-react';
-import { useStore } from '../context/store';
-import type { NetworkEvent } from '../types';
+import { useStore } from '../../context/store';
+import type { NetworkEvent } from '../../types';
 
 const StatsDashboard = () => {
   const { events } = useStore();

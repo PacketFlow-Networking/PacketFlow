@@ -2,11 +2,11 @@ import { useState, useMemo } from 'react';
 import { AlertTriangle, Info, Clock } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { useStore } from '../context/store';
-import { EventDetailsModal } from './EventDetailsModal';
+import { useStore } from '../../context/store';
+import { EventDetailsModal } from '../modals/EventDetailsModal';
 import FilterBar from './FilterBar';
 import ExportMenu from './ExportMenu';
-import type { NetworkEvent } from '../types';
+import type { NetworkEvent } from '../../types';
 
 dayjs.extend(relativeTime);
 
@@ -73,12 +73,15 @@ const EventStream = () => {
   const getSeverityBadge = (score: number, severity?: string) => {
     // Use backend severity if available
     if (severity) {
-      const severityMap = {
+      const severityMap: Record<string, { label: string; class: string }> = {
         'critical': { label: 'Critical', class: 'badge-critical' },
         'high': { label: 'High', class: 'badge-warn' },
         'medium': { label: 'Medium', class: 'badge-info' },
         'low': { label: 'Low', class: 'badge-ok' },
         'normal': { label: 'Normal', class: 'badge-info' },
+        'info': { label: 'Info', class: 'badge-info' },
+        'warn': { label: 'Warning', class: 'badge-warn' },
+        'ok': { label: 'Ok', class: 'badge-ok' },
       };
       return severityMap[severity] || { label: 'Info', class: 'badge-info' };
     }

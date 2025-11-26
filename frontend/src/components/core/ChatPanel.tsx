@@ -2,11 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, ThumbsUp, ThumbsDown, Bot, User, HelpCircle } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { useStore, getAllMessages } from '../context/store';
-import { useApi } from '../hooks/useApi';
-import ExpandableText from './ExpandableText';
-import AIDetailsModal from './AIDetailsModal';
-import type { AIMessage, UserMessage, NetworkEvent } from '../types';
+import { useStore, getAllMessages } from '../../context/store';
+import { useApi } from '../../hooks/useApi';
+import ExpandableText from '../shared/ExpandableText';
+import AIDetailsModal from '../modals/AIDetailsModal';
+import type { AIMessage, UserMessage, NetworkEvent } from '../../types';
 
 dayjs.extend(relativeTime);
 

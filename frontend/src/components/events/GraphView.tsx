@@ -2,9 +2,9 @@ import { useMemo, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import dayjs from 'dayjs';
-import { useStore } from '../context/store';
-import { GRAPH_CONFIG } from '../config/graph.config';
-import type { AnomalyMarker } from '../types';
+import { useStore } from '../../context/store';
+import { GRAPH_CONFIG } from '../../config/graph.config';
+import type { AnomalyMarker } from '../../types';
 
 interface DataPoint {
   timestamp: number;
@@ -87,15 +87,16 @@ const GraphView = () => {
         // Find the corresponding data point
         const dataPoint = historyRef.current.get(bucketKey);
         
-        return {
+        const marker: AnomalyMarker = {
           timestamp: bucketKey,
-          severity: e.anomaly_score >= GRAPH_CONFIG.CRITICAL_THRESHOLD ? 'critical' : 'warn' as const,
+          severity: e.anomaly_score >= GRAPH_CONFIG.CRITICAL_THRESHOLD ? 'critical' : 'warn',
           eventId: e.id,
           score: e.anomaly_score,
           yValue: dataPoint?.count || 0
         };
+        return marker;
       })
-      .filter(m => m.yValue > 0); // Only show markers with valid y values
+      .filter(m => m.yValue! > 0); // Only show markers with valid y values
   }, [events]);
 
   const handleMarkerClick = (marker: AnomalyMarker) => {

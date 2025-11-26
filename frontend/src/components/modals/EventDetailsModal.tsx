@@ -1,9 +1,9 @@
 import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target } from 'lucide-react';
-import { NetworkEvent } from '../types';
-import { useToast } from '../context/ToastContext';
-import AIExplanationPanel from './AIExplanationPanel';
-import ExpandableText from './ExpandableText';
-import FeedbackPanel from './FeedbackPanel';
+import { NetworkEvent } from '../../types';
+import { useToast } from '../../context/ToastContext';
+import AIExplanationPanel from '../panels/AIExplanationPanel';
+import ExpandableText from '../shared/ExpandableText';
+import FeedbackPanel from '../panels/FeedbackPanel';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 

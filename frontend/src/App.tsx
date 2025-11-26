@@ -4,17 +4,13 @@ import { useApi } from './hooks/useApi';
 import { useStore } from './context/store';
 // Mock data generation removed - now handled by backend
 import { useToast } from './context/ToastContext';
-import { KeyboardShortcutsHelp, useKeyboardShortcuts } from './components/KeyboardShortcuts';
-import MetricsBar from './components/MetricsBar';
-import ChatPanel from './components/ChatPanel';
-import GraphView from './components/GraphView';
-import EventStream from './components/EventStream';
-import StatsDashboard from './components/StatsDashboard';
-import IncidentPanel from './components/IncidentPanel';
-import TopologyView from './components/TopologyView';
+import { KeyboardShortcutsHelp, useKeyboardShortcuts } from './components/shared/KeyboardShortcuts';
+import { MetricsBar, ChatPanel, TopologyView, StatsDashboard } from './components/core';
+import { GraphView, EventStream } from './components/events';
+import { IncidentPanel } from './components/panels';
 import AlertConfigModal from './components/alerts/AlertConfigModal';
-import ProactiveSuggestions from './components/ProactiveSuggestions';
-import GlossaryPanel from './components/GlossaryPanel';
+import { ProactiveSuggestions } from './components/panels';
+import { GlossaryPanel } from './components/panels';
 import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network } from 'lucide-react';
 
 function App() {

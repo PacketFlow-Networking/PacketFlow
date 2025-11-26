@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { useStore } from '../context/store';
+import { useStore } from '../../context/store';
 import * as d3 from 'd3';
 import { 
   ZoomIn, 
@@ -15,7 +15,7 @@ import {
   Lock,
   Unlock
 } from 'lucide-react';
-import type { NetworkEvent } from '../types';
+import type { NetworkEvent } from '../../types';
 
 export interface TopologyNode {
   id: string;

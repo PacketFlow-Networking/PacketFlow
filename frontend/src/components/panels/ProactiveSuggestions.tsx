@@ -8,8 +8,8 @@ import {
   X,
   ChevronRight
 } from 'lucide-react';
-import { useStore } from '../context/store';
-import type { SuggestionType } from '../types';
+import { useStore } from '../../context/store';
+import type { SuggestionType } from '../../types';
 
 const ProactiveSuggestions = () => {
   const { 

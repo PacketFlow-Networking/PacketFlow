@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ThumbsUp, ThumbsDown, MessageSquare, Send, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useStore } from '../context/store';
-import type { NetworkEvent, EventFeedback, FeedbackLabel } from '../types';
+import { useStore } from '../../context/store';
+import type { NetworkEvent, EventFeedback, FeedbackLabel } from '../../types';
 
 interface FeedbackPanelProps {
   event: NetworkEvent;

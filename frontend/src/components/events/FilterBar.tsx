@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Filter, X, Clock } from 'lucide-react';
-import { useStore } from '../context/store';
-import type { SeverityLevel } from '../types';
+import { useStore } from '../../context/store';
+import type { SeverityLevel } from '../../types';
 
 const FilterBar = () => {
   const { filters, setFilters, resetFilters } = useStore();
@@ -39,12 +39,15 @@ const FilterBar = () => {
     filters.timeRange !== 'all';
 
   const getSeverityColor = (severity: SeverityLevel) => {
-    const colors = {
+    const colors: Record<SeverityLevel, string> = {
       critical: 'bg-critical text-white',
       high: 'bg-warn text-base',
       medium: 'bg-info/70 text-base',
       low: 'bg-ok/70 text-base',
       normal: 'bg-text-dim text-base',
+      info: 'bg-info/70 text-base',
+      warn: 'bg-warn text-base',
+      ok: 'bg-ok/70 text-base',
     };
     return colors[severity] || colors.normal;
   };

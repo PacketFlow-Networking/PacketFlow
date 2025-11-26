@@ -1,7 +1,7 @@
 import { X, Bot, Calendar, Network, AlertTriangle, Activity, TrendingUp, Hash, Target, Shield } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import type { AIMessage, NetworkEvent } from '../types';
+import type { AIMessage, NetworkEvent } from '../../types';
 
 dayjs.extend(relativeTime);
 

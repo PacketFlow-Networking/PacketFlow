@@ -1,11 +1,8 @@
-import { useState } from 'react';
 import { Activity, Wifi, WifiOff, AlertTriangle, Bell } from 'lucide-react';
-import { useStore } from '../context/store';
-import { ToastSettings } from './Toast/ToastSettings';
+import { useStore } from '../../context/store';
 
 const MetricsBar = () => {
   const { status, connected, mockMode } = useStore();
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const getStatusColor = (value: number, thresholds: { warn: number; critical: number }) => {
     if (value >= thresholds.critical) return 'text-critical';
@@ -87,7 +84,6 @@ const MetricsBar = () => {
         )}
         
         <button
-          onClick={() => setSettingsOpen(true)}
           className="p-2 rounded hover:bg-panel-hover transition-colors"
           aria-label="Notification settings"
           title="Notification settings"
@@ -95,8 +91,6 @@ const MetricsBar = () => {
           <Bell className="w-4 h-4 text-text-dim hover:text-text" />
         </button>
       </div>
-      
-      <ToastSettings isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 };

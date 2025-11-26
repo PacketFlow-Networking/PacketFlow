@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { HelpCircle, X, Book, Search } from 'lucide-react';
-import { useStore } from '../context/store';
+import { useStore } from '../../context/store';
 
 interface Term {
   name: string;

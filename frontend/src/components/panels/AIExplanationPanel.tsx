@@ -10,7 +10,7 @@ import {
   Info,
   BarChart3
 } from 'lucide-react';
-import type { AIExplanation, NetworkEvent } from '../types';
+import type { AIExplanation, NetworkEvent } from '../../types';
 
 interface AIExplanationPanelProps {
   event: NetworkEvent;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Download, FileText, FileJson, FileCode, BarChart3, ChevronDown } from 'lucide-react';
-import { exportToCSV, exportToJSON, exportToText, exportStatsSummary, generateFilename } from '../utils/export';
-import type { NetworkEvent } from '../types';
+import { exportToCSV, exportToJSON, exportToText, exportStatsSummary, generateFilename } from '../../utils/export';
+import type { NetworkEvent } from '../../types';
 
 interface ExportMenuProps {
   events: NetworkEvent[];
