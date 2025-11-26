@@ -1,7 +1,14 @@
-# AINetUI - AI-Powered Network Security Monitoring
+# 📦 ARCHIVED: Project Description (Consolidated into README.md)
+
+**Consolidated**: November 2025  
+**Status**: Archived for reference only - all content merged into main README.md
+
+---
+
+# PacketFlow - AI-Powered Network Security Monitoring
 
 ## Project Overview
-**AINetUI** is a privacy-first, real-time network security monitoring interface that combines packet capture with local LLM reasoning. It transforms raw network telemetry into actionable intelligence through automated anomaly detection and natural language explanations—entirely offline with zero cloud dependencies.
+**PacketFlow** is a privacy-first, real-time network security monitoring interface that combines packet capture with local LLM reasoning. It transforms raw network telemetry into actionable intelligence through automated anomaly detection and natural language explanations—entirely offline with zero cloud dependencies.
 
 **Concept**: "Wireshark meets ChatGPT, but privacy-first"
 
@@ -105,7 +112,7 @@ TShark Capture → Flow Condenser → AI Agent (Ollama) → WebSocket (FastAPI) 
 - ✅ **Alert System**: Sensitivity, thresholds, IP lists, custom rules
 
 ## Quick Start
-```powershell
+```bash
 # Backend (port 8000)
 cd backend && pip install -r requirements.txt && python main.py
 
@@ -118,18 +125,26 @@ ollama serve && ollama pull mistral:7b
 
 ## Project Structure
 ```
-AINetUI/
+PacketFlow/
 ├── backend/           # Python: capture, condenser, AI agent, WebSocket
 ├── frontend/src/      # React: components, context (store.ts), hooks, types
 ├── .github/           # copilot-instructions.md (developer guidelines)
-└── README.MD          # Full documentation
+├── docs/archived/     # Historical documentation
+└── README.md          # Main documentation (consolidated)
 ```
 
 ## Key Innovation
-**Intelligent Interfaces for Cybersecurity**: AINetUI demonstrates how local LLMs + adaptive UIs can transform complex security data into accessible, conversational intelligence without compromising privacy. The IUI research focuses on guiding analysts through investigation workflows, teaching security concepts contextually, and adapting to user expertise—creating a collaborative human-AI partnership for network defense.
+**Intelligent Interfaces for Cybersecurity**: PacketFlow demonstrates how local LLMs + adaptive UIs can transform complex security data into accessible, conversational intelligence without compromising privacy. The IUI research focuses on guiding analysts through investigation workflows, teaching security concepts contextually, and adapting to user expertise—creating a collaborative human-AI partnership for network defense.
+
+---
+
+## 📍 See Also
+- **Main Documentation**: [README.md](../../README.md)
+- **Backend Guide**: [backend/README.md](../../backend/README.md)
+- **Frontend Guide**: [frontend/README.md](../../frontend/README.md)
 
 ---
 
 **Repository**: [github.com/kkraso01/PacketFlow](https://github.com/kkraso01/PacketFlow)  
-**Status**: Active Development | IUI Phase 1 Complete  
+**Status**: Active Development | IUI Phase 1 Complete | Production-Ready  
 **Privacy**: 100% Local Processing | No Cloud Dependencies

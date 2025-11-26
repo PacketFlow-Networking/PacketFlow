@@ -1,3 +1,9 @@
+# 📦 ARCHIVED: Protocol Pie Chart Enhancement
+
+**Status**: Archived feature documentation - functionality is now integrated into StatsDashboard.tsx
+
+---
+
 # Protocol Pie Chart Enhancement - Complete
 
 ## What Was Changed
@@ -68,8 +74,8 @@ Maps port numbers to their application protocols:
 
 ## Files Modified
 
-1.  `frontend/src/components/StatsDashboard.tsx` - Added application protocol detection and second pie chart
-2.  `backend/capture.py` - Fixed buffer size issue
+1. `frontend/src/components/StatsDashboard.tsx` - Added application protocol detection and second pie chart
+2. `backend/capture.py` - Fixed buffer size issue
 
 ## Next Steps
 
@@ -97,4 +103,5 @@ const portMap: Record<number, string> = {
 
 ---
 
-**Status**:  Complete and ready to test!
+**Status**: Feature Complete | Archived for Reference
+**Integration**: Functionality now part of standard StatsDashboard component
