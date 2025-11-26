@@ -30,11 +30,10 @@ const ChatPanel = () => {
   const messages = useStore(getAllMessages);
 
   // Get related events for a message
-  // The backend now sends event timestamps in event_ids, so we match by timestamp first
+  // Match events by their IDs stored in message.event_ids
   const getRelatedEvents = (message: AIMessage): NetworkEvent[] => {
     if (message.event_ids.length === 0) return [];
     return events.filter(event => 
-      message.event_ids.includes(event.timestamp) || 
       message.event_ids.includes(event.id)
     ).slice(0, 10); // Limit to 10 most recent
   };

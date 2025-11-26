@@ -130,21 +130,21 @@ export const useWebSocket = () => {
           showInfo('Disconnected', 'Lost connection to backend. Attempting to reconnect...');
         }
         
-        // Attempt reconnection
-        if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-          reconnectAttemptsRef.current++;
-          console.log(`[WebSocket] Reconnecting in ${RECONNECT_DELAY}ms (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`);
-          reconnectTimeoutRef.current = window.setTimeout(() => {
-            connect();
-          }, RECONNECT_DELAY);
-        } else {
-          console.log('[WebSocket] Max reconnection attempts reached');
-          showError(
-            'Connection Failed',
-            'Unable to connect to backend after multiple attempts. Please check if the server is running.',
-            false
-          );
-        }
+        // Attempt reconnection with exponential backoff
+        // Keep retrying indefinitely with 30s interval after initial max attempts
+        const nextDelay = reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS 
+          ? RECONNECT_DELAY 
+          : 30000; // 30s retry after max attempts reached
+        
+        reconnectAttemptsRef.current++;
+        console.log(`[WebSocket] Reconnecting in ${nextDelay}ms (attempt ${reconnectAttemptsRef.current})`);
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+          // Reset counter when reconnecting to allow next batch of exponential backoff
+          if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+            reconnectAttemptsRef.current = MAX_RECONNECT_ATTEMPTS - 1;
+          }
+          connect();
+        }, nextDelay);
       };
       
       wsRef.current = ws;

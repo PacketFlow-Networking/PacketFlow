@@ -62,7 +62,7 @@ const EventStream = () => {
       const range = timeRanges[filters.timeRange];
       if (range) {
         filtered = filtered.filter(event =>
-          now - new Date(event.timestamp).getTime() < range
+          now - new Date(event.timestamp).getTime() <= range
         );
       }
     }

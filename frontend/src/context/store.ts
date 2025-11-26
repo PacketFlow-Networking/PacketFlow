@@ -127,11 +127,11 @@ export const useStore = create<UIState>()(
   })),
   
   addAIMessage: (message) => set((state) => ({
-    aiMessages: [...state.aiMessages, message]
+    aiMessages: [...state.aiMessages, message].slice(0, 500) // Keep last 500 messages
   })),
   
   addUserMessage: (message) => set((state) => ({
-    userMessages: [...state.userMessages, message]
+    userMessages: [...state.userMessages, message].slice(0, 500) // Keep last 500 messages
   })),
   
   updateStatus: (status) => set({ status }),
@@ -400,7 +400,31 @@ export const useStore = create<UIState>()(
         dismissedSuggestions: state.dismissedSuggestions,
         eventFeedback: state.eventFeedback,
         selectedIncidentId: state.selectedIncidentId
-      })
+      }),
+      // Custom serialization to handle edge cases
+      serialize: (state) => {
+        // Ensure all arrays and objects are proper types before serialization
+        return JSON.stringify(state);
+      },
+      deserialize: (str) => {
+        try {
+          const parsed = JSON.parse(str);
+          // Ensure tooltips_dismissed is always an array
+          if (parsed.userProfile?.learning_progress?.tooltips_dismissed && 
+              typeof parsed.userProfile.learning_progress.tooltips_dismissed === 'object' &&
+              !Array.isArray(parsed.userProfile.learning_progress.tooltips_dismissed)) {
+            parsed.userProfile.learning_progress.tooltips_dismissed = [];
+          }
+          // Ensure dismissedSuggestions is always an array
+          if (parsed.dismissedSuggestions && !Array.isArray(parsed.dismissedSuggestions)) {
+            parsed.dismissedSuggestions = [];
+          }
+          return parsed;
+        } catch {
+          // If parsing fails, return empty object and store will use defaults
+          return {};
+        }
+      }
     }
   )
 );
