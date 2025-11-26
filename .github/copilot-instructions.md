@@ -1,7 +1,7 @@
-# AINetUI - Copilot Instructions
+# PacketFlow - Copilot Instructions
 
 ## Project Overview
-AINetUI is an **AI-powered real-time network security monitoring interface** that combines live packet capture with local LLM reasoning. Think: "Wireshark meets ChatGPT, but privacy-first." The system captures network packets, condenses them into meaningful flow events, detects anomalies, and generates human-readable security insightsall locally with no cloud dependencies.
+PacketFlow is an **AI-powered real-time network security monitoring interface** that combines live packet capture with local LLM reasoning. Think: "Wireshark meets ChatGPT, but privacy-first." The system captures network packets, condenses them into meaningful flow events, detects anomalies, and generates human-readable security insights—all locally with no cloud dependencies.
 
 **Architecture Pattern**: Classic async pipeline with queue-based decoupling:
 ```
@@ -166,7 +166,7 @@ python backend/simple_pcap_test.py
 1. Check backend is running: `curl http://localhost:8000/status`
 2. Check WebSocket connection in browser DevTools  Network  WS
 3. Verify `.env` has `MOCK_MODE=true` for testing
-4. Look for queue backpressure warnings in `backend/ainetui.log`
+4. Look for queue backpressure warnings in `backend/logs/packetflow.log`
 
 ### "AI explanations are empty"
 1. Verify Ollama is running: `curl http://localhost:11434/api/tags`

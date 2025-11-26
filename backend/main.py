@@ -1,5 +1,5 @@
 """
-main.py - Enhanced AINetUI Backend Entry Point
+main.py - Enhanced PacketFlow Backend Entry Point
 Features: metrics, security, task restart, monitoring, resilience
 """
 
@@ -10,14 +10,14 @@ from pathlib import Path
 
 import uvicorn
 
-from capture import PacketCapture
-from condense_enhanced import FlowCondenser
-from ai_agent import AIAgent
-from websocket_server import WebSocketServer
+from core.capture import PacketCapture
+from core.condense import FlowCondenser
+from core.ai import AIAgent
+from api.websocket_server import WebSocketServer
 from config import config, validate_config
-from task_manager import run_with_restart, task_monitor
-from metrics import packets_captured, packets_dropped, active_flows, warmup_complete
-from database import initialize_database, get_db
+from infrastructure.tasks import run_with_restart, task_monitor
+from observability import packets_captured, packets_dropped, active_flows, warmup_complete
+from persistence import Database, initialize_database, get_db
 
 
 # Configure logging
@@ -34,7 +34,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class AINetUIBackend:
+class PacketFlowBackend:
     """Enhanced main backend orchestrator with monitoring and resilience."""
     
     def __init__(self):
@@ -122,7 +122,7 @@ class AINetUIBackend:
     async def start(self):
         """Start all backend components with resilience and monitoring."""
         logger.info("=" * 80)
-        logger.info(" Starting AINetUI Backend (Enhanced)")
+        logger.info(" Starting PacketFlow Backend (Enhanced)")
         logger.info("=" * 80)
         
         # Print configuration
@@ -286,7 +286,7 @@ async def main():
         sys.exit(1)
     
     # Create and start backend
-    backend = AINetUIBackend()
+    backend = PacketFlowBackend()
     await backend.start()
 
 

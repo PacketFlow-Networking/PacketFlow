@@ -1,4 +1,4 @@
-# AINetUI - Unified Multi-Stage Dockerfile
+# PacketFlow - Unified Multi-Stage Dockerfile
 # Builds both frontend and backend in a single container
 
 # ============================================================
@@ -56,7 +56,7 @@ RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "Starting Nginx..."\n\
 nginx\n\
-echo "Starting AINetUI Backend..."\n\
+echo "Starting PacketFlow Backend..."\n\
 cd /app/backend\n\
 exec python main.py\n\
 ' > /app/start.sh && chmod +x /app/start.sh
