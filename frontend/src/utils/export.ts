@@ -1,6 +1,20 @@
 import type { NetworkEvent } from '../types';
 
 /**
+ * Properly escape CSV values (handle commas, quotes, and newlines)
+ */
+const escapeCsvValue = (value: string | undefined | null): string => {
+  if (!value) return '';
+  const stringValue = String(value);
+  
+  // If value contains comma, quote, or newline, wrap in quotes and escape internal quotes
+  if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+};
+
+/**
  * Export events as CSV
  */
 export const exportToCSV = (events: NetworkEvent[], filename: string = 'events.csv') => {
@@ -26,17 +40,17 @@ export const exportToCSV = (events: NetworkEvent[], filename: string = 'events.c
 
   // Convert events to CSV rows
   const rows = events.map(event => [
-    event.timestamp,
-    event.src || '',
-    event.src_port?.toString() || '',
-    event.dst || '',
-    event.dst_port?.toString() || '',
-    event.proto || '',
-    event.flows?.toString() || '',
-    event.throughput?.toString() || '',
-    event.anomaly_score?.toFixed(3) || '',
-    event.severity || '',
-    `"${(event.summary || '').replace(/"/g, '""')}"` // Escape quotes
+    escapeCsvValue(event.timestamp),
+    escapeCsvValue(event.src),
+    escapeCsvValue(event.src_port?.toString()),
+    escapeCsvValue(event.dst),
+    escapeCsvValue(event.dst_port?.toString()),
+    escapeCsvValue(event.proto),
+    escapeCsvValue(event.flows?.toString()),
+    escapeCsvValue(event.throughput?.toString()),
+    escapeCsvValue(event.anomaly_score?.toFixed(3)),
+    escapeCsvValue(event.severity),
+    escapeCsvValue(event.summary)
   ]);
 
   // Combine headers and rows

@@ -52,11 +52,14 @@ const EventStream = () => {
       );
     }
 
-    // Severity filter
+    // Severity filter - normalize severity strings for comparison
     if (filters.severities.length > 0) {
-      filtered = filtered.filter(event =>
-        event.severity && filters.severities.includes(event.severity as any)
-      );
+      filtered = filtered.filter(event => {
+        if (!event.severity) return false;
+        // Normalize both values to lowercase for case-insensitive comparison
+        const normalizedSeverity = event.severity.toLowerCase();
+        return filters.severities.some(sev => sev.toLowerCase() === normalizedSeverity);
+      });
     }
 
     // Protocol filter

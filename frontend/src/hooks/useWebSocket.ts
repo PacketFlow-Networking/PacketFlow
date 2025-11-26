@@ -17,6 +17,7 @@ export const useWebSocket = () => {
     addEvent, 
     addAIMessage, 
     setConnected,
+    selectEvent,
     mockMode 
   } = useStore();
   
@@ -81,8 +82,9 @@ export const useWebSocket = () => {
             
             addEvent(networkEvent);
             
-            // Show toast for critical anomalies
+            // Show toast for critical anomalies and auto-select event
             if (eventData.anomaly_score >= 0.8) {
+              selectEvent(networkEvent.id); // Auto-select event for easy access
               showWarning(
                 'Critical Anomaly Detected',
                 `${eventData.src}  ${eventData.dst}: ${eventData.summary || 'High anomaly score'}`,

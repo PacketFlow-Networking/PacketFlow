@@ -229,7 +229,12 @@ export const useStore = create<UIState>()(
               : undefined
           }
         : inc
-    )
+    ),
+    // Clear selection if incident is being resolved/closed
+    selectedIncidentId: 
+      (status === 'resolved' || status === 'false_positive') && state.selectedIncidentId === id
+        ? null
+        : state.selectedIncidentId
   })),
   
   // Alert configuration actions
