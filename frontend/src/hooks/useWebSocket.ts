@@ -11,6 +11,7 @@ export const useWebSocket = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const messageQueueRef = useRef<any[]>([]); // Queue for pending messages
   
   const { 
     addEvent, 
@@ -32,6 +33,15 @@ export const useWebSocket = () => {
         console.log('[WebSocket] Connected');
         setConnected(true);
         reconnectAttemptsRef.current = 0;
+        
+        // Flush queued messages
+        while (messageQueueRef.current.length > 0) {
+          const queuedMessage = messageQueueRef.current.shift();
+          if (queuedMessage) {
+            ws.send(JSON.stringify(queuedMessage));
+            console.log('[WebSocket] Sent queued message');
+          }
+        }
         
         // Show success toast on connection
         if (reconnectAttemptsRef.current > 0) {
@@ -172,8 +182,15 @@ export const useWebSocket = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(data));
       return true;
+    } else if (wsRef.current?.readyState === WebSocket.CONNECTING) {
+      // Queue message if still connecting
+      messageQueueRef.current.push(data);
+      return false; // Indicate queued, not sent immediately
+    } else {
+      // Queue for next connection
+      messageQueueRef.current.push(data);
+      return false;
     }
-    return false;
   }, []);
 
   useEffect(() => {

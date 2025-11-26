@@ -36,6 +36,7 @@ interface UIState {
   focusedMessageId: string | null;
   feedback: Record<string, 'up' | 'down'>;
   filters: EventFilters;
+  previousFilters: EventFilters | null; // For undo functionality
   alertConfig: AlertConfiguration;
   
   // IUI State
@@ -60,6 +61,7 @@ interface UIState {
   clearOldEvents: (maxAge: number) => void;
   setFilters: (filters: Partial<EventFilters>) => void;
   resetFilters: () => void;
+  undoFilters: () => void; // Restore previous filter state
   
   // Incident actions
   addIncident: (incident: Incident) => void;
@@ -111,6 +113,7 @@ export const useStore = create<UIState>()(
   focusedMessageId: null,
   feedback: {},
   filters: FILTERS,
+  previousFilters: null,
   alertConfig: DEFAULT_ALERT_CONFIG,
   
   // IUI Initial state
@@ -166,10 +169,22 @@ export const useStore = create<UIState>()(
   }),
   
   setFilters: (newFilters) => set((state) => ({
+    previousFilters: state.filters, // Save current filters before updating
     filters: { ...state.filters, ...newFilters }
   })),
   
-  resetFilters: () => set({ filters: FILTERS }),
+  resetFilters: () => set((state) => ({
+    previousFilters: state.filters, // Save current filters before reset
+    filters: FILTERS
+  })),
+  
+  undoFilters: () => set((state) => {
+    if (!state.previousFilters) return {}; // No previous state to restore
+    return {
+      previousFilters: null, // Clear undo history after restore
+      filters: state.previousFilters
+    };
+  }),
   
   // Incident actions
   addIncident: (incident) => set((state) => ({

@@ -11,12 +11,33 @@ import type { NetworkEvent } from '../../types';
 dayjs.extend(relativeTime);
 
 const EventStream = () => {
-  const { events, aiMessages, selectEvent, filters } = useStore();
+  const { events, aiMessages, selectEvent, filters, alertConfig } = useStore();
   const [selectedEvent, setSelectedEvent] = useState<NetworkEvent | null>(null);
 
   // Apply filters to events
   const filteredEvents = useMemo(() => {
     let filtered = [...events];
+
+    // Whitelist filter - exclude whitelisted IPs/subnets
+    const whitelistedIps = alertConfig.whitelist.map(entry => entry.ip);
+    filtered = filtered.filter(event => {
+      const srcWhitelisted = whitelistedIps.some(ip => event.src?.includes(ip));
+      const dstWhitelisted = whitelistedIps.some(ip => event.dst?.includes(ip));
+      return !srcWhitelisted && !dstWhitelisted;
+    });
+
+    // Blacklist filter - only show blacklisted IPs
+    if (alertConfig.blacklist.length > 0) {
+      const blacklistedIps = alertConfig.blacklist.map(entry => entry.ip);
+      filtered = filtered.filter(event => {
+        const srcBlacklisted = blacklistedIps.some(ip => event.src?.includes(ip));
+        const dstBlacklisted = blacklistedIps.some(ip => event.dst?.includes(ip));
+        return srcBlacklisted || dstBlacklisted;
+      });
+    }
+
+    // Apply sensitivity threshold from alert config
+    filtered = filtered.filter(event => event.anomaly_score >= (alertConfig.sensitivity / 100));
 
     // Search query filter
     if (filters.searchQuery) {
@@ -68,7 +89,7 @@ const EventStream = () => {
     }
 
     return filtered;
-  }, [events, filters]);
+  }, [events, filters, alertConfig]);
 
   const getSeverityBadge = (score: number, severity?: string) => {
     // Use backend severity if available
