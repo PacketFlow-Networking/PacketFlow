@@ -1,5 +1,9 @@
 # PacketFlow - AI-Powered Network Security Monitoring
 
+<div align="center">
+  <img src="./frontend/public/images/logo/light/packetflow-long-light.svg" alt="PacketFlow Logo" width="300">
+</div>
+
 **Privacy-First Network Intelligence with Local LLM Reasoning**
 
 PacketFlow is a real-time network security monitoring interface that combines live packet capture with local AI analysis. Think: "Wireshark meets ChatGPT, but entirely offline." The system captures network packets, detects anomalies using 8 statistical methods, and generates human-readable security insights—all locally with zero cloud dependencies.
@@ -103,7 +107,102 @@ PacketFlow bridges the gap between raw network data and actionable intelligence 
 
 ---
 
-## 🚀 Quick Start
+## 🎯 Backend Architecture Overview
+
+The backend follows a **7-tier functional architecture** designed for scalability, testability, and maintainability:
+
+```
+Tier 1: CONFIG          → Centralized environment-based configuration
+Tier 2: API             → REST/WebSocket endpoints (FastAPI)
+Tier 3: CORE            → Business logic (capture, condense, AI)
+Tier 4: PERSISTENCE     → SQLite database operations & schema
+Tier 5: OBSERVABILITY   → Prometheus metrics & structured logging
+Tier 6: INFRASTRUCTURE  → Task management, signal handling, cleanup
+Tier 7: TESTS           → Unit, integration, end-to-end testing
+```
+
+### Key Components
+
+#### **Capture** (`core/capture/`)
+Multi-source packet acquisition: mock simulated traffic, PCAP file replay, or live TShark capture. Configurable via `MOCK_MODE`, `PCAP_FILE`, or `CAPTURE_INTERFACE`.
+
+#### **Condenser** (`core/condense/`)
+Industrial-grade flow aggregation with **8-method anomaly detection**:
+- Z-Score, IQR, EWMA (statistical methods)
+- Rate-Based, Behavioral, Port Scan (threshold-based)
+- Protocol-Specific, Payload Threats (signature-based)
+- Severity scoring (0.0-1.0), warmup phase (50s), automatic cleanup every 5 min
+
+#### **AI Agent** (`core/ai/`)
+Local LLM reasoning via Ollama (mistral:7b, llama2, openhermes). Generates natural language threat analysis, incident correlation, no cloud dependencies. Timeout handling with graceful fallback.
+
+#### **Database** (`persistence/`)
+Async SQLite with batch inserts, indexed queries, automatic retention-based cleanup. Stores events, incidents, query history, optional metrics. Schema versioning ready.
+
+#### **Observability** (`observability/`)
+Prometheus metrics (packets, flows, anomalies, AI accuracy) and structured logging (DEBUG/INFO/WARNING/ERROR/CRITICAL). Configurable via `LOG_LEVEL` and `PROMETHEUS_ENABLED`.
+
+#### **Infrastructure** (`infrastructure/`)
+Task restart manager with exponential backoff, signal handling for graceful shutdown, resource cleanup. Ensures stability without freezing event loop.
+
+**For detailed backend architecture**: See `backend/README.md`
+
+---
+
+## 🎯 Frontend Component Organization
+
+The frontend components are organized into **6 logical categories** for maintainability and scalability:
+
+### Core Components (`src/components/core/`)
+**Main application views and state management**
+- **ChatPanel** - Natural language query interface to AI
+- **MetricsBar** - System performance metrics display
+- **StatsDashboard** - Network statistics visualization
+- **TopologyView** - Network topology graph visualization
+
+### Events Components (`src/components/events/`)
+**Event stream and data analysis views**
+- **EventStream** - Real-time security event list with live updates
+- **FilterBar** - Multi-criteria event filtering (protocol, IP, severity, etc.)
+- **GraphView** - Statistical graph visualization with Recharts
+- **ExportMenu** - Export events to CSV/JSON formats
+
+### Modal Components (`src/components/modals/`)
+**Dialog boxes for details and interactions**
+- **AIDetailsModal** - Detailed AI analysis and explanations
+- **EventDetailsModal** - Event inspection and metadata
+- **TooltipModal** - Contextual help and information
+
+### Panel Components (`src/components/panels/`)
+**Analysis and informational panels**
+- **AIExplanationPanel** - AI-generated threat analysis
+- **FeedbackPanel** - User feedback collection for ML improvement
+- **GlossaryPanel** - Searchable security/network terminology
+- **IncidentPanel** - Incident creation, tracking, investigation
+- **ProactiveSuggestions** - Context-aware AI recommendations
+
+### Shared Components (`src/components/shared/`)
+**Reusable utility components**
+- **ExpandableText** - Collapsible text sections
+- **KeyboardShortcuts** - Global keyboard shortcut handler
+- **ShortcutHint** - Display keyboard shortcut hints
+
+### Feature-Specific Directories
+- **alerts/** - Alert configuration and sensitivity tuning (7 files)
+- **incidents/** - Incident management UI (2 files)
+- **Toast/** - Toast notification system (5 files)
+- **topology/** - Network visualization implementation (1 file)
+
+### Component Organization Benefits
+✅ **Clear separation of concerns** - Easy to find related components  
+✅ **Scalability** - Room to grow within each category  
+✅ **Code reusability** - Shared components centralized  
+✅ **Maintainability** - Logical grouping reduces cognitive load  
+✅ **Developer onboarding** - Clear structure for new team members  
+
+**For detailed component documentation**: See `frontend/README.md` → "Component Organization" section
+
+---
 
 ### Prerequisites
 - **Python 3.11+** (backend)
@@ -215,36 +314,55 @@ DB_RETENTION_DAYS=7
 
 ```
 PacketFlow/
-├── backend/                          # Python async pipeline
-│   ├── core/                         # Core business logic
-│   │   ├── capture/                  # Packet capture (TShark, PCAP, mock)
-│   │   ├── condense/                 # Flow aggregation & anomaly detection
-│   │   └── ai/                       # LLM reasoning & incident correlation
-│   ├── api/                          # FastAPI endpoints & WebSocket
-│   ├── persistence/                  # SQLite database operations
-│   ├── config/                       # Configuration management
-│   ├── observability/                # Logging & metrics
-│   ├── infrastructure/               # Task management, cleanup
-│   ├── tests/                        # Unit & integration tests
-│   ├── main.py                       # Entry point
+├── backend/                          # Python 3.11+ async pipeline (7-tier architecture)
+│   ├── core/                         # Tier 3: Business logic & data processing
+│   │   ├── capture/                  # Packet acquisition (TShark, PCAP, mock modes)
+│   │   ├── condense/                 # Flow aggregation & 8-method anomaly detection
+│   │   └── ai/                       # LLM reasoning, incident correlation, Ollama integration
+│   ├── api/                          # Tier 2: FastAPI REST/WebSocket endpoints
+│   ├── persistence/                  # Tier 4: Async SQLite operations, database schema
+│   ├── config/                       # Tier 1: Centralized configuration from .env
+│   ├── observability/                # Tier 5: Prometheus metrics, structured logging
+│   ├── infrastructure/               # Tier 6: Task management, signal handling, cleanup
+│   ├── tests/                        # Tier 7: Unit, integration, end-to-end tests
+│   ├── docs/                         # Architecture and operational documentation
+│   ├── utils/                        # Development utilities (diagnostics, PCAP tools)
+│   ├── main.py                       # Entry point (Tier 7 orchestrator)
 │   ├── requirements.txt              # Python dependencies
-│   └── .env                          # Environment configuration
+│   ├── pyproject.toml                # Python project metadata
+│   ├── Dockerfile                    # Container configuration
+│   ├── README.md                     # Backend architecture deep dive
+│   └── .env                          # Configuration via environment variables
 │
-├── frontend/                         # React + TypeScript UI
-│   ├── src/
-│   │   ├── components/               # React components (features + shared)
-│   │   │   ├── alerts/               # Alert configuration
-│   │   │   ├── incidents/            # Incident management
-│   │   │   └── topology/             # Network visualization
-│   │   ├── context/                  # Zustand store, ToastContext
-│   │   ├── hooks/                    # WebSocket, API utilities
-│   │   ├── types/                    # TypeScript interfaces
-│   │   ├── utils/                    # Export, helpers
-│   │   └── styles/                   # Tailwind config, globals
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tsconfig.json
+├── frontend/                         # React 18 + TypeScript UI (6-category component organization)
+│   ├── docs/                         # Documentation index & feature guides (19 files)
+│   ├── src/                          # TypeScript source code
+│   │   ├── components/               # React components (39 files, 6 categories)
+│   │   │   ├── core/                 # Main views: ChatPanel, MetricsBar, StatsDashboard, TopologyView
+│   │   │   ├── events/               # Event views: EventStream, FilterBar, GraphView, ExportMenu
+│   │   │   ├── modals/               # Dialogs: AIDetailsModal, EventDetailsModal, TooltipModal
+│   │   │   ├── panels/               # Analysis: AIExplanation, Feedback, Glossary, Incident, Suggestions
+│   │   │   ├── shared/               # Utilities: ExpandableText, KeyboardShortcuts, ShortcutHint
+│   │   │   ├── alerts/               # Feature: Alert configuration & sensitivity tuning
+│   │   │   ├── incidents/            # Feature: Incident management UI
+│   │   │   ├── Toast/                # Feature: Toast notification system
+│   │   │   └── topology/             # Feature: Network visualization
+│   │   ├── context/                  # State management: Zustand store with persistence
+│   │   ├── hooks/                    # Custom hooks: useWebSocket, useApi
+│   │   ├── types/                    # TypeScript interfaces for network events, UI state
+│   │   ├── utils/                    # Helper functions: export, formatting
+│   │   ├── styles/                   # Tailwind CSS: globals, color palette, theme
+│   │   ├── config/                   # Application configuration: graph layout, constants
+│   │   ├── main.tsx                  # React entry point
+│   │   └── App.tsx                   # Root component with main views
+│   ├── index.html                    # HTML template
+│   ├── package.json                  # Node dependencies, scripts
+│   ├── vite.config.ts                # Build configuration
+│   ├── tsconfig.json                 # TypeScript configuration (strict mode)
+│   ├── tailwind.config.js            # Tailwind CSS setup
+│   ├── postcss.config.js             # PostCSS configuration
+│   ├── README.md                     # Frontend dev guide with component organization
+│   └── Dockerfile                    # Container configuration
 │
 ├── .github/
 │   └── copilot-instructions.md       # Developer guidelines & patterns
@@ -291,24 +409,34 @@ npm run preview
 
 ### Key Files for Common Tasks
 
-#### Add New Anomaly Detection Method
-- Edit: `backend/core/condense/condenser.py`
-- Add method to `_detect_anomalies()`
-- Update `ThreatIndicator` enum
+#### Backend: Add New Anomaly Detection Method
+- File: `backend/core/condense/condenser.py`
+- Method: Add to `_detect_anomalies()`
+- Also: Update `ThreatIndicator` enum
+- Documentation: `backend/README.md` → Condenser section
 
-#### Add New UI Visualization
-- Create component in `frontend/src/components/`
-- Add to view switcher in `App.tsx`
-- Import types from `frontend/src/types/index.ts`
+#### Backend: Change AI Behavior
+- System Prompt: `backend/.env` → `AI_SYSTEM_PROMPT`
+- Logic: `backend/core/ai/ai_agent.py` → `_build_context()`
+- Config: `backend/config/settings.py` → `AIConfig` class
 
-#### Change AI Behavior
-- Edit system prompt in `backend/.env` → `AI_SYSTEM_PROMPT`
-- Modify `_build_context()` in `backend/core/ai/ai_agent.py`
+#### Backend: Add REST Endpoint
+- File: `backend/api/websocket_server.py`
+- Add: FastAPI route with `@app.get()` or `@app.post()`
+- Security: Add `@limiter.limit("10/minute")` for rate limiting
+- Metrics: Import from `backend/observability/metrics.py`
 
-#### Add REST Endpoint
-- Edit `backend/api/websocket_server.py`
-- Add rate limiting: `@limiter.limit("10/minute")`
-- Add Prometheus metrics if needed
+#### Frontend: Add New Component
+- Location: `frontend/src/components/{core|events|modals|panels|shared}/`
+- Export: Add to `frontend/src/components/{category}/index.ts`
+- Usage: Import from category folder in `App.tsx` or other components
+- Types: Update `frontend/src/types/index.ts` if needed
+
+#### Frontend: Add New UI View
+- Create: Component in appropriate category (typically `core/` or `events/`)
+- Register: Add tab to view switcher in `frontend/src/App.tsx`
+- Import: Use centralized exports from `components/{category}/index.ts`
+- State: Manage with Zustand store in `frontend/src/context/store.ts`
 
 ---
 
@@ -363,11 +491,26 @@ See `backend/BACKEND_BUG_REPORT.md` for detailed bug tracking and fixes applied.
 
 ## 📚 Documentation
 
-- **Architecture Deep Dive**: `backend/README.md`
-- **Frontend Features**: `frontend/README.md`
-- **Bug Report & Fixes**: `backend/BACKEND_BUG_REPORT.md`
-- **IUI Phase 1**: `frontend/IUI_PHASE1_COMPLETE.md`
-- **Backend Patterns**: `.github/copilot-instructions.md`
+### Architecture & Design
+- **Root README** - This file (high-level overview)
+- **Backend Architecture**: `backend/README.md` (7-tier design, all components)
+- **Frontend Architecture**: `frontend/README.md` (6-category organization, components)
+- **Frontend Organization**: `frontend/docs/INDEX.md` (documentation index & navigation)
+
+### Backend Implementation
+- **Backend Patterns**: `.github/copilot-instructions.md` (conventions, examples, workflows)
+- **Database Schema**: `backend/persistence/README.md` (SQL schema, queries, retention)
+- **Data Sources**: Analysis of mock mode, PCAP replay, live capture modes
+
+### Frontend Features (9/25 Complete)
+- **Feature Documentation**: `frontend/docs/FEATURE_*.md` (6 completed features)
+- **IUI Phase 1**: `frontend/docs/IUI_PHASE1_COMPLETE.md` (adaptive UI features)
+- **Data Flow**: `frontend/docs/DATA_FLOW_EXPLAINED.md` (state, WebSocket, rendering)
+
+### Reference & Guides
+- **Copilot Instructions**: `.github/copilot-instructions.md` (development guidelines)
+- **Configuration Guide**: Embedded in root `.env` with inline comments
+- **API Reference**: WebSocket format and REST endpoints documented in `backend/api/`
 
 ---
 

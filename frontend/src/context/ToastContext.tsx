@@ -1,6 +1,5 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { ToastData, ToastType } from '../components/Toast/Toast';
-import { ToastContainer } from '../components/Toast/ToastContainer';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
+import { ToastContainer, ToastData } from '../components/Toast/ToastContainer';
 
 interface ToastContextValue {
   showToast: (options: Omit<ToastData, 'id'>) => void;
@@ -17,6 +16,17 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<ToastData[]>([]);
+  const timeoutsRef = useRef<Map<string, number>>(new Map());
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(timeoutId => {
+        clearTimeout(timeoutId);
+      });
+      timeoutsRef.current.clear();
+    };
+  }, []);
 
   const showToast = useCallback((options: Omit<ToastData, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
@@ -32,13 +42,24 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     
     // Auto-dismiss if duration is set
     if (newToast.duration && newToast.duration > 0) {
-      setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         dismissToast(id);
+        timeoutsRef.current.delete(id);
       }, newToast.duration);
+      
+      // Track timeout for cleanup
+      timeoutsRef.current.set(id, timeoutId);
     }
   }, []);
 
   const dismissToast = useCallback((id: string) => {
+    // Clear timeout if exists
+    const timeoutId = timeoutsRef.current.get(id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutsRef.current.delete(id);
+    }
+    
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 

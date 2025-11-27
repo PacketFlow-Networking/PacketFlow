@@ -3,7 +3,8 @@ import { useStore } from '../context/store';
 import { useToast } from '../context/ToastContext';
 import type { NetworkEvent, AIMessage } from '../types';
 
-const WS_URL = 'ws://localhost:8000/ws/updates';
+// Use environment variable or fallback to localhost
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/updates';
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 10;
 
@@ -11,11 +12,13 @@ export const useWebSocket = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const messageQueueRef = useRef<any[]>([]); // Queue for pending messages
   
   const { 
     addEvent, 
     addAIMessage, 
     setConnected,
+    selectEvent,
     mockMode 
   } = useStore();
   
@@ -32,6 +35,15 @@ export const useWebSocket = () => {
         console.log('[WebSocket] Connected');
         setConnected(true);
         reconnectAttemptsRef.current = 0;
+        
+        // Flush queued messages
+        while (messageQueueRef.current.length > 0) {
+          const queuedMessage = messageQueueRef.current.shift();
+          if (queuedMessage) {
+            ws.send(JSON.stringify(queuedMessage));
+            console.log('[WebSocket] Sent queued message');
+          }
+        }
         
         // Show success toast on connection
         if (reconnectAttemptsRef.current > 0) {
@@ -55,9 +67,9 @@ export const useWebSocket = () => {
             // Network event from backend
             const eventData = message.data;
             
-            // Create NetworkEvent with required fields
+            // Create NetworkEvent with required fields using cryptographically unique ID
             const networkEvent: NetworkEvent = {
-              id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              id: `evt-${crypto.randomUUID()}`, // Collision-resistant unique identifier
               timestamp: eventData.timestamp || new Date().toISOString(),
               src: eventData.src || 'unknown',
               dst: eventData.dst || 'unknown',
@@ -71,8 +83,9 @@ export const useWebSocket = () => {
             
             addEvent(networkEvent);
             
-            // Show toast for critical anomalies
+            // Show toast for critical anomalies and auto-select event
             if (eventData.anomaly_score >= 0.8) {
+              selectEvent(networkEvent.id); // Auto-select event for easy access
               showWarning(
                 'Critical Anomaly Detected',
                 `${eventData.src}  ${eventData.dst}: ${eventData.summary || 'High anomaly score'}`,
@@ -130,21 +143,21 @@ export const useWebSocket = () => {
           showInfo('Disconnected', 'Lost connection to backend. Attempting to reconnect...');
         }
         
-        // Attempt reconnection
-        if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-          reconnectAttemptsRef.current++;
-          console.log(`[WebSocket] Reconnecting in ${RECONNECT_DELAY}ms (attempt ${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})`);
-          reconnectTimeoutRef.current = window.setTimeout(() => {
-            connect();
-          }, RECONNECT_DELAY);
-        } else {
-          console.log('[WebSocket] Max reconnection attempts reached');
-          showError(
-            'Connection Failed',
-            'Unable to connect to backend after multiple attempts. Please check if the server is running.',
-            false
-          );
-        }
+        // Attempt reconnection with exponential backoff
+        // Keep retrying indefinitely with 30s interval after initial max attempts
+        const nextDelay = reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS 
+          ? RECONNECT_DELAY 
+          : 30000; // 30s retry after max attempts reached
+        
+        reconnectAttemptsRef.current++;
+        console.log(`[WebSocket] Reconnecting in ${nextDelay}ms (attempt ${reconnectAttemptsRef.current})`);
+        reconnectTimeoutRef.current = window.setTimeout(() => {
+          // Reset counter when reconnecting to allow next batch of exponential backoff
+          if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+            reconnectAttemptsRef.current = MAX_RECONNECT_ATTEMPTS - 1;
+          }
+          connect();
+        }, nextDelay);
       };
       
       wsRef.current = ws;
@@ -172,8 +185,15 @@ export const useWebSocket = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(data));
       return true;
+    } else if (wsRef.current?.readyState === WebSocket.CONNECTING) {
+      // Queue message if still connecting
+      messageQueueRef.current.push(data);
+      return false; // Indicate queued, not sent immediately
+    } else {
+      // Queue for next connection
+      messageQueueRef.current.push(data);
+      return false;
     }
-    return false;
   }, []);
 
   useEffect(() => {

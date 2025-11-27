@@ -2,15 +2,17 @@ import { useEffect, useCallback } from 'react';
 import { useStore } from '../context/store';
 import type { SystemStatus } from '../types';
 
-const API_BASE = 'http://localhost:8000';  // Direct URL instead of proxy
+// Use environment variable or fallback to localhost
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 const STATUS_POLL_INTERVAL = 3000; // 3 seconds
 
 export const useApi = () => {
-  const { updateStatus, mockMode } = useStore();
+  const { updateStatus, setConnected, mockMode } = useStore();
 
   const getStatus = useCallback(async (): Promise<SystemStatus | null> => {
     if (mockMode) {
-      // Return mock status
+      // Return mock status and mark as connected
+      setConnected(true);
       const mockStatus: SystemStatus = {
         packets_per_sec: Math.floor(Math.random() * 1000) + 500,
         active_flows: Math.floor(Math.random() * 50) + 20,
@@ -27,6 +29,9 @@ export const useApi = () => {
       }
       const data = await response.json();
       
+      // Successfully connected to backend
+      setConnected(true);
+      
       // Transform backend response to match frontend types
       const status: SystemStatus = {
         packets_per_sec: data.total_packets || data.packets_per_sec || 0,
@@ -38,9 +43,11 @@ export const useApi = () => {
       return status;
     } catch (error) {
       console.error('[API] Status fetch error:', error);
+      // Failed to reach backend
+      setConnected(false);
       return null;
     }
-  }, [mockMode]);
+  }, [mockMode, setConnected]);
 
   const queryAI = useCallback(async (question: string): Promise<string | null> => {
     if (mockMode) {
@@ -67,7 +74,20 @@ export const useApi = () => {
           // AI agent not available
           return `[INFO] AI agent is currently unavailable. Please make sure Ollama is running or remote AI is configured.`;
         }
-        throw new Error(`Query failed: ${response.status}`);
+        
+        // Try to parse error response if available
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            const errorData = await response.json();
+            const errorMsg = errorData.error || errorData.message || `Error: ${response.status}`;
+            return `[ERROR] ${errorMsg}`;
+          }
+        } catch {
+          // Response body not JSON, use status code
+        }
+        
+        return `[ERROR] Query failed: ${response.status} ${response.statusText}`;
       }
       
       const data = await response.json();

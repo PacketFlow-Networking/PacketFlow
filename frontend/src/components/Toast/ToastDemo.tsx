@@ -1,4 +1,4 @@
-import { useToast } from '../context/ToastContext';
+import { useToast } from '../../context/ToastContext';
 import { Bell, CheckCircle, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
 export const ToastDemo = () => {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useStore } from '../../context/store';
 import { useToast } from '../../context/ToastContext';
@@ -11,8 +11,8 @@ interface CreateIncidentModalProps {
 }
 
 export const CreateIncidentModal = ({ isOpen, onClose, preselectedEventIds = [] }: CreateIncidentModalProps) => {
-  const { addIncident } = useStore();
-  const { showSuccess } = useToast();
+  const { addIncident, events } = useStore();
+  const { showSuccess, showError } = useToast();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -20,13 +20,42 @@ export const CreateIncidentModal = ({ isOpen, onClose, preselectedEventIds = [] 
   const [tags, setTags] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
 
+  // Handle escape key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim()) {
+      showError('Validation error', 'Incident title is required');
       return;
+    }
+
+    // Validate event IDs exist in the events array
+    const validEventIds = preselectedEventIds.filter(id => 
+      events.some(e => e.id === id)
+    );
+
+    if (preselectedEventIds.length > 0 && validEventIds.length === 0) {
+      showError('Invalid events', 'The selected events no longer exist. Please reselect events.');
+      return;
+    }
+
+    if (preselectedEventIds.length !== validEventIds.length) {
+      showError('Warning', `${preselectedEventIds.length - validEventIds.length} selected event(s) no longer exist and will be excluded.`);
     }
 
     const incident = {
@@ -37,7 +66,7 @@ export const CreateIncidentModal = ({ isOpen, onClose, preselectedEventIds = [] 
       severity,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      event_ids: preselectedEventIds,
+      event_ids: validEventIds, // Use only valid event IDs
       notes: [],
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       assigned_to: assignedTo.trim() || undefined,

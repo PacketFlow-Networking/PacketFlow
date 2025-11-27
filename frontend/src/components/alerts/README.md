@@ -1,6 +1,6 @@
 # Alert Configuration System
 
-Complete alert configuration and customization system for AINetUI.
+Complete alert configuration and customization system for PacketFlow.
 
 ## Overview
 
@@ -107,7 +107,7 @@ The configuration modal has 5 tabs:
 All configuration is automatically saved to browser localStorage:
 - Settings persist across page refreshes
 - Settings persist across browser sessions
-- Storage key: `ainetui-alert-config`
+- Storage key: `packetflow-alert-config`
 
 ## Configuration Structure
 

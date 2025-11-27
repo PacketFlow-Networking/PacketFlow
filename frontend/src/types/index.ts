@@ -72,6 +72,7 @@ export interface AnomalyMarker {
   severity: SeverityLevel;
   eventId: string;
   score: number;
+  yValue?: number;
 }
 
 // Filter types
