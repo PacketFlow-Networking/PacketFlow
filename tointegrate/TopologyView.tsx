@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { useStore } from '../../context/store';
+import { useStore } from '../context/store';
 import * as d3 from 'd3';
 import { 
   ZoomIn, 
@@ -16,17 +16,16 @@ import {
   Unlock,
   Layers
 } from 'lucide-react';
-import type { NetworkEvent } from '../../types';
 
 export interface TopologyNode {
   id: string;
   label: string;
   type: 'internal' | 'external';
-  physical_room?: string;
+  physical_room?: string; // NEW: Physical room/subnet zone
   anomalyScore: number;
   eventCount: number;
   totalBytes: number;
-  cluster?: number;
+  cluster?: number; // NEW: Semantic cluster ID
   x?: number;
   y?: number;
   fx?: number | null;
@@ -36,11 +35,12 @@ export interface TopologyNode {
 export interface TopologyLink {
   source: string | TopologyNode;
   target: string | TopologyNode;
-  value: number;
+  value: number; // traffic volume
   anomalies: number;
   protocols: Set<string>;
 }
 
+// NEW: Cluster interface for semantic grouping
 interface Cluster {
   id: number;
   nodes: TopologyNode[];
@@ -50,6 +50,7 @@ interface Cluster {
   type: 'internal_room' | 'dmz' | 'external';
 }
 
+// NEW: Physical room interface for subnet-based zones
 interface PhysicalRoom {
   name: string;
   nodes: TopologyNode[];
@@ -58,6 +59,7 @@ interface PhysicalRoom {
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 }
 
+// NEW: View mode type
 type ViewMode = 'semantic' | 'physical' | 'hybrid';
 
 export interface TopologyFilters {
@@ -68,7 +70,9 @@ export interface TopologyFilters {
   selectedProtocols: Set<string>;
 }
 
+// Cluster Detection Algorithm - Groups nodes that communicate heavily with each other
 function detectClusters(nodes: TopologyNode[], links: TopologyLink[]): Cluster[] {
+  // Build adjacency matrix for communication strength
   const adjacency: Map<string, Map<string, number>> = new Map();
   
   links.forEach(link => {
@@ -82,6 +86,7 @@ function detectClusters(nodes: TopologyNode[], links: TopologyLink[]): Cluster[]
     adjacency.get(targetId)!.set(sourceId, link.value);
   });
   
+  // Assign clusters using greedy connected components
   const nodeClusterMap = new Map<string, number>();
   let currentCluster = 0;
   
@@ -92,32 +97,37 @@ function detectClusters(nodes: TopologyNode[], links: TopologyLink[]): Cluster[]
     const neighbors = adjacency.get(nodeId);
     
     if (neighbors) {
+      // Sort neighbors by communication strength
       const sortedNeighbors = Array.from(neighbors.entries())
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 10);
+        .slice(0, 10); // Only consider top 10 strongest connections
       
       sortedNeighbors.forEach(([neighborId, strength]) => {
-        if (strength > 10 && !nodeClusterMap.has(neighborId)) {
+        if (strength > 10 && !nodeClusterMap.has(neighborId)) { // Threshold for cluster membership
           assignCluster(neighborId, clusterId);
         }
       });
     }
   };
   
+  // Assign internal nodes to clusters
   nodes.filter(n => n.type === 'internal').forEach(node => {
     if (!nodeClusterMap.has(node.id)) {
       assignCluster(node.id, currentCluster++);
     }
   });
   
+  // External nodes get their own "external" cluster
   nodes.filter(n => n.type === 'external').forEach(node => {
-    nodeClusterMap.set(node.id, 9999);
+    nodeClusterMap.set(node.id, 9999); // Special external cluster
   });
   
+  // Update nodes with cluster assignments
   nodes.forEach(node => {
     node.cluster = nodeClusterMap.get(node.id) || 0;
   });
   
+  // Build cluster objects
   const clusterMap = new Map<number, TopologyNode[]>();
   nodes.forEach(node => {
     const cId = node.cluster || 0;
@@ -126,13 +136,19 @@ function detectClusters(nodes: TopologyNode[], links: TopologyLink[]): Cluster[]
   });
   
   const clusterColors = [
-    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6',
+    '#3b82f6', // Blue
+    '#10b981', // Green
+    '#f59e0b', // Amber
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+    '#14b8a6', // Teal
   ];
   
   const clusters: Cluster[] = [];
   clusterMap.forEach((clusterNodes, clusterId) => {
     if (clusterNodes.length === 0) return;
     
+    // Calculate cluster center
     const centerX = clusterNodes.reduce((sum, n) => sum + (n.x || 0), 0) / clusterNodes.length;
     const centerY = clusterNodes.reduce((sum, n) => sum + (n.y || 0), 0) / clusterNodes.length;
     
@@ -153,9 +169,11 @@ function detectClusters(nodes: TopologyNode[], links: TopologyLink[]): Cluster[]
   return clusters;
 }
 
+// Physical Room Detection - Groups nodes by subnet/zone
 function detectPhysicalRooms(nodes: TopologyNode[]): PhysicalRoom[] {
   const roomMap = new Map<string, TopologyNode[]>();
   
+  // Extract subnet from IP (first 3 octets for Class C)
   const getSubnet = (ip: string): string => {
     const parts = ip.split('.');
     if (parts.length >= 3) {
@@ -164,9 +182,10 @@ function detectPhysicalRooms(nodes: TopologyNode[]): PhysicalRoom[] {
     return 'Unknown';
   };
   
+  // Group nodes by subnet
   nodes.filter(n => n.type === 'internal').forEach(node => {
     const subnet = node.physical_room || getSubnet(node.id);
-    node.physical_room = subnet;
+    node.physical_room = subnet; // Update node with subnet info
     
     if (!roomMap.has(subnet)) {
       roomMap.set(subnet, []);
@@ -175,7 +194,14 @@ function detectPhysicalRooms(nodes: TopologyNode[]): PhysicalRoom[] {
   });
   
   const roomColors = [
-    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4',
+    '#3b82f6', // Blue - Workstations
+    '#10b981', // Green - Servers
+    '#f59e0b', // Amber - DMZ
+    '#8b5cf6', // Purple - IoT
+    '#ec4899', // Pink - Admin
+    '#14b8a6', // Teal - Development
+    '#f97316', // Orange - Production
+    '#06b6d4', // Cyan - Management
   ];
   
   const rooms: PhysicalRoom[] = [];
@@ -184,9 +210,11 @@ function detectPhysicalRooms(nodes: TopologyNode[]): PhysicalRoom[] {
   roomMap.forEach((roomNodes, roomName) => {
     if (roomNodes.length === 0) return;
     
+    // Calculate center
     const centerX = roomNodes.reduce((sum, n) => sum + (n.x || 0), 0) / roomNodes.length;
     const centerY = roomNodes.reduce((sum, n) => sum + (n.y || 0), 0) / roomNodes.length;
     
+    // Calculate bounding box with padding
     const padding = 60;
     const bounds = {
       minX: Math.min(...roomNodes.map(n => n.x || 0)) - padding,
@@ -222,10 +250,10 @@ export default function TopologyView() {
   const [showFilters, setShowFilters] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
-  const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [physicalRooms, setPhysicalRooms] = useState<PhysicalRoom[]>([]);
-  const [showClusters, setShowClusters] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('hybrid');
+  const [clusters, setClusters] = useState<Cluster[]>([]); // NEW
+  const [physicalRooms, setPhysicalRooms] = useState<PhysicalRoom[]>([]); // NEW
+  const [showClusters, setShowClusters] = useState(true); // NEW
+  const [viewMode, setViewMode] = useState<ViewMode>('hybrid'); // NEW: semantic, physical, or hybrid
   const [filters, setFilters] = useState<TopologyFilters>({
     showInternal: true,
     showExternal: true,
@@ -234,10 +262,12 @@ export default function TopologyView() {
     selectedProtocols: new Set(['TCP', 'UDP', 'ICMP', 'HTTP', 'HTTPS', 'DNS'])
   });
 
+  // Build graph data from events
   const graphData = useMemo(() => {
     const nodeMap = new Map<string, TopologyNode>();
     const linkMap = new Map<string, TopologyLink>();
 
+    // Helper to determine if IP is internal (RFC1918)
     const isInternal = (ip: string): boolean => {
       return (
         ip.startsWith('10.') ||
@@ -248,13 +278,17 @@ export default function TopologyView() {
       );
     };
 
+    // Get container dimensions for center calculation
     const container = containerRef.current;
     const centerX = container ? container.clientWidth / 2 : 400;
     const centerY = container ? container.clientHeight / 2 : 300;
 
+    // Process events
     events.forEach(event => {
+      // Skip if protocol not in filter
       if (!filters.selectedProtocols.has(event.proto)) return;
 
+      // Process source node
       if (!nodeMap.has(event.src)) {
         const savedPos = nodePositionsRef.current.get(event.src);
         nodeMap.set(event.src, {
@@ -264,6 +298,7 @@ export default function TopologyView() {
           anomalyScore: 0,
           eventCount: 0,
           totalBytes: 0,
+          // NEW: Start new nodes near center with small random offset (not far away!)
           x: savedPos?.x ?? centerX + (Math.random() - 0.5) * 100,
           y: savedPos?.y ?? centerY + (Math.random() - 0.5) * 100
         });
@@ -273,6 +308,7 @@ export default function TopologyView() {
       srcNode.eventCount++;
       srcNode.totalBytes += (event.avg_size || 0) * event.flows;
 
+      // Process destination node
       if (!nodeMap.has(event.dst)) {
         const savedPos = nodePositionsRef.current.get(event.dst);
         nodeMap.set(event.dst, {
@@ -282,6 +318,7 @@ export default function TopologyView() {
           anomalyScore: 0,
           eventCount: 0,
           totalBytes: 0,
+          // NEW: Start new nodes near center with small random offset
           x: savedPos?.x ?? centerX + (Math.random() - 0.5) * 100,
           y: savedPos?.y ?? centerY + (Math.random() - 0.5) * 100
         });
@@ -291,6 +328,7 @@ export default function TopologyView() {
       dstNode.eventCount++;
       dstNode.totalBytes += (event.avg_size || 0) * event.flows;
 
+      // Process link
       const linkKey = `${event.src}-${event.dst}`;
       if (!linkMap.has(linkKey)) {
         linkMap.set(linkKey, {
@@ -307,6 +345,7 @@ export default function TopologyView() {
       link.protocols.add(event.proto);
     });
 
+    // Apply filters
     const nodes = Array.from(nodeMap.values()).filter(node => {
       if (node.type === 'internal' && !filters.showInternal) return false;
       if (node.type === 'external' && !filters.showExternal) return false;
@@ -325,6 +364,7 @@ export default function TopologyView() {
     return { nodes, links };
   }, [events, filters]);
 
+  // NEW: Detect clusters and physical rooms when graph data changes
   useEffect(() => {
     if (graphData.nodes.length === 0) {
       setClusters([]);
@@ -332,16 +372,20 @@ export default function TopologyView() {
       return;
     }
     
+    // Detect semantic clusters (communication-based)
     const detectedClusters = detectClusters(graphData.nodes, graphData.links);
     setClusters(detectedClusters);
     
+    // Detect physical rooms (subnet-based)
     const detectedRooms = detectPhysicalRooms(graphData.nodes);
     setPhysicalRooms(detectedRooms);
   }, [graphData]);
 
+  // Initialize D3 visualization
   useEffect(() => {
     if (!svgRef.current || !containerRef.current) return;
     if (graphData.nodes.length === 0) {
+      // Clear if no data
       if (simulationRef.current) {
         simulationRef.current.stop();
         simulationRef.current = null;
@@ -356,6 +400,7 @@ export default function TopologyView() {
 
     const svg = d3.select(svgRef.current);
     
+    // Only create zoom once
     if (!zoomBehaviorRef.current) {
       const zoom = d3.zoom<SVGSVGElement, unknown>()
         .scaleExtent([0.1, 4])
@@ -369,6 +414,7 @@ export default function TopologyView() {
       zoomBehaviorRef.current = zoom;
     }
 
+    // Clear only if this is first render or significant change
     const isFirstRender = !gRef.current;
     if (isFirstRender) {
       svg.selectAll('*').remove();
@@ -377,6 +423,7 @@ export default function TopologyView() {
       const g = svg.append('g');
       gRef.current = g.node();
       
+      // Define arrow markers
       const defs = svg.append('defs');
       
       defs.append('marker')
@@ -406,7 +453,9 @@ export default function TopologyView() {
 
     const g = d3.select(gRef.current!);
 
+    // Update or create simulation
     if (!simulationRef.current) {
+      // Initial simulation setup - only runs once
       simulationRef.current = d3.forceSimulation(graphData.nodes as any)
         .force('link', d3.forceLink(graphData.links)
           .id((d: any) => d.id)
@@ -414,38 +463,27 @@ export default function TopologyView() {
         .force('charge', d3.forceManyBody().strength(-300))
         .force('center', d3.forceCenter(width / 2, height / 2))
         .force('collision', d3.forceCollide().radius(30))
-        .alphaDecay(0.05)
-        .alphaMin(0.001)
-        .velocityDecay(0.4);
-
-      // Lock nodes when simulation converges
-      simulationRef.current.on('tick', () => {
-        if (simulationRef.current!.alpha() < 0.01) {
-          graphData.nodes.forEach(node => {
-            node.fx = node.x;
-            node.fy = node.y;
-          });
-          simulationRef.current!.stop();
-        }
-      });
+        .alphaDecay(0.05) // Faster decay to settle quickly
+        .alphaMin(0.001) // Stop earlier
+        .velocityDecay(0.4); // More friction
     } else {
+      // Update simulation with new data
       simulationRef.current.nodes(graphData.nodes as any);
       const linkForce = simulationRef.current.force('link') as d3.ForceLink<any, any>;
       if (linkForce) {
         linkForce.links(graphData.links);
       }
-      // Unlock nodes for next iteration
-      graphData.nodes.forEach(node => {
-        node.fx = null;
-        node.fy = null;
-      });
+      // MUCH gentler restart - only nudge positions slightly for new nodes
+      // alpha 0.02 = barely move existing nodes, just settle new ones
       simulationRef.current.alpha(0.02).restart();
     }
 
     const simulation = simulationRef.current;
 
+    // Drag behavior - gentler simulation restart
     const drag = d3.drag<SVGGElement, any>()
       .on('start', (event) => {
+        // Very gentle restart - don't shake the whole graph
         if (!event.active) simulation.alphaTarget(0.05).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
@@ -453,15 +491,19 @@ export default function TopologyView() {
       .on('drag', (event) => {
         event.subject.fx = event.x;
         event.subject.fy = event.y;
+        // Save position
         nodePositionsRef.current.set(event.subject.id, { x: event.x, y: event.y });
       })
       .on('end', (event) => {
         if (!event.active) simulation.alphaTarget(0);
+        // Keep node pinned after drag
         event.subject.fx = event.x;
         event.subject.fy = event.y;
+        // Save final position
         nodePositionsRef.current.set(event.subject.id, { x: event.x, y: event.y });
       });
 
+    // NEW: Render cluster boundaries (semantic/communication-based)
     if (showClusters && (viewMode === 'semantic' || viewMode === 'hybrid')) {
       g.selectAll<SVGEllipseElement, Cluster>('ellipse.cluster')
         .data(clusters.filter(c => c.type !== 'external'), (d: Cluster) => `cluster-${d.id}`)
@@ -488,6 +530,7 @@ export default function TopologyView() {
             .attr('stroke', (d: Cluster) => d.color)
         );
 
+      // Update cluster labels with smooth transition
       g.selectAll<SVGTextElement, Cluster>('text.cluster-label')
         .data(clusters.filter(c => c.type !== 'external'), (d: Cluster) => `label-${d.id}`)
         .join(
@@ -513,6 +556,7 @@ export default function TopologyView() {
       g.selectAll('text.cluster-label').remove();
     }
 
+    // NEW: Render physical room boundaries (subnet-based)
     if (showClusters && (viewMode === 'physical' || viewMode === 'hybrid')) {
       g.selectAll<SVGRectElement, PhysicalRoom>('rect.room')
         .data(physicalRooms, (d: PhysicalRoom) => `room-${d.name}`)
@@ -542,6 +586,7 @@ export default function TopologyView() {
             .attr('stroke', (d: PhysicalRoom) => d.color)
         );
 
+      // Room labels with smooth transitions
       g.selectAll<SVGTextElement, PhysicalRoom>('text.room-label')
         .data(physicalRooms, (d: PhysicalRoom) => `label-${d.name}`)
         .join(
@@ -568,6 +613,7 @@ export default function TopologyView() {
       g.selectAll('text.room-label').remove();
     }
 
+    // Update links
     const link = g.selectAll<SVGLineElement, any>('line')
       .data(graphData.links, (d: any) => `${d.source.id || d.source}-${d.target.id || d.target}`)
       .join(
@@ -582,6 +628,7 @@ export default function TopologyView() {
           .attr('marker-end', (d: any) => d.anomalies > 0 ? 'url(#arrow-anomaly)' : 'url(#arrow)')
       );
 
+    // Update nodes
     const node = g.selectAll<SVGGElement, TopologyNode>('g.node')
       .data(graphData.nodes, (d: TopologyNode) => d.id)
       .join(
@@ -604,6 +651,7 @@ export default function TopologyView() {
               setSelectedNode(d);
             });
 
+          // Full IP label
           nodeGroup.append('text')
             .text((d: any) => d.label)
             .attr('x', 0)
@@ -628,6 +676,7 @@ export default function TopologyView() {
         }
       );
 
+    // Add/update anomaly indicators
     node.selectAll('circle.anomaly-indicator').remove();
     node.filter((d: any) => d.anomalyScore > 0.5)
       .append('circle')
@@ -639,6 +688,7 @@ export default function TopologyView() {
       .attr('stroke', '#fff')
       .attr('stroke-width', 1);
 
+    // Update positions on tick
     simulation.on('tick', () => {
       link
         .attr('x1', (d: any) => d.source.x)
@@ -647,15 +697,23 @@ export default function TopologyView() {
         .attr('y2', (d: any) => d.target.y);
 
       node.attr('transform', (d: any) => {
+        // Save positions
         nodePositionsRef.current.set(d.id, { x: d.x, y: d.y });
         return `translate(${d.x},${d.y})`;
       });
     });
 
+    // Auto-stop when settled
+    simulation.on('end', () => {
+      console.log('Simulation settled');
+    });
+
+    // Pause/resume or lock
     if (isPaused || isLocked) {
       simulation.stop();
     }
 
+    // If locked, pin all nodes
     if (isLocked) {
       graphData.nodes.forEach(node => {
         if (node.x !== undefined && node.y !== undefined) {
@@ -666,7 +724,7 @@ export default function TopologyView() {
     }
 
     return () => {
-      // Keep simulation running
+      // Don't stop simulation on cleanup, let it continue
     };
   }, [graphData, isPaused, isLocked, clusters, physicalRooms, showClusters, viewMode]);
 
@@ -706,6 +764,7 @@ export default function TopologyView() {
 
   return (
     <div className="h-full flex flex-col bg-base">
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-panel">
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-info" />
@@ -716,35 +775,73 @@ export default function TopologyView() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* 3D View Button */}
           <button
-            onClick={() => setIsLocked(!isLocked)}
+            onClick={() => window.open('/3d-topology', '_blank')}
+            className="p-2 hover:bg-panel-hover rounded transition-colors text-info"
+            title="Open 3D Network Topology (New Tab)"
+          >
+            <Layers className="w-4 h-4" />
+          </button>
+
+          {/* Lock/Unlock */}
+          <button
+            onClick={() => {
+              setIsLocked(!isLocked);
+              if (!isLocked) {
+                setIsPaused(false); // Unlock also unpauses
+              }
+            }}
             className={`p-2 rounded transition-colors ${
               isLocked ? 'bg-warn/20 text-warn' : 'hover:bg-panel-hover text-text'
             }`}
-            title={isLocked ? "Unlock Layout" : "Lock Layout"}
+            title={isLocked ? "Unlock Layout (Allow Movement)" : "Lock Layout (Freeze Positions)"}
           >
-            {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+            {isLocked ? (
+              <Lock className="w-4 h-4" />
+            ) : (
+              <Unlock className="w-4 h-4" />
+            )}
           </button>
 
+          {/* Pause/Play */}
           <button
             onClick={() => setIsPaused(!isPaused)}
             className="p-2 hover:bg-panel-hover rounded transition-colors"
-            title={isPaused ? "Resume" : "Pause"}
+            title={isPaused ? "Resume Animation" : "Pause Animation"}
             disabled={isLocked}
           >
-            {isPaused ? <Play className="w-4 h-4 text-text" /> : <Pause className="w-4 h-4 text-text" />}
+            {isPaused ? (
+              <Play className="w-4 h-4 text-text" />
+            ) : (
+              <Pause className="w-4 h-4 text-text" />
+            )}
           </button>
 
-          <button onClick={handleZoomIn} className="p-2 hover:bg-panel-hover rounded transition-colors" title="Zoom In">
+          {/* Zoom controls */}
+          <button
+            onClick={handleZoomIn}
+            className="p-2 hover:bg-panel-hover rounded transition-colors"
+            title="Zoom In"
+          >
             <ZoomIn className="w-4 h-4 text-text" />
           </button>
-          <button onClick={handleZoomOut} className="p-2 hover:bg-panel-hover rounded transition-colors" title="Zoom Out">
+          <button
+            onClick={handleZoomOut}
+            className="p-2 hover:bg-panel-hover rounded transition-colors"
+            title="Zoom Out"
+          >
             <ZoomOut className="w-4 h-4 text-text" />
           </button>
-          <button onClick={handleResetZoom} className="p-2 hover:bg-panel-hover rounded transition-colors" title="Reset Zoom">
+          <button
+            onClick={handleResetZoom}
+            className="p-2 hover:bg-panel-hover rounded transition-colors"
+            title="Reset Zoom"
+          >
             <Maximize2 className="w-4 h-4 text-text" />
           </button>
 
+          {/* Filter toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`p-2 rounded transition-colors ${
@@ -755,17 +852,19 @@ export default function TopologyView() {
             <Filter className="w-4 h-4" />
           </button>
 
+          {/* NEW: Clusters toggle */}
           <button
             onClick={() => setShowClusters(!showClusters)}
             className={`p-2 rounded transition-colors ${
               showClusters ? 'bg-info text-base' : 'hover:bg-panel-hover text-text'
             }`}
-            title="Toggle Boundaries"
+            title="Toggle Cluster Boundaries"
           >
             <Layers className="w-4 h-4" />
           </button>
         </div>
 
+        {/* NEW: View Mode Selector */}
         <div className="flex items-center gap-2 bg-panel/50 px-3 py-2 border border-border rounded-lg">
           <span className="text-xs font-medium text-text-dim">View:</span>
           <button
@@ -773,7 +872,7 @@ export default function TopologyView() {
             className={`px-3 py-1 text-xs rounded transition-colors ${
               viewMode === 'semantic' ? 'bg-info text-base font-medium' : 'text-text-dim hover:bg-panel-hover hover:text-text'
             }`}
-            title="Semantic clustering"
+            title="Semantic clustering - groups by communication patterns"
           >
             Graph
           </button>
@@ -782,7 +881,7 @@ export default function TopologyView() {
             className={`px-3 py-1 text-xs rounded transition-colors ${
               viewMode === 'physical' ? 'bg-info text-base font-medium' : 'text-text-dim hover:bg-panel-hover hover:text-text'
             }`}
-            title="Physical rooms"
+            title="Physical rooms - groups by subnet/zone"
           >
             Rooms
           </button>
@@ -791,7 +890,7 @@ export default function TopologyView() {
             className={`px-3 py-1 text-xs rounded transition-colors ${
               viewMode === 'hybrid' ? 'bg-info text-base font-medium' : 'text-text-dim hover:bg-panel-hover hover:text-text'
             }`}
-            title="Both views"
+            title="Hybrid view - both semantic and physical groupings"
           >
             Both
           </button>
@@ -799,6 +898,7 @@ export default function TopologyView() {
       </div>
 
       <div className="flex-1 flex min-h-0">
+        {/* Main graph */}
         <div ref={containerRef} className="flex-1 relative">
           <svg ref={svgRef} className="w-full h-full" />
 
@@ -807,11 +907,14 @@ export default function TopologyView() {
               <div className="text-center text-text-dim">
                 <Info className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>No network data to display</p>
-                <p className="text-sm mt-1">Adjust filters or wait for events</p>
+                <p className="text-sm mt-1">
+                  Adjust filters or wait for events
+                </p>
               </div>
             </div>
           )}
 
+          {/* Legend */}
           <div className="absolute bottom-4 left-4 bg-panel border border-border rounded p-3 text-xs max-w-xs">
             <div className="font-semibold text-text mb-2">Legend</div>
             <div className="space-y-1">
@@ -831,19 +934,38 @@ export default function TopologyView() {
                 <div className="w-3 h-3 rounded-full bg-red-500" />
                 <span className="text-text-dim">Critical (&gt;0.7)</span>
               </div>
+
+              {/* NEW: Cluster/Room indicators */}
+              {showClusters && (viewMode === 'semantic' || viewMode === 'hybrid') && (
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-text font-medium text-xs mb-1">🔮 Semantic Clusters</div>
+                  <div className="text-text-dim text-[10px]">Ovals = Communication groups</div>
+                </div>
+              )}
+              {showClusters && (viewMode === 'physical' || viewMode === 'hybrid') && (
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-text font-medium text-xs mb-1">📍 Physical Rooms</div>
+                  <div className="text-text-dim text-[10px]">Rectangles = Subnet zones</div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Filters Panel */}
         {showFilters && (
           <div className="w-64 border-l border-border bg-panel p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-text">Filters</h3>
-              <button onClick={() => setShowFilters(false)} className="p-1 hover:bg-panel-hover rounded">
+              <button
+                onClick={() => setShowFilters(false)}
+                className="p-1 hover:bg-panel-hover rounded"
+              >
                 <X className="w-4 h-4 text-text" />
               </button>
             </div>
 
+            {/* Node Type Filters */}
             <div className="mb-4">
               <div className="text-sm font-medium text-text mb-2">Node Types</div>
               <label className="flex items-center gap-2 mb-1">
@@ -866,9 +988,10 @@ export default function TopologyView() {
               </label>
             </div>
 
+            {/* Anomaly Score Filter */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-text">Min Anomaly</span>
+                <span className="text-sm font-medium text-text">Min Anomaly Score</span>
                 <span className="text-xs text-text-dim">{filters.minAnomalyScore.toFixed(2)}</span>
               </div>
               <input
@@ -882,6 +1005,48 @@ export default function TopologyView() {
               />
             </div>
 
+            {/* Traffic Volume Filter */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-text">Min Traffic</span>
+                <span className="text-xs text-text-dim">{formatBytes(filters.minTraffic)}</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="10000000"
+                step="100000"
+                value={filters.minTraffic}
+                onChange={(e) => setFilters({...filters, minTraffic: parseInt(e.target.value)})}
+                className="w-full"
+              />
+            </div>
+
+            {/* Protocol Filter */}
+            <div className="mb-4">
+              <div className="text-sm font-medium text-text mb-2">Protocols</div>
+              {['TCP', 'UDP', 'ICMP', 'HTTP', 'HTTPS', 'DNS'].map(proto => (
+                <label key={proto} className="flex items-center gap-2 mb-1">
+                  <input
+                    type="checkbox"
+                    checked={filters.selectedProtocols.has(proto)}
+                    onChange={(e) => {
+                      const newSet = new Set(filters.selectedProtocols);
+                      if (e.target.checked) {
+                        newSet.add(proto);
+                      } else {
+                        newSet.delete(proto);
+                      }
+                      setFilters({...filters, selectedProtocols: newSet});
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-text-dim">{proto}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Reset Filters */}
             <button
               onClick={() => setFilters({
                 showInternal: true,
@@ -892,16 +1057,20 @@ export default function TopologyView() {
               })}
               className="w-full py-2 px-3 bg-panel-hover hover:bg-border text-sm text-text rounded transition-colors"
             >
-              Reset
+              Reset Filters
             </button>
           </div>
         )}
 
+        {/* Node Details Panel */}
         {selectedNode && (
           <div className="w-64 border-l border-border bg-panel p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-text">Node Details</h3>
-              <button onClick={() => setSelectedNode(null)} className="p-1 hover:bg-panel-hover rounded">
+              <button
+                onClick={() => setSelectedNode(null)}
+                className="p-1 hover:bg-panel-hover rounded"
+              >
                 <X className="w-4 h-4 text-text" />
               </button>
             </div>
@@ -909,7 +1078,9 @@ export default function TopologyView() {
             <div className="space-y-3">
               <div>
                 <div className="text-xs text-text-dim mb-1">IP Address</div>
-                <div className="text-sm font-mono text-text break-all">{selectedNode.label}</div>
+                <div className="text-sm font-mono text-text break-all">
+                  {selectedNode.label}
+                </div>
               </div>
 
               <div>
@@ -936,7 +1107,9 @@ export default function TopologyView() {
                       style={{ width: `${selectedNode.anomalyScore * 100}%` }}
                     />
                   </div>
-                  <span className="text-sm text-text font-mono">{selectedNode.anomalyScore.toFixed(2)}</span>
+                  <span className="text-sm text-text font-mono">
+                    {selectedNode.anomalyScore.toFixed(2)}
+                  </span>
                 </div>
               </div>
 
@@ -955,8 +1128,12 @@ export default function TopologyView() {
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
                     <div>
-                      <div className="text-sm font-medium text-red-400 mb-1">Suspicious Activity</div>
-                      <div className="text-xs text-text-dim">Review related events for details.</div>
+                      <div className="text-sm font-medium text-red-400 mb-1">
+                        Suspicious Activity
+                      </div>
+                      <div className="text-xs text-text-dim">
+                        This host has shown anomalous behavior. Review related events for details.
+                      </div>
                     </div>
                   </div>
                 </div>

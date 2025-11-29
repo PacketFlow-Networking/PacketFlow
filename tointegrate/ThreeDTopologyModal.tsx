@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { X, Maximize2 } from 'lucide-react';
 
 // Lazy load the 3D view component to avoid loading Three.js until needed
-const ThreeDTopologyContent = lazy(() => import('./ThreeDTopologyView'));
+const ThreeDTopologyContent = lazy(() => import('../pages/ThreeDTopologyView'));
 
 interface ThreeDTopologyModalProps {
   isOpen: boolean;
