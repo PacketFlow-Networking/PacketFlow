@@ -119,7 +119,7 @@ def _init_api_security():
         )
     
     if DEBUG_MODE and not API_KEY:
-        logger.warning("⚠️  Running in DEBUG mode without API_KEY - API security is DISABLED")
+        logger.warning("  Running in DEBUG mode without API_KEY - API security is DISABLED")
         API_KEY = "debug-mode-no-auth"  # Placeholder for debug mode
 
 
@@ -204,6 +204,9 @@ class WebSocketServer:
         
         # Setup routes
         self._setup_routes()
+        
+        # Include AI routes (structured outputs with Instructor)
+        self._include_ai_routes()
     
     def _setup_routes(self):
         """Setup FastAPI routes with security and monitoring."""
@@ -408,7 +411,7 @@ class WebSocketServer:
                 # Use AI agent's unified chat query processor
                 result = await self.ai_agent.process_chat_query(
                     query=query,
-                    include_events=True  # ← Include event context
+                    include_events=True  #  Include event context
                 )
                 
                 # Broadcast to all WebSocket clients
@@ -686,6 +689,29 @@ class WebSocketServer:
                 
             except Exception as e:
                 logger.error(f"Error in queue monitor: {e}")
+    
+    def _include_ai_routes(self):
+        """Include structured AI routes (Instructor-based)."""
+        try:
+            from api.routes.ai_routes import router as ai_router
+            self.app.include_router(ai_router)
+            logger.info("[OK] Structured AI routes enabled (Instructor)")
+            
+            # Verify Instructor client can be initialized
+            from config import config
+            if config.ai.mode == "remote":
+                from core.ai.instructor_client import InstructorClient
+                test_client = InstructorClient(
+                    base_url=config.ai.remote_url,
+                    model=config.ai.remote_model,
+                    timeout=config.ai.timeout
+                )
+                logger.info(f"[OK] Instructor client verified: {test_client.base_url}")
+            
+        except ImportError as e:
+            logger.warning(f"Structured AI routes not available: {e}")
+        except Exception as e:
+            logger.error(f"Failed to include AI routes: {e}")
     
     def get_app(self) -> FastAPI:
         """Get FastAPI application instance."""

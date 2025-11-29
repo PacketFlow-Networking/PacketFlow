@@ -634,35 +634,42 @@ class PacketCapture:
                     self.packet_count += 1
                     await asyncio.sleep(0.1)
                 
-                # Every 30 iterations, create various anomaly scenarios
-                if iteration % 30 == 0 and iteration > 0:
-                    logger.info("Generating anomaly spike with suspicious payloads...")
+                # Every 20 iterations, create MASSIVE anomaly spike (stronger detection)
+                if iteration % 20 == 0 and iteration > 0:
+                    logger.info("Generating STRONG anomaly spike with massive DNS flood...")
                     
-                    # Scenario 1: DNS amplification/tunneling
-                    anomaly_src, anomaly_dst = anomaly_hosts[4]  # IoT device
-                    for _ in range(50):
-                        suspicious_query = f"subdomain{random.randint(1, 1000)}.malicious-domain.com"
+                    # MASSIVE DNS flood: 500+ packets from same source to DNS
+                    anomaly_src = "192.168.1.50"  # Suspicious host
+                    anomaly_dst = "8.8.8.8"  # Google DNS
+                    
+                    for i in range(500):  # 500 DNS queries in rapid succession
+                        suspicious_query = f"tunnel{i}.exfil.local"
                         packet = {
                             "timestamp": datetime.now().isoformat(),
                             "src": anomaly_src,
                             "dst": anomaly_dst,
                             "proto": "UDP",
-                            "src_port": random.randint(49152, 65535),
+                            "src_port": 53000 + (i % 1000),  # Varying ports
                             "dst_port": 53,
-                            "length": random.randint(64, 128),
+                            "length": random.randint(64, 255),
                             "dns": {
                                 "query_name": suspicious_query,
-                                "query_type": "ANY",
-                                "transaction_id": f"0x{random.randint(0, 65535):04x}",
+                                "query_type": "A",
+                                "transaction_id": f"0x{i:04x}",
                             }
                         }
                         await queue.put(packet)
                         self.packet_count += 1
-                        await asyncio.sleep(0.01)
+                        await asyncio.sleep(0.001)  # 1ms between packets = massive rate
                     
-                    # Scenario 2: C2 beaconing from multiple hosts
-                    for anomaly_src, anomaly_dst in anomaly_hosts[:2]:  # Two C2 connections
-                        for _ in range(10):
+                    logger.info("DNS flood spike complete - should trigger CRITICAL anomaly detection")
+                    
+                # Additional attack scenarios every 45 iterations
+                if iteration % 45 == 0 and iteration > 0:
+                    # C2 beaconing from multiple hosts
+                    for idx, anomaly_src in enumerate(["192.168.1.15", "192.168.1.20"]):
+                        anomaly_dst = "10.0.0.5"
+                        for _ in range(15):
                             packet = {
                                 "timestamp": datetime.now().isoformat(),
                                 "src": anomaly_src,
@@ -674,29 +681,12 @@ class PacketCapture:
                                 "tcp_flags": {"syn": False, "ack": True, "psh": True, "fin": False, "rst": False},
                                 "tls": {
                                     "version": "TLS 1.2",
-                                    "server_name": "suspicious-c2-domain.com",
+                                    "server_name": "c2-beacon.evil.com",
                                 }
                             }
                             await queue.put(packet)
                             self.packet_count += 1
-                            await asyncio.sleep(0.05)
-                    
-                    # Scenario 3: Lateral movement
-                    anomaly_src, anomaly_dst = anomaly_hosts[2]  # Workstation to server
-                    for _ in range(30):
-                        packet = {
-                            "timestamp": datetime.now().isoformat(),
-                            "src": anomaly_src,
-                            "dst": anomaly_dst,
-                            "proto": "TCP",
-                            "src_port": random.randint(49152, 65535),
-                            "dst_port": random.choice([445, 3389, 22]),  # SMB, RDP, SSH
-                            "length": random.randint(100, 300),
-                            "tcp_flags": {"syn": True, "ack": False, "psh": False, "fin": False, "rst": False},
-                        }
-                        await queue.put(packet)
-                        self.packet_count += 1
-                        await asyncio.sleep(0.02)
+                            await asyncio.sleep(0.02)
                 
                 iteration += 1
                 await asyncio.sleep(1)

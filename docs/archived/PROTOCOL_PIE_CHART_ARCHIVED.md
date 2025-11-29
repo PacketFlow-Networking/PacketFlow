@@ -1,4 +1,4 @@
-# 📦 ARCHIVED: Protocol Pie Chart Enhancement
+#  ARCHIVED: Protocol Pie Chart Enhancement
 
 **Status**: Archived feature documentation - functionality is now integrated into StatsDashboard.tsx
 

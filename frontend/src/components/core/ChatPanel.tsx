@@ -23,11 +23,15 @@ const ChatPanel = () => {
     feedback, 
     setFeedback,
     focusedMessageId,
+    selectedEventId,
     events
   } = useStore();
   
-  const { queryAI } = useApi();
+  const { queryAI, analyzeEvent } = useApi();
   const messages = useStore(getAllMessages);
+  
+  // Get selected event if any
+  const selectedEvent = selectedEventId ? events.find(e => e.id === selectedEventId) : null;
 
   // Get related events for a message
   // Match events by their IDs stored in message.event_ids
@@ -99,6 +103,47 @@ const ChatPanel = () => {
     setFeedback(messageId, currentRating === rating ? null : rating);
   };
 
+  const handleAnalyzeSelectedEvent = async () => {
+    if (!selectedEvent || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const analysis = await analyzeEvent(selectedEvent);
+      
+      if (analysis) {
+        // Create structured AI message with explainability
+        const aiMessage: AIMessage = {
+          id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          timestamp: new Date().toISOString(),
+          content: analysis.summary || 'Analysis completed',
+          event_ids: [selectedEvent.id],
+          type: 'response',
+          brief_summary: analysis.brief_summary,
+          full_summary: analysis.summary,
+          what_happened: analysis.what_happened,
+          why_suspicious: analysis.why_suspicious,
+          detection_method: analysis.detection_method,
+          attack_context: analysis.attack_context,
+          threat_indicators: analysis.threat_indicators,
+          recommendations: analysis.recommendations,
+          technical_details: analysis.technical_details,
+          threat_level: analysis.threat_level,
+          confidence: analysis.confidence > 0.8 ? 'high' :
+                     analysis.confidence > 0.5 ? 'medium' : 'low'
+        };
+        
+        addAIMessage(aiMessage);
+        
+        // Auto-open the details modal
+        setSelectedMessage(aiMessage);
+      }
+    } catch (error) {
+      console.error('[Chat] Analyze event error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const renderMessage = (message: AIMessage | UserMessage) => {
     const isUser = message.type === 'user';
     const isAI = !isUser;
@@ -136,12 +181,23 @@ const ChatPanel = () => {
             )}
           </div>
 
-          <ExpandableText 
-            text={message.content}
-            maxLength={200}
-            className="text-text text-sm leading-relaxed"
-            onShowMore={aiMessage ? () => setSelectedMessage(aiMessage) : undefined}
-          />
+          {/* Display brief_summary if available, otherwise fallback to content */}
+          {aiMessage?.brief_summary ? (
+            <div 
+              className="text-text text-sm leading-relaxed cursor-pointer hover:text-info transition-colors"
+              onClick={() => setSelectedMessage(aiMessage)}
+            >
+              {aiMessage.brief_summary}
+              <span className="text-xs text-info ml-2"> View details</span>
+            </div>
+          ) : (
+            <ExpandableText 
+              text={message.content}
+              maxLength={200}
+              className="text-text text-sm leading-relaxed"
+              onShowMore={aiMessage ? () => setSelectedMessage(aiMessage) : undefined}
+            />
+          )}
 
           {aiMessage && (
             <div className="mt-3 flex items-center gap-3">
@@ -190,13 +246,30 @@ const ChatPanel = () => {
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-ok" />
-          <h2 className="text-lg font-semibold text-text">AI Assistant</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Bot className="w-5 h-5 text-ok" />
+              <h2 className="text-lg font-semibold text-text">AI Assistant</h2>
+            </div>
+            <p className="text-sm text-text-dim mt-1">
+              Ask questions about network activity and anomalies
+            </p>
+          </div>
+          
+          {/* Analyze Selected Event Button */}
+          {selectedEvent && (
+            <button
+              onClick={handleAnalyzeSelectedEvent}
+              disabled={isSubmitting}
+              className="px-3 py-2 bg-accent hover:bg-accent-hover text-text-dark rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              title="Analyze selected event with AI"
+            >
+              <Bot className="w-4 h-4" />
+              Analyze Event
+            </button>
+          )}
         </div>
-        <p className="text-sm text-text-dim mt-1">
-          Ask questions about network activity and anomalies
-        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar p-4 space-y-3">
@@ -233,7 +306,7 @@ const ChatPanel = () => {
             disabled={!input.trim() || isSubmitting}
             className="btn-primary px-4"
           >
-            {isSubmitting ? <span>⏳</span> : <Send className="w-5 h-5" />}
+            {isSubmitting ? <span></span> : <Send className="w-5 h-5" />}
           </button>
         </form>
       </div>

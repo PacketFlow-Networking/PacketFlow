@@ -7,127 +7,118 @@ The PacketFlow backend has been completely reorganized into a clean, modular arc
 
 ```
 backend/
-├── config/                    # Configuration management
-│   ├── __init__.py
-│   └── settings.py            # Environment-based configuration (moved from config.py)
-│
-├── core/                      # Core processing logic
-│   ├── __init__.py
-│   ├── capture/
-│   │   ├── __init__.py
-│   │   └── capture.py         # Multi-source packet capture (moved from capture.py)
-│   ├── condense/
-│   │   ├── __init__.py
-│   │   └── condenser.py       # Flow aggregation & anomaly detection (moved from condense_enhanced.py)
-│   └── ai/
-│       ├── __init__.py
-│       └── ai_agent.py        # AI reasoning engine (moved from ai_agent.py)
-│
-├── api/                       # REST/WebSocket API layer
-│   ├── __init__.py
-│   ├── websocket_server.py    # FastAPI app (moved from websocket_server.py)
-│   ├── routes/
-│   │   └── __init__.py        # Future: REST routes
-│   └── middleware/
-│       └── __init__.py        # Future: Auth, CORS, rate limiting
-│
-├── persistence/               # Database layer
-│   ├── __init__.py
-│   ├── db.py                  # SQLite async operations (moved from database.py)
-│   ├── repositories/
-│   │   └── __init__.py        # Future: Data access objects (DAO pattern)
-│   └── migrations/
-│       └── __init__.py        # Future: Schema versioning
-│
-├── observability/             # Metrics & monitoring
-│   ├── __init__.py
-│   ├── metrics/
-│   │   ├── __init__.py
-│   │   └── metrics.py         # Prometheus metrics (moved from metrics.py)
-│   └── logging/
-│       └── __init__.py        # Future: Structured logging
-│
-├── infrastructure/            # Background tasks & system concerns
-│   ├── __init__.py
-│   ├── tasks/
-│   │   ├── __init__.py
-│   │   └── manager.py         # Task restart logic (moved from task_manager.py)
-│   ├── cleanup/
-│   │   └── __init__.py        # Future: Resource cleanup
-│   └── signals/
-│       └── __init__.py        # Future: Signal handling
-│
-├── tests/                     # Comprehensive test suite
-│   ├── __init__.py
-│   ├── unit/                  # Individual component tests
-│   │   └── __init__.py
-│   ├── integration/           # Component interaction tests
-│   │   └── __init__.py
-│   ├── e2e/                   # Full pipeline tests
-│   │   └── __init__.py
-│   ├── test_client.py         # (moved from root)
-│   ├── test_enhanced_backend.py
-│   ├── test_improvements.py
-│   ├── test_pcap.py
-│   └── simple_pcap_test.py
-│
-├── utils/                     # Development utilities & diagnostics
-│   ├── __init__.py
-│   ├── diagnose_capture.py    # (moved from root)
-│   ├── diagnose_pcap.py
-│   ├── download_pcaps.py
-│   ├── format_logs.py
-│   └── switch_condenser.py
-│
-├── _deprecated/               # Legacy files (kept for reference during migration)
-│   ├── __init__.py
-│   ├── ai_agent.py            # ⚠️ USE: from core.ai import AIAgent
-│   ├── capture.py             # ⚠️ USE: from core.capture import PacketCapture
-│   ├── check_system.py
-│   ├── config.py              # ⚠️ USE: from config import config
-│   ├── condense.py
-│   ├── condense_enhanced.py   # ⚠️ USE: from core.condense import FlowCondenser
-│   ├── database.py            # ⚠️ USE: from persistence import Database
-│   ├── diagnose_capture.py
-│   ├── diagnose_pcap.py
-│   ├── download_pcaps.py
-│   ├── format_logs.py
-│   ├── metrics.py             # ⚠️ USE: from observability import packets_captured
-│   ├── switch_condenser.py
-│   ├── task_manager.py        # ⚠️ USE: from infrastructure import run_with_restart
-│   └── websocket_server.py    # ⚠️ USE: from api import WebSocketServer
-│
-├── main.py                    # Application entry point (updated imports)
-├── BACKEND_BUG_REPORT.md
-├── DATABASE_README.md
-├── requirements.txt
-├── pyproject.toml
-├── Dockerfile
-├── .env
-└── [other config files]
+ config/                    # Configuration management
+    __init__.py
+    settings.py            # Environment-based configuration (moved from config.py)
+ core/                      # Core processing logic
+    __init__.py
+    capture/
+       __init__.py
+       capture.py         # Multi-source packet capture (moved from capture.py)
+    condense/
+       __init__.py
+       condenser.py       # Flow aggregation & anomaly detection (moved from condense_enhanced.py)
+    ai/
+        __init__.py
+        ai_agent.py        # AI reasoning engine (moved from ai_agent.py)
+ api/                       # REST/WebSocket API layer
+    __init__.py
+    websocket_server.py    # FastAPI app (moved from websocket_server.py)
+    routes/
+       __init__.py        # Future: REST routes
+    middleware/
+        __init__.py        # Future: Auth, CORS, rate limiting
+ persistence/               # Database layer
+    __init__.py
+    db.py                  # SQLite async operations (moved from database.py)
+    repositories/
+       __init__.py        # Future: Data access objects (DAO pattern)
+    migrations/
+        __init__.py        # Future: Schema versioning
+ observability/             # Metrics & monitoring
+    __init__.py
+    metrics/
+       __init__.py
+       metrics.py         # Prometheus metrics (moved from metrics.py)
+    logging/
+        __init__.py        # Future: Structured logging
+ infrastructure/            # Background tasks & system concerns
+    __init__.py
+    tasks/
+       __init__.py
+       manager.py         # Task restart logic (moved from task_manager.py)
+    cleanup/
+       __init__.py        # Future: Resource cleanup
+    signals/
+        __init__.py        # Future: Signal handling
+ tests/                     # Comprehensive test suite
+    __init__.py
+    unit/                  # Individual component tests
+       __init__.py
+    integration/           # Component interaction tests
+       __init__.py
+    e2e/                   # Full pipeline tests
+       __init__.py
+    test_client.py         # (moved from root)
+    test_enhanced_backend.py
+    test_improvements.py
+    test_pcap.py
+    simple_pcap_test.py
+ utils/                     # Development utilities & diagnostics
+    __init__.py
+    diagnose_capture.py    # (moved from root)
+    diagnose_pcap.py
+    download_pcaps.py
+    format_logs.py
+    switch_condenser.py
+ _deprecated/               # Legacy files (kept for reference during migration)
+    __init__.py
+    ai_agent.py            #  USE: from core.ai import AIAgent
+    capture.py             #  USE: from core.capture import PacketCapture
+    check_system.py
+    config.py              #  USE: from config import config
+    condense.py
+    condense_enhanced.py   #  USE: from core.condense import FlowCondenser
+    database.py            #  USE: from persistence import Database
+    diagnose_capture.py
+    diagnose_pcap.py
+    download_pcaps.py
+    format_logs.py
+    metrics.py             #  USE: from observability import packets_captured
+    switch_condenser.py
+    task_manager.py        #  USE: from infrastructure import run_with_restart
+    websocket_server.py    #  USE: from api import WebSocketServer
+ main.py                    # Application entry point (updated imports)
+ BACKEND_BUG_REPORT.md
+ DATABASE_README.md
+ requirements.txt
+ pyproject.toml
+ Dockerfile
+ .env
+ [other config files]
 ```
 
 ## File Organization Summary
 
 ### Moved to `config/`
-- `config.py` → `config/settings.py`
+- `config.py`  `config/settings.py`
 
 ### Moved to `core/`
-- `capture.py` → `core/capture/capture.py`
-- `condense_enhanced.py` → `core/condense/condenser.py`
-- `ai_agent.py` → `core/ai/ai_agent.py`
+- `capture.py`  `core/capture/capture.py`
+- `condense_enhanced.py`  `core/condense/condenser.py`
+- `ai_agent.py`  `core/ai/ai_agent.py`
 
 ### Moved to `api/`
-- `websocket_server.py` → `api/websocket_server.py`
+- `websocket_server.py`  `api/websocket_server.py`
 
 ### Moved to `persistence/`
-- `database.py` → `persistence/db.py`
+- `database.py`  `persistence/db.py`
 
 ### Moved to `observability/`
-- `metrics.py` → `observability/metrics/metrics.py`
+- `metrics.py`  `observability/metrics/metrics.py`
 
 ### Moved to `infrastructure/`
-- `task_manager.py` → `infrastructure/tasks/manager.py`
+- `task_manager.py`  `infrastructure/tasks/manager.py`
 
 ### Moved to `tests/`
 - `test_client.py`
@@ -227,7 +218,7 @@ from api import WebSocketServer
 from persistence import Database
 from infrastructure import run_with_restart
 from observability import packets_captured
-print('✓ All imports successful!')
+print(' All imports successful!')
 "
 ```
 
@@ -262,14 +253,14 @@ print('✓ All imports successful!')
 
 ## Benefits of This Organization
 
-✓ **Clear Separation of Concerns** - Each directory has a single, well-defined responsibility
-✓ **Easy Navigation** - Files organized by functionality, not type
-✓ **Scalability** - Easy to add new routes, metrics, tasks, or modules
-✓ **Testability** - Core logic decoupled from infrastructure for easier testing
-✓ **Maintainability** - New developers can quickly understand the structure
-✓ **No Circular Dependencies** - Clean import graph following layered architecture
-✓ **Future-Proof** - Ready for microservices or API gateway patterns
-✓ **Backwards Compatibility** - `_deprecated/` allows for gradual migration
+ **Clear Separation of Concerns** - Each directory has a single, well-defined responsibility
+ **Easy Navigation** - Files organized by functionality, not type
+ **Scalability** - Easy to add new routes, metrics, tasks, or modules
+ **Testability** - Core logic decoupled from infrastructure for easier testing
+ **Maintainability** - New developers can quickly understand the structure
+ **No Circular Dependencies** - Clean import graph following layered architecture
+ **Future-Proof** - Ready for microservices or API gateway patterns
+ **Backwards Compatibility** - `_deprecated/` allows for gradual migration
 
 ## File Statistics
 

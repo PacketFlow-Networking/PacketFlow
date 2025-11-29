@@ -4,31 +4,20 @@
 
 ---
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 The backend follows a **7-tier functional architecture** designed for scalability, testability, and maintainability:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      ENTRY POINT                               │
-│                      main.py (orchestrator)                    │
-└─────────────────────────────────────────────────────────────────┘
-                              ↓
-┌──────────┬──────────┬────────────┬──────────┬────────────────────┐
-│          │          │            │          │                    │
-▼          ▼          ▼            ▼          ▼                    ▼
-┌────┐ ┌────┐ ┌────────┐ ┌──────────┐ ┌──────────────┐ ┌─────────────┐
-│CFG │ │API │ │CORE    │ │PERSIST.  │ │OBSERVABILITY │ │INFRASTRUCTURE
-│    │ │    │ │        │ │          │ │              │ │
-└────┘ └────┘ └────────┘ └──────────┘ └──────────────┘ └─────────────┘
-   1     2       3          4              5               6
+                      ENTRY POINT                                                     main.py (orchestrator)                                                                                                                                                                                   CFG  API  CORE     PERSIST.   OBSERVABILITY  INFRASTRUCTURE
+                                                     1     2       3          4              5               6
                             
                     7: TESTS (integration/unit/e2e)
 ```
 
 ---
 
-## 📂 Root Directory Structure
+##  Root Directory Structure
 
 **Key directories:**
 - `config/` - Configuration management
@@ -55,7 +44,7 @@ The backend follows a **7-tier functional architecture** designed for scalabilit
 
 ---
 
-## 📁 Directory Structure & Components
+##  Directory Structure & Components
 
 ### **1. `config/` - Configuration Management**
 
@@ -365,7 +354,7 @@ LOG_FILE=packetflow.log
 
 **Features:**
 - **Automatic restart** - Restarts crashed tasks with backoff
-- **Exponential backoff** - 1s → 2s → 4s → 8s (max 30s)
+- **Exponential backoff** - 1s  2s  4s  8s (max 30s)
 - **Logging** - Tracks restarts for debugging
 - **Non-blocking** - Doesn't freeze the event loop
 
@@ -416,7 +405,7 @@ await run_with_restart(unstable_task, max_retries=5)
 - Fast execution (~seconds)
 
 #### **Integration Tests** (`tests/integration/`)
-- Multi-component workflows (capture → condense → AI)
+- Multi-component workflows (capture  condense  AI)
 - Real database operations
 - Medium execution (~minutes)
 
@@ -434,7 +423,7 @@ await run_with_restart(unstable_task, max_retries=5)
 
 ---
 
-## 🛠️ Development Utilities
+##  Development Utilities
 
 **Location:** `backend/utils/`
 
@@ -456,7 +445,7 @@ python utils/download_pcaps.py       # Get test data
 
 ---
 
-## ▶️ Running the Backend
+##  Running the Backend
 
 ### **Quick Start (Mock Mode - No Dependencies)**
 
@@ -512,28 +501,23 @@ python main.py
 
 ---
 
-## 📊 Data Flow Pipeline
+##  Data Flow Pipeline
 
 ```
 Packet Source (Capture)
-    ↓ packet_queue (1000 max)
-    ↓
-Flow Condenser (Aggregation + Anomaly Detection)
-    ↓ event_queue (100 max)
-    ↓
-AI Agent (Generate Explanations)
-    ↓ output_queue (100 max)
-    ↓
-WebSocket Server (Broadcast to Clients)
-    ↓
-Persistence (Save to SQLite)
-    ↓
-Frontend (React UI Display)
+     packet_queue (1000 max)
+    Flow Condenser (Aggregation + Anomaly Detection)
+     event_queue (100 max)
+    AI Agent (Generate Explanations)
+     output_queue (100 max)
+    WebSocket Server (Broadcast to Clients)
+    Persistence (Save to SQLite)
+    Frontend (React UI Display)
 ```
 
 ---
 
-## 🔧 Configuration Deep Dive
+##  Configuration Deep Dive
 
 ### **All Configuration Options** (in `.env`)
 
@@ -584,7 +568,7 @@ PROMETHEUS_PORT=8001
 
 ---
 
-## 📋 Common Tasks
+##  Common Tasks
 
 ### **Run Tests**
 ```bash
@@ -625,7 +609,7 @@ curl http://localhost:8000/metrics  # Prometheus format
 
 ---
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### **No events appearing**
 1. Check backend is running: `curl http://localhost:8000/status`
@@ -651,7 +635,7 @@ curl http://localhost:8000/metrics  # Prometheus format
 
 ---
 
-## 🏛️ Architecture Principles
+##  Architecture Principles
 
 1. **Async-first** - All I/O is non-blocking using asyncio
 2. **Queue-based decoupling** - Stages connected via async queues, not direct calls
@@ -664,7 +648,7 @@ curl http://localhost:8000/metrics  # Prometheus format
 
 ---
 
-## 📚 Additional Documentation
+##  Additional Documentation
 
 - **Database Setup:** `persistence/README.md`
 - **Bug Report:** `BACKEND_BUG_REPORT.md`
@@ -672,7 +656,7 @@ curl http://localhost:8000/metrics  # Prometheus format
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 When adding new features:
 
@@ -685,6 +669,6 @@ When adding new features:
 
 ---
 
-## 📄 License
+##  License
 
 See main project LICENSE file.

@@ -99,6 +99,43 @@ export const useApi = () => {
     }
   }, [mockMode]);
 
+  const analyzeEvent = useCallback(async (eventData: any): Promise<any | null> => {
+    if (mockMode) {
+      // Return mock structured analysis
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return {
+        brief_summary: "Mock DNS spike detected from source",
+        summary: "This is a mock structured analysis response. Enable backend for real AI insights.",
+        threat_level: "medium",
+        what_happened: "Simulated network anomaly",
+        why_suspicious: "Mock detection for testing",
+        detection_method: "Mock analysis",
+        confidence: 0.75
+      };
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/ai/analyze-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ event: eventData })
+      });
+      
+      if (!response.ok) {
+        console.error(`[API] Analyze event failed: ${response.status}`);
+        return null;
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('[API] Analyze event error:', error);
+      return null;
+    }
+  }, [mockMode]);
+
   // Poll status periodically
   useEffect(() => {
     const pollStatus = async () => {
@@ -121,6 +158,7 @@ export const useApi = () => {
 
   return {
     getStatus,
-    queryAI
+    queryAI,
+    analyzeEvent
   };
 };

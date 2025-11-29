@@ -50,7 +50,7 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
                 {dayjs(message.timestamp).format('MMM D, YYYY HH:mm:ss')}
                 {message.confidence && (
                   <>
-                    <span className="text-muted">•</span>
+                    <span className="text-muted"></span>
                     <span className={`badge ${
                       message.confidence === 'high' ? 'badge-ok' :
                       message.confidence === 'medium' ? 'badge-info' : 'badge-warn'
@@ -99,18 +99,153 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
             )}
           </div>
 
-          {/* Full AI Response */}
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Bot className="w-4 h-4 text-info" />
-              <h3 className="font-semibold text-text">AI Analysis</h3>
-            </div>
-            <div className="bg-panel border border-info/30 rounded-lg p-4">
-              <p className="text-text text-sm leading-relaxed whitespace-pre-wrap">
-                {message.content}
-              </p>
-            </div>
-          </section>
+          {/* Structured Explainability Fields */}
+          {message.full_summary || message.what_happened || message.why_suspicious ? (
+            <section className="space-y-4">
+              {/* Full Summary */}
+              {message.full_summary && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bot className="w-4 h-4 text-info" />
+                    <h3 className="font-semibold text-text">Summary</h3>
+                  </div>
+                  <div className="bg-panel border border-info/30 rounded-lg p-4">
+                    <p className="text-text text-sm leading-relaxed">{message.full_summary}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Threat Level */}
+              {message.threat_level && (
+                <div className="flex items-center gap-3">
+                  <Shield className="w-4 h-4 text-info" />
+                  <span className="text-sm text-muted">Threat Level:</span>
+                  <span className={`badge ${
+                    message.threat_level === 'critical' ? 'badge-error' :
+                    message.threat_level === 'high' ? 'badge-warn' :
+                    message.threat_level === 'medium' ? 'badge-info' : 'badge-ok'
+                  }`}>
+                    {message.threat_level}
+                  </span>
+                </div>
+              )}
+
+              {/* What Happened */}
+              {message.what_happened && (
+                <div>
+                  <h4 className="text-sm font-semibold text-text mb-2"> What Happened</h4>
+                  <div className="bg-panel border border-border rounded-lg p-3">
+                    <p className="text-text text-sm">{message.what_happened}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Why Suspicious */}
+              {message.why_suspicious && (
+                <div>
+                  <h4 className="text-sm font-semibold text-text mb-2"> Why Suspicious</h4>
+                  <div className="bg-panel border border-warning/30 rounded-lg p-3">
+                    <p className="text-text text-sm">{message.why_suspicious}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Detection Method */}
+              {message.detection_method && (
+                <div>
+                  <h4 className="text-sm font-semibold text-text mb-2"> Detection Method</h4>
+                  <div className="bg-panel border border-border rounded-lg p-3">
+                    <p className="text-text text-sm">{message.detection_method}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Attack Context */}
+              {message.attack_context && (
+                <div>
+                  <h4 className="text-sm font-semibold text-text mb-2"> Attack Context</h4>
+                  <div className="bg-panel border border-error/30 rounded-lg p-3">
+                    <p className="text-text text-sm">{message.attack_context}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Threat Indicators */}
+              {message.threat_indicators && message.threat_indicators.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-text mb-2"> Threat Indicators</h4>
+                  <div className="space-y-2">
+                    {message.threat_indicators.map((indicator, idx) => (
+                      <div key={idx} className="bg-panel border border-error/30 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="badge badge-error">{indicator.type}</span>
+                          <span className="text-xs font-mono text-muted">
+                            {(indicator.confidence * 100).toFixed(0)}% confidence
+                          </span>
+                        </div>
+                        <p className="text-sm text-text mb-1">{indicator.explanation}</p>
+                        <p className="text-xs text-muted">Evidence: {indicator.evidence}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendations */}
+              {message.recommendations && message.recommendations.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-text mb-2"> Recommendations</h4>
+                  <div className="space-y-2">
+                    {message.recommendations.map((rec, idx) => (
+                      <div key={idx} className="bg-panel border border-ok/30 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold text-text text-sm">{rec.action}</span>
+                          <span className={`badge ${
+                            rec.priority === 'critical' ? 'badge-error' :
+                            rec.priority === 'high' ? 'badge-warn' :
+                            rec.priority === 'medium' ? 'badge-info' : 'badge-ok'
+                          }`}>
+                            {rec.priority}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted">{rec.details}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Technical Details */}
+              {message.technical_details && Object.keys(message.technical_details).length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-text mb-2"> Technical Details</h4>
+                  <div className="bg-panel border border-border rounded-lg p-3">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {Object.entries(message.technical_details).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-muted">{key}:</span>
+                          <span className="text-text font-mono">{String(value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          ) : (
+            /* Fallback to original content display */
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <Bot className="w-4 h-4 text-info" />
+                <h3 className="font-semibold text-text">AI Analysis</h3>
+              </div>
+              <div className="bg-panel border border-info/30 rounded-lg p-4">
+                <p className="text-text text-sm leading-relaxed whitespace-pre-wrap">
+                  {message.content}
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* Related Events with Full Details */}
           {relatedEvents.length > 0 && (

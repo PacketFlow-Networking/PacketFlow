@@ -17,6 +17,14 @@ from datetime import datetime
 import aiohttp
 import json
 
+# Import Instructor client for structured AI analysis
+try:
+    from core.ai.instructor_client import InstructorClient
+    INSTRUCTOR_AVAILABLE = True
+except ImportError:
+    INSTRUCTOR_AVAILABLE = False
+    logger.warning("Instructor client not available - structured analysis disabled")
+
 logger = logging.getLogger(__name__)
 
 
@@ -82,6 +90,19 @@ class AIAgent:
         self.query_count = 0
         self.error_count = 0
         self.incidents_detected = 0
+        
+        # Initialize Instructor client for structured analysis
+        self.instructor_client: Optional[InstructorClient] = None
+        if INSTRUCTOR_AVAILABLE and mode == 'remote':
+            try:
+                self.instructor_client = InstructorClient(
+                    base_url=remote_url,
+                    model=remote_model,
+                    timeout=timeout
+                )
+                logger.info("Instructor client initialized for structured AI analysis")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Instructor client: {e}")
         
     def _default_system_prompt(self) -> str:
         """Generate default system prompt for network security analysis."""
@@ -185,11 +206,24 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 severity = event.get("severity", "low")
                 is_warmup = event.get("is_warmup", False)
                 
+                # Debug: Log ALL event status (not just anomalies)
+                logger.info(f"Event {event['src']}  {event['dst']} | is_anomaly={is_anomaly}, severity={severity}, warmup={is_warmup}, score={event.get('anomaly_score', 0):.2f}")
+                
                 # Skip AI during warmup
                 if is_warmup:
+                    logger.info(f"  SKIP: Warmup phase")
                     event["ai_explanation"] = None
                     event["ai_processed"] = False
                     event["ai_mode"] = None
+                    event["ai_timestamp"] = None
+                    await output_queue.put(event)
+                    continue
+                
+                # Skip non-anomalies
+                if not is_anomaly or severity not in ["medium", "high", "critical"]:
+                    logger.info(f"  SKIP: Not anomaly or severity too low ({severity})")
+                    event["ai_explanation"] = None
+                    event["ai_processed"] = False
                     event["ai_timestamp"] = None
                     await output_queue.put(event)
                     continue
@@ -198,41 +232,39 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 self.recent_events.append(event)
                 
                 # Analyze medium+ anomalies
-                if is_anomaly and severity in ["medium", "high", "critical"]:
-                    logger.info(f"Analyzing {severity} anomaly with enhanced AI...")
-                    
-                    # Check for correlated events
-                    correlated_events = self._find_correlated_events(event)
-                    
-                    # Generate structured explanation
-                    explanation = await self._generate_structured_explanation(
-                        event, 
-                        correlated_events
-                    )
-                    
-                    event["ai_explanation"] = explanation["text"]
-                    event["ai_confidence"] = explanation["confidence"]
-                    event["ai_threat_level"] = explanation["threat_level"]
-                    event["ai_recommendations"] = explanation["recommendations"]
-                    event["ai_evidence"] = explanation["evidence"]
-                    event["ai_correlated_events"] = len(correlated_events)
-                    event["ai_processed"] = True
-                    event["ai_mode"] = self.mode
-                    event["ai_timestamp"] = datetime.now().isoformat()
-                    
-                    self.query_count += 1
-                    
-                    # Check if this is part of a larger incident
-                    if len(correlated_events) >= 2:
-                        incident = self._create_incident(event, correlated_events)
-                        event["ai_incident"] = incident
-                        self.incidents_detected += 1
-                        logger.warning(f"INCIDENT DETECTED: {incident['title']}")
-                else:
-                    # Normal traffic - no AI analysis needed
-                    event["ai_explanation"] = None
-                    event["ai_processed"] = False
-                    event["ai_timestamp"] = None
+                logger.info(f"  ANALYZE: {severity.upper()} anomaly - calling AI...")
+                
+                # Check for correlated events
+                correlated_events = self._find_correlated_events(event)
+                
+                # Generate structured explanation
+                explanation = await self._generate_structured_explanation(
+                    event, 
+                    correlated_events
+                )
+                
+                event["ai_explanation"] = explanation["text"]
+                event["ai_confidence"] = explanation["confidence"]
+                event["ai_threat_level"] = explanation["threat_level"]
+                event["ai_recommendations"] = explanation["recommendations"]
+                event["ai_evidence"] = explanation["evidence"]
+                event["ai_correlated_events"] = len(correlated_events)
+                event["ai_processed"] = True
+                event["ai_mode"] = self.mode
+                event["ai_timestamp"] = datetime.now().isoformat()
+                
+                # Add structured analysis if available (from Instructor)
+                if "structured_analysis" in explanation:
+                    event["ai_analysis"] = explanation["structured_analysis"]
+                
+                self.query_count += 1
+                
+                # Check if this is part of a larger incident
+                if len(correlated_events) >= 2:
+                    incident = self._create_incident(event, correlated_events)
+                    event["ai_incident"] = incident
+                    self.incidents_detected += 1
+                    logger.warning(f"INCIDENT DETECTED: {incident['title']}")
                 
                 await output_queue.put(event)
                 
@@ -286,6 +318,79 @@ Be direct and actionable. Avoid unnecessary hedging."""
     ) -> Dict:
         """Generate structured explanation with evidence and recommendations."""
         try:
+            # Try Instructor-based structured analysis first (remote mode only)
+            if self.instructor_client and self.mode == 'remote':
+                try:
+                    from core.ai.schemas import NetworkEventAnalysis
+                    
+                    # Build comprehensive prompt for structured analysis
+                    prompt = f"""Analyze this network security anomaly and provide DETAILED EXPLAINABILITY:
+
+=== EVENT DATA ===
+Source IP: {event.get('src', 'unknown')}
+Destination IP: {event.get('dst', 'unknown')}
+Protocol: {event.get('proto', 'unknown')}
+Flow Count: {event.get('flows', 0)}
+Total Bytes: {event.get('total_bytes', 0)}
+Average Packet Size: {event.get('avg_packet_size', 0)} bytes
+Anomaly Score: {event.get('anomaly_score', 0.0)}
+Detection Methods Used: {', '.join(event.get('detection_methods', []))}
+Threat Indicators: {', '.join(event.get('threat_indicators', []))}
+System Summary: {event.get('summary', 'No summary available')}
+
+=== REQUIRED EXPLAINABILITY ===
+0. BRIEF SUMMARY: Create a one-line summary (50-80 chars) for chat sidebar display
+1. WHAT HAPPENED: Describe the observable anomalous behavior
+2. WHY SUSPICIOUS: Explain why this deviates from normal network patterns
+3. DETECTION METHOD: Explain how the detection methods identified this
+4. THREAT INDICATORS: For each indicator, provide evidence AND explanation
+5. ATTACK CONTEXT: What type of attack this might be and attacker objectives
+6. TECHNICAL DETAILS: Key metrics that triggered the alert
+
+Provide comprehensive security analysis with explainable threat indicators and actionable recommendations."""
+                    
+                    system_prompt = "You are an expert network security analyst. Analyze events and provide structured, actionable security insights."
+                    
+                    # Get structured analysis from Instructor
+                    analysis = await self.instructor_client.create_completion(
+                        response_model=NetworkEventAnalysis,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": prompt}
+                        ]
+                    )
+                    
+                    # Convert Pydantic model to dict for event
+                    return {
+                        "text": analysis.summary,  # Use full summary for ai_explanation
+                        "confidence": "high" if analysis.confidence > 0.8 else "medium" if analysis.confidence > 0.5 else "low",
+                        "threat_level": analysis.threat_level,
+                        "recommendations": [{"action": r.action, "priority": r.priority, "details": r.details} 
+                                          for r in analysis.recommendations],
+                        "evidence": self._extract_evidence(event),
+                        # Add structured analysis object
+                        "structured_analysis": {
+                            "brief_summary": analysis.brief_summary,
+                            "summary": analysis.summary,
+                            "what_happened": analysis.what_happened,
+                            "why_suspicious": analysis.why_suspicious,
+                            "detection_method": analysis.detection_method,
+                            "attack_context": analysis.attack_context,
+                            "threat_indicators": [{"type": ti.type, "confidence": ti.confidence, 
+                                                  "evidence": ti.evidence, "explanation": ti.explanation}
+                                                for ti in analysis.threat_indicators],
+                            "recommendations": [{"action": r.action, "priority": r.priority, "details": r.details}
+                                              for r in analysis.recommendations],
+                            "technical_details": analysis.technical_details,
+                            "threat_level": analysis.threat_level,
+                            "confidence": analysis.confidence
+                        }
+                    }
+                    
+                except Exception as instructor_error:
+                    logger.warning(f"Instructor analysis failed, falling back to basic AI: {instructor_error}")
+            
+            # Fallback to basic AI analysis
             prompt = self._build_structured_prompt(event, correlated_events)
             
             if self.mode == 'local':
@@ -750,7 +855,7 @@ Keep it concise and actionable. Focus on the most important findings."""
                     threats = ', '.join(event.get('threat_indicators', [])) or 'None'
                     
                     context_parts.append(
-                        f"  [{time_only}] {src} → {dst} ({proto}) "
+                        f"  [{time_only}] {src}  {dst} ({proto}) "
                         f"Score: {score:.2f} | Threats: {threats}"
                     )
             else:

@@ -1,21 +1,21 @@
 # Intelligent User Interfaces (IUI) - Phase 1 Implementation
 
-## ✅ Completed Features
+##  Completed Features
 
 ### 1. **Explainable AI Visualizations** 
 **Component**: `AIExplanationPanel.tsx`
 
 **Features Implemented**:
-- ✅ **Step-by-Step Reasoning Chain**: Shows AI's logical process with confidence scores
-- ✅ **Decision Factors Visualization**: Bar charts showing which metrics contributed to detection
-- ✅ **Alternative Hypotheses**: Shows rejected explanations with reasoning
-- ✅ **Confidence Breakdown**: Detailed breakdown of confidence sources
-- ✅ **Collapsible Sections**: Progressive disclosure for complex information
-- ✅ **Educational Notes**: Contextual help explaining how to interpret results
+-  **Step-by-Step Reasoning Chain**: Shows AI's logical process with confidence scores
+-  **Decision Factors Visualization**: Bar charts showing which metrics contributed to detection
+-  **Alternative Hypotheses**: Shows rejected explanations with reasoning
+-  **Confidence Breakdown**: Detailed breakdown of confidence sources
+-  **Collapsible Sections**: Progressive disclosure for complex information
+-  **Educational Notes**: Contextual help explaining how to interpret results
 
 **Integration**: Automatically appears in Event Details Modal for anomalies with score > 0.5
 
-**Location**: Event Details Modal → AI Explanation section
+**Location**: Event Details Modal  AI Explanation section
 
 ---
 
@@ -23,12 +23,12 @@
 **Component**: `ProactiveSuggestions.tsx`
 
 **Features Implemented**:
-- ✅ **Smart Pattern Detection**: Auto-generates suggestions based on event patterns
-- ✅ **Priority Levels**: High/Medium/Low with color coding
-- ✅ **Actionable Buttons**: One-click actions to apply filters, create incidents
-- ✅ **Auto-Expiry**: Suggestions expire after configured time
-- ✅ **Dismissible**: Users can dismiss suggestions
-- ✅ **Persistent Dismissals**: Remembers dismissed suggestions
+-  **Smart Pattern Detection**: Auto-generates suggestions based on event patterns
+-  **Priority Levels**: High/Medium/Low with color coding
+-  **Actionable Buttons**: One-click actions to apply filters, create incidents
+-  **Auto-Expiry**: Suggestions expire after configured time
+-  **Dismissible**: Users can dismiss suggestions
+-  **Persistent Dismissals**: Remembers dismissed suggestions
 
 **Suggestion Types**:
 1. **Investigation**: Multiple anomalies from same source
@@ -68,45 +68,41 @@
 
 ---
 
-## 🎨 Visual Design
+##  Visual Design
 
 ### Explainable AI Panel
 - **Color-coded confidence**: Green (>80%), Yellow (>50%), Red (<50%)
-- **Impact indicators**: ✓ Positive, ✗ Negative, ℹ Neutral
+- **Impact indicators**:  Positive,  Negative,  Neutral
 - **Progress bars**: Visual representation of confidence and factor weights
 - **Expandable sections**: Reduce cognitive load with progressive disclosure
 
 ### Proactive Suggestions
 - **Priority borders**: Red (high), Yellow (medium), Blue (low)
-- **Icon system**: 🔍 Investigation, ⚠️ Action, 🔧 Filter, 📚 Learning
+- **Icon system**:  Investigation,  Action,  Filter,  Learning
 - **Inline actions**: ChevronRight button for quick execution
 - **Dismissible**: X button for user control
 
 ---
 
-## 📊 Data Flow (No Changes to Existing Flow)
+##  Data Flow (No Changes to Existing Flow)
 
 ```
-Backend Events → WebSocket → Store → Events Array
-                                    ↓
-                          ProactiveSuggestions (analyzes)
-                                    ↓
-                          Generates suggestions
-                                    ↓
-                          Store.suggestions[]
-                                    ↓
-                          Displayed in UI
+Backend Events  WebSocket  Store  Events Array
+                                                              ProactiveSuggestions (analyzes)
+                                                              Generates suggestions
+                                                              Store.suggestions[]
+                                                              Displayed in UI
 ```
 
 **No modifications to**:
-- ✅ WebSocket message handling
-- ✅ Event processing pipeline
-- ✅ AI agent backend logic
-- ✅ Existing components behavior
+-  WebSocket message handling
+-  Event processing pipeline
+-  AI agent backend logic
+-  Existing components behavior
 
 ---
 
-## 🚀 Usage Guide
+##  Usage Guide
 
 ### Viewing AI Explanations
 1. Click on any anomaly event (score > 0.5)
@@ -155,7 +151,7 @@ store.addEventFeedback({
 
 ---
 
-## 📈 Next Steps (Phase 2)
+##  Next Steps (Phase 2)
 
 ### Ready to Implement:
 1. **Interactive Machine Teaching**
@@ -180,7 +176,7 @@ store.addEventFeedback({
 
 ---
 
-## 🧪 Testing
+##  Testing
 
 ### To Test Explainable AI:
 1. Start backend: `cd backend && python main.py`
@@ -198,7 +194,7 @@ store.addEventFeedback({
 
 ---
 
-## 🔧 Configuration
+##  Configuration
 
 ### Suggestion Auto-Generation Interval
 ```typescript
@@ -222,7 +218,7 @@ expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
 
 ---
 
-## 📚 Research Context
+##  Research Context
 
 These implementations align with IUI research principles:
 
@@ -234,7 +230,7 @@ These implementations align with IUI research principles:
 
 ---
 
-## 🎯 Success Metrics
+##  Success Metrics
 
 To evaluate IUI effectiveness:
 - **Explainability**: % of users who understand AI decisions
@@ -245,7 +241,7 @@ To evaluate IUI effectiveness:
 
 ---
 
-## 🐛 Known Limitations
+##  Known Limitations
 
 1. **Mock Data**: AI explanations currently use generated data
    - Future: Connect to actual backend AI reasoning
@@ -256,7 +252,7 @@ To evaluate IUI effectiveness:
 
 ---
 
-## 📝 File Changes Summary
+##  File Changes Summary
 
 **New Files Created**:
 - `frontend/src/components/AIExplanationPanel.tsx` (340 lines)
@@ -270,4 +266,4 @@ To evaluate IUI effectiveness:
 - `frontend/src/components/EventDetailsModal.tsx` (+5 lines - AIExplanationPanel integration)
 
 **Total Lines Added**: ~815 lines
-**Existing Functionality**: ✅ Fully preserved
+**Existing Functionality**:  Fully preserved

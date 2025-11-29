@@ -82,11 +82,11 @@ class Config:
             try:
                 from dotenv import load_dotenv
                 load_dotenv(env_file)
-                print(f"✓ Loaded environment from: {env_file}")
+                print(f" Loaded environment from: {env_file}")
             except ImportError:
                 print("Warning: python-dotenv not installed, using system env vars only")
         else:
-            print(f"⚠️  WARNING: .env file not found at {env_file}")
+            print(f"  WARNING: .env file not found at {env_file}")
         
         return cls()
 

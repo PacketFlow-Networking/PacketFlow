@@ -95,6 +95,9 @@ export const useWebSocket = () => {
             
             // If there's AI explanation, add it as AI message
             if (eventData.ai_explanation && eventData.ai_processed) {
+              // Check if we have structured analysis from Instructor
+              const hasStructuredData = eventData.ai_analysis && typeof eventData.ai_analysis === 'object';
+              
               const aiMessage: AIMessage = {
                 id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 timestamp: new Date().toISOString(),
@@ -102,7 +105,22 @@ export const useWebSocket = () => {
                 event_ids: [networkEvent.id],
                 type: eventData.is_anomaly ? 'warning' : 'insight',
                 confidence: eventData.anomaly_score > 0.8 ? 'high' : 
-                           eventData.anomaly_score > 0.5 ? 'medium' : 'low'
+                           eventData.anomaly_score > 0.5 ? 'medium' : 'low',
+                // Add structured fields if available
+                ...(hasStructuredData && {
+                  brief_summary: eventData.ai_analysis.brief_summary,
+                  full_summary: eventData.ai_analysis.summary,
+                  what_happened: eventData.ai_analysis.what_happened,
+                  why_suspicious: eventData.ai_analysis.why_suspicious,
+                  detection_method: eventData.ai_analysis.detection_method,
+                  attack_context: eventData.ai_analysis.attack_context,
+                  threat_indicators: eventData.ai_analysis.threat_indicators,
+                  recommendations: eventData.ai_analysis.recommendations,
+                  technical_details: eventData.ai_analysis.technical_details,
+                  threat_level: eventData.ai_analysis.threat_level,
+                  confidence: eventData.ai_analysis.confidence > 0.8 ? 'high' :
+                             eventData.ai_analysis.confidence > 0.5 ? 'medium' : 'low'
+                })
               };
               addAIMessage(aiMessage);
             }
@@ -115,7 +133,7 @@ export const useWebSocket = () => {
               id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               timestamp: responseData.timestamp || new Date().toISOString(),
               content: responseData.response || 'No response',
-              event_ids: responseData.event_ids || [],  // ← Now has linked events!
+              event_ids: responseData.event_ids || [],  //  Now has linked events!
               type: responseData.error ? 'warning' : 'insight',
               confidence: responseData.confidence || 'medium'
             };

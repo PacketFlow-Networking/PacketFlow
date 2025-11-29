@@ -12,14 +12,14 @@ interface Term {
 const GLOSSARY: Term[] = [
   // Detection Methods
   { name: 'Z-Score', definition: 'Statistical measure of how many standard deviations a value is from the mean. Used to detect outliers.', example: 'Z-Score of 4.5 means the value is 4.5 standard deviations above normal.', category: 'detection' },
-  { name: 'IQR', definition: 'Interquartile Range: A robust measure of statistical dispersion, the difference between the 75th and 25th percentiles.', example: 'Values outside 1.5×IQR are considered outliers.', category: 'detection' },
+  { name: 'IQR', definition: 'Interquartile Range: A robust measure of statistical dispersion, the difference between the 75th and 25th percentiles.', example: 'Values outside 1.5IQR are considered outliers.', category: 'detection' },
   { name: 'EWMA', definition: 'Exponentially Weighted Moving Average: Gives more weight to recent observations while tracking trends.', example: 'Detects gradual traffic increases better than simple averages.', category: 'detection' },
   { name: 'Rate-Based', definition: 'Detection method that triggers when packet or flow rates exceed configured thresholds.', example: 'Alert when packets/second > 10,000', category: 'detection' },
   { name: 'Behavioral', definition: 'Analyzes patterns like packet sizes and inter-arrival times to detect anomalies.', example: 'Detects DNS tunneling through unusual packet size entropy.', category: 'detection' },
   { name: 'Port Scan', definition: 'Detection of attempts to connect to multiple ports, indicating reconnaissance activity.', example: 'Single source trying 20+ different destination ports.', category: 'detection' },
   
   // Protocols
-  { name: 'DNS', definition: 'Domain Name System: Translates domain names to IP addresses.', example: 'Converts google.com → 142.250.185.46', category: 'protocol' },
+  { name: 'DNS', definition: 'Domain Name System: Translates domain names to IP addresses.', example: 'Converts google.com  142.250.185.46', category: 'protocol' },
   { name: 'HTTP', definition: 'HyperText Transfer Protocol: Web traffic protocol for transmitting web pages.', example: 'Loading websites in your browser.', category: 'protocol' },
   { name: 'HTTPS', definition: 'HTTP Secure: Encrypted version of HTTP using TLS/SSL.', example: 'Secure websites with padlock icon.', category: 'protocol' },
   { name: 'TLS', definition: 'Transport Layer Security: Cryptographic protocol for secure communications.', example: 'Encrypts sensitive data like passwords.', category: 'protocol' },
@@ -178,7 +178,7 @@ export default function GlossaryPanel() {
       {/* Footer */}
       <div className="p-3 border-t border-border bg-base/50 text-center">
         <p className="text-xs text-muted">
-          {filteredTerms.length} {filteredTerms.length === 1 ? 'term' : 'terms'} • Click terms to mark as learned
+          {filteredTerms.length} {filteredTerms.length === 1 ? 'term' : 'terms'}  Click terms to mark as learned
         </p>
       </div>
     </div>

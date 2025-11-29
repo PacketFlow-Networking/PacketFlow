@@ -721,7 +721,7 @@ Keep it concise and actionable. Focus on the most important findings."""
                     threats = ', '.join(event.get('threat_indicators', [])) or 'None'
                     
                     context_parts.append(
-                        f"  [{time_only}] {src} → {dst} ({proto}) "
+                        f"  [{time_only}] {src}  {dst} ({proto}) "
                         f"Score: {score:.2f} | Threats: {threats}"
                     )
             else:

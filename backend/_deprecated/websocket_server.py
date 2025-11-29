@@ -311,7 +311,7 @@ class WebSocketServer:
                 # Use AI agent's unified chat query processor
                 result = await self.ai_agent.process_chat_query(
                     query=query,
-                    include_events=True  # ← Include event context
+                    include_events=True  #  Include event context
                 )
                 
                 # Broadcast to all WebSocket clients

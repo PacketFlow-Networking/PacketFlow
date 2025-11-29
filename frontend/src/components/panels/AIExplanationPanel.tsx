@@ -114,8 +114,7 @@ const AIExplanationPanel = ({ event, explanation, onClose }: AIExplanationPanelP
             onClick={onClose}
             className="text-text-dim hover:text-text transition-colors"
           >
-            ×
-          </button>
+                      </button>
         )}
       </div>
 
@@ -167,7 +166,7 @@ const AIExplanationPanel = ({ event, explanation, onClose }: AIExplanationPanelP
                   <ul className="text-xs text-text-dim space-y-1">
                     {step.evidence.map((ev, i) => (
                       <li key={i} className="flex items-start gap-1">
-                        <span className="text-info">•</span>
+                        <span className="text-info"></span>
                         <span>{ev}</span>
                       </li>
                     ))}
@@ -301,7 +300,7 @@ const AIExplanationPanel = ({ event, explanation, onClose }: AIExplanationPanelP
       {/* Educational Note */}
       <div className="bg-info/10 border border-info/30 rounded-lg p-3">
         <p className="text-xs text-text-dim">
-          <span className="font-medium text-info">💡 How to interpret: </span>
+          <span className="font-medium text-info"> How to interpret: </span>
           This explanation shows the AI's reasoning process. Higher confidence scores mean the AI is more certain about its classification. The decision factors show which metrics contributed most to the anomaly detection.
         </p>
       </div>

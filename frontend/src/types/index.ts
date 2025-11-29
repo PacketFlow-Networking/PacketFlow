@@ -37,6 +37,26 @@ export interface AIMessage {
   event_ids: string[];
   confidence?: 'low' | 'medium' | 'high';
   type: 'insight' | 'warning' | 'summary' | 'response';
+  // Structured explainability fields (from Instructor API)
+  brief_summary?: string;          // Short summary for chat display
+  full_summary?: string;            // Full 2-3 sentence summary
+  what_happened?: string;           // Observable behavior
+  why_suspicious?: string;          // Why anomalous
+  detection_method?: string;        // How detected
+  attack_context?: string;          // Attack type & objectives
+  threat_indicators?: Array<{
+    type: string;
+    confidence: number;
+    evidence: string;
+    explanation: string;
+  }>;
+  recommendations?: Array<{
+    action: string;
+    priority: 'critical' | 'high' | 'medium' | 'low';
+    details: string;
+  }>;
+  technical_details?: Record<string, any>;
+  threat_level?: 'critical' | 'high' | 'medium' | 'low' | 'info';
 }
 
 export interface UserMessage {
