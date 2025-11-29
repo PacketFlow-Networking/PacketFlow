@@ -317,21 +317,21 @@ function PhysicalRoomBoundary({ room }: { room: PhysicalRoom }) {
   
   return (
     <group position={[room.center.x, room.center.y, room.center.z]}>
-      {/* Translucent box with stronger color */}
+      {/* Highly transparent box - only wireframe visible */}
       <mesh>
         <boxGeometry args={[width, height, depth]} />
         <meshStandardMaterial
           color={room.color}
           transparent
-          opacity={0.18}
+          opacity={0.02}
           wireframe={false}
           side={THREE.DoubleSide}
         />
       </mesh>
-      {/* Clear wireframe edges */}
+      {/* Subtle wireframe edges only */}
       <lineSegments>
         <edgesGeometry args={[new THREE.BoxGeometry(width, height, depth)]} />
-        <lineBasicMaterial color={room.color} linewidth={3} opacity={0.8} transparent />
+        <lineBasicMaterial color={room.color} linewidth={1} opacity={0.35} transparent />
       </lineSegments>
       {/* Room label at top corner */}
       <Html center distanceFactor={30} position={[0, height / 2 + 15, 0]}>
@@ -373,23 +373,23 @@ function ClusterBoundary({ cluster }: { cluster: Cluster }) {
   
   return (
     <group position={[boundary.center.x, boundary.center.y, boundary.center.z]}>
-      {/* Semi-transparent sphere boundary */}
+      {/* Highly transparent sphere boundary - barely visible fill */}
       <mesh>
         <sphereGeometry args={[boundary.radius, 16, 16]} />
         <meshBasicMaterial
           color={cluster.color}
           transparent
-          opacity={0.1}
+          opacity={0.02}
           wireframe={false}
         />
       </mesh>
-      {/* Wireframe outline */}
+      {/* Subtle wireframe outline only */}
       <mesh>
         <sphereGeometry args={[boundary.radius + 2, 16, 16]} />
         <meshBasicMaterial
           color={cluster.color}
           transparent
-          opacity={0.3}
+          opacity={0.15}
           wireframe={true}
         />
       </mesh>
@@ -420,6 +420,8 @@ export default function ThreeDTopologyView() {
   const [showClusters, setShowClusters] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('hybrid'); // semantic, physical, or hybrid
   const [showLabels, setShowLabels] = useState(false); // Labels off by default for performance
+  const [isLocked, setIsLocked] = useState(false); // Lock layout for stability
+  const [isPaused, setIsPaused] = useState(false); // Pause simulation
   
   const [filters, setFilters] = useState<TopologyFilters>({
     showInternal: true,
@@ -585,58 +587,70 @@ export default function ThreeDTopologyView() {
       // Still provides good layout but 2x faster initial load
       const iterations = Math.min(50, nodes.length > 50 ? 30 : 50);
       
-      for (let i = 0; i < iterations; i++) {
-        // Repulsion between all nodes
-        for (let j = 0; j < nodes.length; j++) {
-          for (let k = j + 1; k < nodes.length; k++) {
-            const node1 = nodes[j];
-            const node2 = nodes[k];
-            
-            const dx = (node2.x || 0) - (node1.x || 0);
-            const dy = (node2.y || 0) - (node1.y || 0);
-            const dz = (node2.z || 0) - (node1.z || 0);
-            
-            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-            const force = 1000 / (dist * dist);
-            
-            node1.x! -= (dx / dist) * force;
-            node1.y! -= (dy / dist) * force;
-            node1.z! -= (dz / dist) * force;
-            
-            node2.x! += (dx / dist) * force;
-            node2.y! += (dy / dist) * force;
-            node2.z! += (dz / dist) * force;
+      // Skip simulation if paused
+      if (!isPaused) {
+        for (let i = 0; i < iterations; i++) {
+          // Repulsion between all nodes
+          for (let j = 0; j < nodes.length; j++) {
+            for (let k = j + 1; k < nodes.length; k++) {
+              const node1 = nodes[j];
+              const node2 = nodes[k];
+              
+              const dx = (node2.x || 0) - (node1.x || 0);
+              const dy = (node2.y || 0) - (node1.y || 0);
+              const dz = (node2.z || 0) - (node1.z || 0);
+              
+              const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+              const force = 1000 / (dist * dist);
+              
+              node1.x! -= (dx / dist) * force;
+              node1.y! -= (dy / dist) * force;
+              node1.z! -= (dz / dist) * force;
+              
+              node2.x! += (dx / dist) * force;
+              node2.y! += (dy / dist) * force;
+              node2.z! += (dz / dist) * force;
+            }
           }
-        }
-        
-        // Attraction for linked nodes
-        links.forEach(link => {
-          const sourceNode = nodes.find(n => n.id === (typeof link.source === 'string' ? link.source : link.source.id));
-          const targetNode = nodes.find(n => n.id === (typeof link.target === 'string' ? link.target : link.target.id));
           
-          if (sourceNode && targetNode) {
-            const dx = (targetNode.x || 0) - (sourceNode.x || 0);
-            const dy = (targetNode.y || 0) - (sourceNode.y || 0);
-            const dz = (targetNode.z || 0) - (sourceNode.z || 0);
+          // Attraction for linked nodes
+          links.forEach(link => {
+            const sourceNode = nodes.find(n => n.id === (typeof link.source === 'string' ? link.source : link.source.id));
+            const targetNode = nodes.find(n => n.id === (typeof link.target === 'string' ? link.target : link.target.id));
             
-            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-            const force = dist * 0.01;
-            
-            sourceNode.x! += (dx / dist) * force;
-            sourceNode.y! += (dy / dist) * force;
-            sourceNode.z! += (dz / dist) * force;
-            
-            targetNode.x! -= (dx / dist) * force;
-            targetNode.y! -= (dy / dist) * force;
-            targetNode.z! -= (dz / dist) * force;
-          }
-        });
-        
-        // Center force
+            if (sourceNode && targetNode) {
+              const dx = (targetNode.x || 0) - (sourceNode.x || 0);
+              const dy = (targetNode.y || 0) - (sourceNode.y || 0);
+              const dz = (targetNode.z || 0) - (sourceNode.z || 0);
+              
+              const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+              const force = dist * 0.01;
+              
+              sourceNode.x! += (dx / dist) * force;
+              sourceNode.y! += (dy / dist) * force;
+              sourceNode.z! += (dz / dist) * force;
+              
+              targetNode.x! -= (dx / dist) * force;
+              targetNode.y! -= (dy / dist) * force;
+              targetNode.z! -= (dz / dist) * force;
+            }
+          });
+          
+          // Center force
+          nodes.forEach(node => {
+            node.x! *= 0.95;
+            node.y! *= 0.95;
+            node.z! *= 0.95;
+          });
+        }
+      }
+
+      // Lock nodes in place if layout is locked
+      if (isLocked) {
         nodes.forEach(node => {
-          node.x! *= 0.95;
-          node.y! *= 0.95;
-          node.z! *= 0.95;
+          node.fx = node.x;
+          node.fy = node.y;
+          node.fz = node.z;
         });
       }
 
@@ -720,7 +734,34 @@ export default function ThreeDTopologyView() {
               🔀 Hybrid
             </button>
           </div>
-          
+
+          {/* Lock/Unlock Button */}
+          <button
+            onClick={() => setIsLocked(!isLocked)}
+            className={`px-3 py-2 rounded flex items-center gap-2 transition-colors ${
+              isLocked ? 'bg-amber-500/20 text-amber-400' : 'hover:bg-panel-hover text-text'
+            }`}
+            title={isLocked ? "Unlock Layout" : "Lock Layout"}
+          >
+            {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+          </button>
+
+          {/* Pause/Play Button */}
+          <button
+            onClick={() => setIsPaused(!isPaused)}
+            disabled={isLocked}
+            className={`px-3 py-2 rounded flex items-center gap-2 transition-colors ${
+              isPaused 
+                ? 'bg-info/20 text-info' 
+                : isLocked
+                ? 'opacity-50 cursor-not-allowed text-text'
+                : 'hover:bg-panel-hover text-text'
+            }`}
+            title={isPaused ? "Resume Simulation" : "Pause Simulation"}
+          >
+            {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+          </button>
+
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`px-3 py-2 rounded flex items-center gap-2 transition-colors ${
