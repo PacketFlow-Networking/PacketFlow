@@ -11,7 +11,8 @@ import { IncidentPanel } from './components/panels';
 import AlertConfigModal from './components/alerts/AlertConfigModal';
 import { ProactiveSuggestions } from './components/panels';
 import { GlossaryPanel } from './components/panels';
-import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network } from 'lucide-react';
+import ThreeDTopologyModal from './components/ThreeDTopologyModal';
+import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network, Box } from 'lucide-react';
 
 function App() {
   useWebSocket();
@@ -22,6 +23,7 @@ function App() {
   
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showAlertConfig, setShowAlertConfig] = useState(false);
+  const [show3DTopology, setShow3DTopology] = useState(false);
   const [activeTab, setActiveTab] = useState<'events' | 'stats' | 'topology'>('events');
   const [leftPanelTab, setLeftPanelTab] = useState<'chat' | 'incidents'>('chat');
 
@@ -112,7 +114,11 @@ function App() {
       setActiveTab('topology');
       showInfo('Network Topology', 'Viewing network topology graph');
     },
-    isModalOpen: showShortcutsHelp || showAlertConfig,
+    onShow3DTopology: () => {
+      setShow3DTopology(true);
+      showInfo('3D Network Topology', 'Opening immersive 3D view (Escape to close)');
+    },
+    isModalOpen: showShortcutsHelp || showAlertConfig || show3DTopology,
   });
 
   return (
@@ -197,6 +203,14 @@ function App() {
                 <Network className="w-4 h-4" />
                 Topology
               </button>
+              <button
+                onClick={() => setShow3DTopology(true)}
+                className="flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 border-transparent text-text-dim hover:text-text hover:bg-panel-hover"
+                title="Open 3D immersive network view (Ctrl+Shift+3)"
+              >
+                <Box className="w-4 h-4" />
+                3D View
+              </button>
             </div>
             
             {/* Tab Content */}
@@ -221,6 +235,12 @@ function App() {
       <AlertConfigModal
         isOpen={showAlertConfig}
         onClose={() => setShowAlertConfig(false)}
+      />
+
+      {/* 3D Topology Modal */}
+      <ThreeDTopologyModal
+        isOpen={show3DTopology}
+        onClose={() => setShow3DTopology(false)}
       />
 
       {/* Glossary Panel - IUI Feature */}

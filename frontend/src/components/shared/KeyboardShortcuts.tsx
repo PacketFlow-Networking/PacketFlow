@@ -22,6 +22,7 @@ const shortcuts: Shortcut[] = [
   { key: 't', description: 'Cycle through tabs (Events/Stats/Topology)', category: 'Navigation' },
   { key: 'n', description: 'Show network topology view', category: 'Navigation' },
   { key: 'i', description: 'Toggle Chat/Incidents panel', category: 'Navigation' },
+  { key: 'Ctrl+Shift+3', description: 'Open 3D topology view', category: 'Navigation' },
   
   // Event Navigation
   { key: 'j', description: 'Next event', category: 'Events' },
@@ -133,6 +134,7 @@ interface UseKeyboardShortcutsOptions {
   onToggleLeftPanel?: () => void;
   onOpenAlertConfig?: () => void;
   onShowTopology?: () => void;
+  onShow3DTopology?: () => void;
   isModalOpen?: boolean;
 }
 
@@ -152,6 +154,7 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
     onToggleLeftPanel,
     onOpenAlertConfig,
     onShowTopology,
+    onShow3DTopology,
     isModalOpen = false,
   } = options;
 
@@ -185,6 +188,13 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
       if (e.key === ',' && (e.ctrlKey || e.metaKey) && !isInput) {
         e.preventDefault();
         if (onOpenAlertConfig) onOpenAlertConfig();
+        return;
+      }
+
+      // Special case: 'Ctrl+Shift+3' for 3D topology
+      if (e.key === '#' && e.ctrlKey && e.shiftKey && !isInput) {
+        e.preventDefault();
+        if (onShow3DTopology) onShow3DTopology();
         return;
       }
 

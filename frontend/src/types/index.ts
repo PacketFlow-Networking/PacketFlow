@@ -10,6 +10,7 @@ export interface NetworkEvent {
   avg_size?: number;
   throughput?: number;
   anomaly_score: number;
+  is_anomaly?: boolean;
   summary: string;
   severity?: string;
   src_port?: number;

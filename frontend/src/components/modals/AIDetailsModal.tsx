@@ -256,7 +256,7 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
                     <p className="text-sm text-muted leading-relaxed">{rec.details}</p>
                     {(rec.affected_systems?.length || rec.compliance_impact?.length) && (
                       <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
-                        {rec.affected_systems?.length > 0 && (
+                        {rec.affected_systems && rec.affected_systems.length > 0 && (
                           <div>
                             <div className="text-xs font-semibold text-muted mb-1">Affected Systems</div>
                             <div className="flex flex-wrap gap-1">
@@ -268,7 +268,7 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
                             </div>
                           </div>
                         )}
-                        {rec.compliance_impact?.length > 0 && (
+                        {rec.compliance_impact && rec.compliance_impact.length > 0 && (
                           <div>
                             <div className="text-xs font-semibold text-muted mb-1">Compliance Impact</div>
                             <div className="flex flex-wrap gap-1">
@@ -351,7 +351,7 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
                 <BookOpen className="w-5 h-5 text-info" />
                 SOC Analyst Support
               </h3>
-              {analysis.investigation_checklist?.length > 0 && (
+              {analysis.investigation_checklist && analysis.investigation_checklist.length > 0 && (
                 <div className="bg-panel border border-border rounded-lg p-4 space-y-2">
                   <div className="text-sm font-semibold text-text mb-2">Investigation Checklist</div>
                   {analysis.investigation_checklist.map((step, idx) => (
@@ -362,7 +362,7 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
                   ))}
                 </div>
               )}
-              {analysis.false_positive_indicators?.length > 0 && (
+              {analysis.false_positive_indicators && analysis.false_positive_indicators.length > 0 && (
                 <div className="bg-panel border border-warn/30 rounded-lg p-4 space-y-2">
                   <div className="text-sm font-semibold text-text mb-2">Potential False Positive Causes</div>
                   {analysis.false_positive_indicators.map((indicator, idx) => (
