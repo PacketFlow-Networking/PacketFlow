@@ -2,7 +2,7 @@
 capture.py - Real-time packet capture module with PCAP replay support
 Captures network packets using TShark and streams them to an async queue.
 Includes packet payloads for deep packet inspection (DPI) capabilities.
-NEW: Supports reading from PCAP files and looping for testing.
+NEW: Supports reading from PCAP files with Scapy and looping for testing.
 """
 
 import asyncio
@@ -15,6 +15,13 @@ import os
 from typing import Dict, Optional
 from datetime import datetime
 import urllib.request
+
+# Import Scapy for PCAP file reading
+try:
+    from scapy.all import rdpcap, IP, TCP, UDP, DNS, DNSQR, DNSRR
+    SCAPY_AVAILABLE = True
+except ImportError:
+    SCAPY_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -61,14 +68,12 @@ class PacketCapture:
     async def start_capture(self, queue: asyncio.Queue):
         """
         Start capturing packets and pushing them to the queue.
+        Priority: PCAP file > Live capture (mock mode disabled).
         
         Args:
             queue: Async queue to send parsed packets to
         """
-        if self.mock_mode:
-            logger.info("Starting packet capture in MOCK mode (with simulated payloads)")
-            await self._mock_capture(queue)
-        elif self.pcap_file:
+        if self.pcap_file:
             logger.info(f"Starting PCAP replay from: {self.pcap_file} (loop={self.pcap_loop}, speed={self.pcap_speed}x)")
             await self._pcap_replay(queue)
         else:
@@ -76,9 +81,15 @@ class PacketCapture:
             await self._real_capture(queue)
     
     async def _pcap_replay(self, queue: asyncio.Queue):
-        """Replay packets from a PCAP file."""
+        """Replay packets from a PCAP file using Scapy."""
         if not os.path.exists(self.pcap_file):
             logger.error(f"PCAP file not found: {self.pcap_file}")
+            logger.info("Falling back to mock mode...")
+            await self._mock_capture(queue)
+            return
+        
+        if not SCAPY_AVAILABLE:
+            logger.error("Scapy not available. Please install: pip install scapy")
             logger.info("Falling back to mock mode...")
             await self._mock_capture(queue)
             return
@@ -88,61 +99,39 @@ class PacketCapture:
             
             while True:
                 loop_count += 1
-                logger.info(f"Playing PCAP file (loop {loop_count})...")
+                logger.info(f"Playing PCAP file with Scapy (loop {loop_count})...")
                 
-                # Use TShark to read PCAP file
-                cmd = [
-                    "tshark",
-                    "-r", self.pcap_file,  # Read from file
-                    "-T", "ek",            # Elasticsearch format
-                    "-x",                  # Include hex dump
-                ]
-                
-                # Add filter if specified
-                if self.capture_filter:
-                    cmd.extend(["-Y", self.capture_filter])  # Display filter for pcap files
-                
-                logger.info(f"Reading PCAP with TShark: {' '.join(cmd)}")
-                
-                # Start TShark process with larger buffer
-                process = await asyncio.create_subprocess_exec(
-                    *cmd,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    limit=10 * 1024 * 1024  # 10MB buffer for large packets
-                )
-                
-                packet_count_loop = 0
-                last_packet_time = None
-                
-                # Read packets line by line
-                async for line in process.stdout:
-                    try:
-                        line_str = line.decode('utf-8').strip()
-                        
-                        # Skip empty lines and index lines
-                        if not line_str or line_str.startswith('{"index"'):
-                            continue
-                        
-                        # Parse JSON packet
+                try:
+                    # Read PCAP file with Scapy
+                    packets = rdpcap(self.pcap_file)
+                    logger.info(f"Loaded {len(packets)} packets from {self.pcap_file}")
+                    
+                    packet_count_loop = 0
+                    first_packet_time = None
+                    start_replay_time = datetime.now()
+                    
+                    for pkt in packets:
                         try:
-                            packet_data = orjson.loads(line_str)
-                            parsed = self._parse_ek_packet(packet_data)
+                            # Extract packet info
+                            parsed = self._parse_scapy_packet(pkt)
                             
                             if parsed:
-                                # Add realistic timing based on pcap timestamps
-                                if last_packet_time and self.pcap_speed > 0:
-                                    # Calculate delay to maintain relative timing
-                                    current_time = float(parsed.get("timestamp", 0))
-                                    delay = (current_time - last_packet_time) / self.pcap_speed
+                                # Handle timing for realistic replay
+                                if first_packet_time is None and hasattr(pkt, 'time'):
+                                    first_packet_time = pkt.time
+                                
+                                # Calculate delay based on PCAP timestamps
+                                if first_packet_time is not None and self.pcap_speed > 0 and hasattr(pkt, 'time'):
+                                    pkt_time = pkt.time
+                                    elapsed_pcap = pkt_time - first_packet_time
+                                    elapsed_real = (datetime.now() - start_replay_time).total_seconds()
+                                    target_time = elapsed_pcap / self.pcap_speed
+                                    delay = max(0, target_time - elapsed_real)
                                     
-                                    # Limit delay to reasonable bounds
-                                    if 0 < delay < 10:
+                                    if delay > 0 and delay < 10:
                                         await asyncio.sleep(delay)
                                 
-                                last_packet_time = float(parsed.get("timestamp", 0))
-                                
-                                # Update timestamp to current time for realistic processing
+                                # Update timestamp to current time
                                 parsed["timestamp"] = datetime.now().isoformat()
                                 
                                 await queue.put(parsed)
@@ -152,15 +141,18 @@ class PacketCapture:
                                 # Log progress every 100 packets
                                 if packet_count_loop % 100 == 0:
                                     logger.info(f"Replayed {packet_count_loop} packets from PCAP (total: {self.packet_count})")
-                        except json.JSONDecodeError:
+                                    
+                        except Exception as e:
+                            logger.debug(f"Error processing packet: {e}")
                             continue
-                            
-                    except Exception as e:
-                        logger.debug(f"Error processing line: {e}")
-                
-                await process.wait()
-                
-                logger.info(f"PCAP replay complete: {packet_count_loop} packets from loop {loop_count}")
+                    
+                    logger.info(f"PCAP replay complete: {packet_count_loop} packets from loop {loop_count}")
+                    
+                except Exception as e:
+                    logger.error(f"Error reading PCAP with Scapy: {e}")
+                    logger.info("Falling back to mock mode...")
+                    await self._mock_capture(queue)
+                    break
                 
                 # If not looping, break
                 if not self.pcap_loop:
@@ -170,10 +162,6 @@ class PacketCapture:
                 # Small delay between loops
                 await asyncio.sleep(2)
                 
-        except FileNotFoundError:
-            logger.error("TShark not found. Please install Wireshark/TShark.")
-            logger.info("Falling back to mock mode...")
-            await self._mock_capture(queue)
         except Exception as e:
             logger.error(f"PCAP replay error: {e}")
             logger.info("Falling back to mock mode...")
@@ -478,6 +466,146 @@ class PacketCapture:
         except Exception as e:
             logger.debug(f"Parse error: {e}")
             return None
+    
+    def _parse_scapy_packet(self, pkt) -> Optional[Dict]:
+        """
+        Parse a Scapy packet object into our standard format.
+        
+        Args:
+            pkt: Scapy packet object
+            
+        Returns:
+            Parsed packet dictionary or None
+        """
+        try:
+            # Check if packet has IP layer
+            if IP not in pkt:
+                return None
+            
+            ip_layer = pkt[IP]
+            src = str(ip_layer.src)
+            dst = str(ip_layer.dst)
+            proto_num = ip_layer.proto
+            
+            # Map protocol numbers to names
+            proto_map = {
+                1: "ICMP",
+                2: "IGMP",
+                6: "TCP",
+                17: "UDP",
+                41: "IPv6",
+                47: "GRE",
+                50: "ESP",
+                51: "AH",
+                58: "ICMPv6",
+                89: "OSPF",
+                132: "SCTP",
+            }
+            proto = proto_map.get(proto_num, f"IP_{proto_num}")
+            
+            src_port = 0
+            dst_port = 0
+            payload_data = None
+            dns_data = None
+            
+            # Extract ports if TCP or UDP
+            if TCP in pkt:
+                tcp_layer = pkt[TCP]
+                src_port = int(tcp_layer.sport)
+                dst_port = int(tcp_layer.dport)
+                proto = "TCP"
+            elif UDP in pkt:
+                udp_layer = pkt[UDP]
+                src_port = int(udp_layer.sport)
+                dst_port = int(udp_layer.dport)
+                proto = "UDP"
+                
+                # Check for DNS
+                if DNS in pkt:
+                    dns_layer = pkt[DNS]
+                    dns_query_count = 0
+                    dns_response_count = 0
+                    queries = []
+                    
+                    try:
+                        if hasattr(dns_layer, 'questions') and dns_layer.questions:
+                            dns_query_count = len(dns_layer.questions)
+                            for question in dns_layer.questions:
+                                try:
+                                    domain = question.qname.decode('utf-8', errors='ignore').rstrip('.')
+                                    queries.append(domain)
+                                except:
+                                    pass
+                        
+                        if hasattr(dns_layer, 'answers') and dns_layer.answers:
+                            dns_response_count = len(dns_layer.answers)
+                    except:
+                        pass
+                    
+                    dns_data = {
+                        "query_count": dns_query_count,
+                        "response_count": dns_response_count,
+                    }
+                    if queries:
+                        dns_data["queries"] = queries
+            
+            # Get packet length
+            length = len(pkt)
+            
+            # Get payload if available
+            if pkt.payload and hasattr(pkt.payload, 'layer_name'):
+                if pkt.payload.layer_name not in ['IP', 'TCP', 'UDP', 'DNS']:
+                    try:
+                        payload_data = str(pkt.payload)[:self.max_payload_bytes]
+                    except:
+                        pass
+            
+            # Build result
+            result = {
+                "timestamp": datetime.now().isoformat(),
+                "src": src,
+                "dst": dst,
+                "src_port": src_port,
+                "dst_port": dst_port,
+                "proto": proto,
+                "length": length,
+                "flags": {
+                    "syn": False,
+                    "ack": False,
+                    "fin": False,
+                    "rst": False,
+                    "psh": False,
+                },
+            }
+            
+            # Extract TCP flags if present
+            if TCP in pkt:
+                try:
+                    tcp_layer = pkt[TCP]
+                    flags_int = tcp_layer.flags
+                    # TCP flags: FIN=0x01, SYN=0x02, RST=0x04, PSH=0x08, ACK=0x10, URG=0x20
+                    result["flags"] = {
+                        "syn": bool(flags_int & 0x02),
+                        "ack": bool(flags_int & 0x10),
+                        "fin": bool(flags_int & 0x01),
+                        "rst": bool(flags_int & 0x04),
+                        "psh": bool(flags_int & 0x08),
+                    }
+                except:
+                    pass
+            
+            if payload_data:
+                result["payload"] = payload_data
+            
+            if dns_data:
+                result["dns"] = dns_data
+            
+            logger.debug(f"Parsed Scapy: {src}:{src_port} -> {dst}:{dst_port} [{proto}] {length}B")
+            return result
+            
+        except Exception as e:
+            logger.debug(f"Scapy parse error: {e}")
+            return None
             
     async def _mock_capture(self, queue: asyncio.Queue):
         """Generate simulated packet data for testing with realistic payloads and diverse IPs."""
@@ -634,35 +762,42 @@ class PacketCapture:
                     self.packet_count += 1
                     await asyncio.sleep(0.1)
                 
-                # Every 30 iterations, create various anomaly scenarios
-                if iteration % 30 == 0 and iteration > 0:
-                    logger.info("Generating anomaly spike with suspicious payloads...")
+                # Every 20 iterations, create MASSIVE anomaly spike (stronger detection)
+                if iteration % 20 == 0 and iteration > 0:
+                    logger.info("Generating STRONG anomaly spike with massive DNS flood...")
                     
-                    # Scenario 1: DNS amplification/tunneling
-                    anomaly_src, anomaly_dst = anomaly_hosts[4]  # IoT device
-                    for _ in range(50):
-                        suspicious_query = f"subdomain{random.randint(1, 1000)}.malicious-domain.com"
+                    # MASSIVE DNS flood: 500+ packets from same source to DNS
+                    anomaly_src = "192.168.1.50"  # Suspicious host
+                    anomaly_dst = "8.8.8.8"  # Google DNS
+                    
+                    for i in range(500):  # 500 DNS queries in rapid succession
+                        suspicious_query = f"tunnel{i}.exfil.local"
                         packet = {
                             "timestamp": datetime.now().isoformat(),
                             "src": anomaly_src,
                             "dst": anomaly_dst,
                             "proto": "UDP",
-                            "src_port": random.randint(49152, 65535),
+                            "src_port": 53000 + (i % 1000),  # Varying ports
                             "dst_port": 53,
-                            "length": random.randint(64, 128),
+                            "length": random.randint(64, 255),
                             "dns": {
                                 "query_name": suspicious_query,
-                                "query_type": "ANY",
-                                "transaction_id": f"0x{random.randint(0, 65535):04x}",
+                                "query_type": "A",
+                                "transaction_id": f"0x{i:04x}",
                             }
                         }
                         await queue.put(packet)
                         self.packet_count += 1
-                        await asyncio.sleep(0.01)
+                        await asyncio.sleep(0.001)  # 1ms between packets = massive rate
                     
-                    # Scenario 2: C2 beaconing from multiple hosts
-                    for anomaly_src, anomaly_dst in anomaly_hosts[:2]:  # Two C2 connections
-                        for _ in range(10):
+                    logger.info("DNS flood spike complete - should trigger CRITICAL anomaly detection")
+                    
+                # Additional attack scenarios every 45 iterations
+                if iteration % 45 == 0 and iteration > 0:
+                    # C2 beaconing from multiple hosts
+                    for idx, anomaly_src in enumerate(["192.168.1.15", "192.168.1.20"]):
+                        anomaly_dst = "10.0.0.5"
+                        for _ in range(15):
                             packet = {
                                 "timestamp": datetime.now().isoformat(),
                                 "src": anomaly_src,
@@ -674,29 +809,12 @@ class PacketCapture:
                                 "tcp_flags": {"syn": False, "ack": True, "psh": True, "fin": False, "rst": False},
                                 "tls": {
                                     "version": "TLS 1.2",
-                                    "server_name": "suspicious-c2-domain.com",
+                                    "server_name": "c2-beacon.evil.com",
                                 }
                             }
                             await queue.put(packet)
                             self.packet_count += 1
-                            await asyncio.sleep(0.05)
-                    
-                    # Scenario 3: Lateral movement
-                    anomaly_src, anomaly_dst = anomaly_hosts[2]  # Workstation to server
-                    for _ in range(30):
-                        packet = {
-                            "timestamp": datetime.now().isoformat(),
-                            "src": anomaly_src,
-                            "dst": anomaly_dst,
-                            "proto": "TCP",
-                            "src_port": random.randint(49152, 65535),
-                            "dst_port": random.choice([445, 3389, 22]),  # SMB, RDP, SSH
-                            "length": random.randint(100, 300),
-                            "tcp_flags": {"syn": True, "ack": False, "psh": False, "fin": False, "rst": False},
-                        }
-                        await queue.put(packet)
-                        self.packet_count += 1
-                        await asyncio.sleep(0.02)
+                            await asyncio.sleep(0.02)
                 
                 iteration += 1
                 await asyncio.sleep(1)

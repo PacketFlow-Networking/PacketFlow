@@ -6,22 +6,10 @@ import type { SystemStatus } from '../types';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 const STATUS_POLL_INTERVAL = 3000; // 3 seconds
 
-export const useApi = () => {
-  const { updateStatus, setConnected, mockMode } = useStore();
+export const useAPI = () => {
+  const { updateStatus, setConnected } = useStore();
 
   const getStatus = useCallback(async (): Promise<SystemStatus | null> => {
-    if (mockMode) {
-      // Return mock status and mark as connected
-      setConnected(true);
-      const mockStatus: SystemStatus = {
-        packets_per_sec: Math.floor(Math.random() * 1000) + 500,
-        active_flows: Math.floor(Math.random() * 50) + 20,
-        anomalies_per_min: Math.random() * 3,
-        uptime_seconds: Math.floor(Date.now() / 1000)
-      };
-      return mockStatus;
-    }
-
     try {
       const response = await fetch(`${API_BASE}/status`);
       if (!response.ok) {
@@ -47,15 +35,9 @@ export const useApi = () => {
       setConnected(false);
       return null;
     }
-  }, [mockMode, setConnected]);
+  }, [setConnected]);
 
   const queryAI = useCallback(async (question: string): Promise<string | null> => {
-    if (mockMode) {
-      // Return mock AI response
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return `[MOCK] This is a simulated AI response to: "${question}". The backend is not connected. Enable the backend to get real AI insights.`;
-    }
-
     try {
       const response = await fetch(`${API_BASE}/query`, {
         method: 'POST',
@@ -97,7 +79,30 @@ export const useApi = () => {
       console.error('[API] Query error:', error);
       return `[INFO] Could not reach backend. Make sure backend is running on ${API_BASE}`;
     }
-  }, [mockMode]);
+  }, []);
+
+  const analyzeEvent = useCallback(async (eventData: any): Promise<any | null> => {
+    try {
+      const response = await fetch(`${API_BASE}/api/ai/analyze-event`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ event: eventData })
+      });
+      
+      if (!response.ok) {
+        console.error(`[API] Analyze event failed: ${response.status}`);
+        return null;
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('[API] Analyze event error:', error);
+      return null;
+    }
+  }, []);
 
   // Poll status periodically
   useEffect(() => {
@@ -121,6 +126,9 @@ export const useApi = () => {
 
   return {
     getStatus,
-    queryAI
+    queryAI,
+    analyzeEvent
   };
 };
+
+export const useApi = useAPI;

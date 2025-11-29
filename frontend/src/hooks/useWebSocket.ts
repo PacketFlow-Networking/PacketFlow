@@ -18,15 +18,14 @@ export const useWebSocket = () => {
     addEvent, 
     addAIMessage, 
     setConnected,
-    selectEvent,
-    mockMode 
+    selectEvent
   } = useStore();
   
   const { showError, showWarning, showSuccess, showInfo } = useToast();
 
   const connect = useCallback(() => {
-    // Always connect to backend, even in mock mode
-    // Backend will handle mock data generation
+    // Connect to backend WebSocket for real-time updates
+    // Backend captures from PCAP file or live network
 
     try {
       const ws = new WebSocket(WS_URL);
@@ -95,6 +94,9 @@ export const useWebSocket = () => {
             
             // If there's AI explanation, add it as AI message
             if (eventData.ai_explanation && eventData.ai_processed) {
+              // Check if we have structured analysis from Instructor
+              const hasStructuredData = eventData.ai_analysis && typeof eventData.ai_analysis === 'object';
+              
               const aiMessage: AIMessage = {
                 id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 timestamp: new Date().toISOString(),
@@ -102,7 +104,12 @@ export const useWebSocket = () => {
                 event_ids: [networkEvent.id],
                 type: eventData.is_anomaly ? 'warning' : 'insight',
                 confidence: eventData.anomaly_score > 0.8 ? 'high' : 
-                           eventData.anomaly_score > 0.5 ? 'medium' : 'low'
+                           eventData.anomaly_score > 0.5 ? 'medium' : 'low',
+                brief_summary: eventData.summary,
+                // Add structured analysis if available from Instructor
+                ...(hasStructuredData && {
+                  structured_analysis: eventData.ai_analysis
+                })
               };
               addAIMessage(aiMessage);
             }
@@ -115,7 +122,7 @@ export const useWebSocket = () => {
               id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               timestamp: responseData.timestamp || new Date().toISOString(),
               content: responseData.response || 'No response',
-              event_ids: responseData.event_ids || [],  // ← Now has linked events!
+              event_ids: responseData.event_ids || [],  //  Now has linked events!
               type: responseData.error ? 'warning' : 'insight',
               confidence: responseData.confidence || 'medium'
             };
@@ -165,7 +172,7 @@ export const useWebSocket = () => {
       console.error('[WebSocket] Connection error:', error);
       setConnected(false);
     }
-  }, [addEvent, addAIMessage, setConnected, mockMode]);
+  }, [addEvent, addAIMessage, setConnected]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

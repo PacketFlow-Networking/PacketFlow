@@ -1,7 +1,8 @@
-import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target } from 'lucide-react';
-import { useEffect } from 'react';
-import { NetworkEvent } from '../../types';
+import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target, Shield, Zap, CheckCircle, BookOpen } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { NetworkEvent, AIMessage } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import { useStore } from '../../context/store';
 import AIExplanationPanel from '../panels/AIExplanationPanel';
 import ExpandableText from '../shared/ExpandableText';
 import FeedbackPanel from '../panels/FeedbackPanel';
@@ -19,6 +20,13 @@ interface EventDetailsModalProps {
 
 export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }: EventDetailsModalProps) => {
   const { showSuccess, showError } = useToast();
+  const { aiMessages } = useStore();
+  const [activeTab, setActiveTab] = useState<'overview' | 'analysis'>('overview');
+  
+  // Find AI analysis for this event
+  const aiAnalysis = aiMessages.find(msg => 
+    msg.event_ids?.includes(event?.id || '') && msg.structured_analysis
+  ) as AIMessage | undefined;
   
   // Handle escape key to close modal
   useEffect(() => {
@@ -43,6 +51,24 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
     return 'text-ok border-ok/30 bg-ok/10';
   };
 
+  const getThreatLevelColor = (level: string) => {
+    const colors: Record<string, string> = {
+      critical: 'text-critical bg-critical/10 border-critical/30',
+      high: 'text-warn bg-warn/10 border-warn/30',
+      medium: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30',
+      low: 'text-ok bg-ok/10 border-ok/30',
+      info: 'text-info bg-info/10 border-info/30'
+    };
+    return colors[level] || colors.info;
+  };
+
+  const getCVSSColor = (score: number) => {
+    if (score >= 9.0) return 'text-critical bg-critical/10';
+    if (score >= 7.0) return 'text-warn bg-warn/10';
+    if (score >= 4.0) return 'text-yellow-500 bg-yellow-500/10';
+    return 'text-ok bg-ok/10';
+  };
+
   const formatBytes = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
@@ -51,6 +77,18 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
 
   const formatRate = (rate: number, unit: string) => {
     return `${rate.toLocaleString()} ${unit}`;
+  };
+
+  const formatTimeframe = (tf?: string) => {
+    if (!tf) return 'ASAP';
+    const map: Record<string, string> = {
+      immediate: '< 15 min',
+      '1_hour': '1 hour',
+      '4_hours': '4 hours',
+      '24_hours': '24 hours',
+      asap: 'ASAP'
+    };
+    return map[tf] || tf;
   };
 
   return (

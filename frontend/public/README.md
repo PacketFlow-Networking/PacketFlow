@@ -41,13 +41,13 @@ Custom font files:
 
 ## Best Practices
 
-✅ **DO:**
+ **DO:**
 - Use `public/` for static files that don't need processing
 - Reference with absolute paths: `/images/logo.png`
 - Keep files optimized (compress images, use WebP where possible)
 - Document new categories in this README
 
-❌ **DON'T:**
+ **DON'T:**
 - Put frequently-changing files here (use `src/assets/` instead)
 - Import images in components that can be bundled with code
 - Store large files without compression
@@ -55,7 +55,7 @@ Custom font files:
 ## Vite Build Behavior
 
 - Files in `public/` are copied to `dist/` during build
-- Paths are preserved (e.g., `public/images/logo.png` → `dist/images/logo.png`)
+- Paths are preserved (e.g., `public/images/logo.png`  `dist/images/logo.png`)
 - No content hashing, so use cache-busting if needed
 - Changes require restart in dev server
 

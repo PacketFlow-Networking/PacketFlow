@@ -17,7 +17,7 @@ function App() {
   useWebSocket();
   useApi();
   
-  const { mockMode, toggleMockMode, clearOldEvents, filters, setFilters, resetFilters } = useStore();
+  const { clearOldEvents, filters, setFilters, resetFilters } = useStore();
   const { showInfo } = useToast();
   
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
@@ -77,13 +77,6 @@ function App() {
       if (exportButton) {
         exportButton.click();
       }
-    },
-    onToggleMockMode: () => {
-      toggleMockMode();
-      showInfo(
-        mockMode ? 'Mock mode disabled' : 'Mock mode enabled',
-        mockMode ? 'Connecting to real backend' : 'Generating mock data'
-      );
     },
     onOpenSettings: () => {
       // Trigger settings button in MetricsBar
@@ -217,19 +210,6 @@ function App() {
           </div>
         </div>
       </div>
-
-      <button
-        onClick={toggleMockMode}
-        className={`fixed bottom-6 right-6 p-4 rounded-full shadow-lg transition-all ${
-          mockMode 
-            ? 'bg-warn text-base hover:bg-warn/90' 
-            : 'bg-panel border-2 border-border text-text hover:bg-panel-hover'
-        }`}
-        title={mockMode ? 'Disable Mock Mode' : 'Enable Mock Mode'}
-        aria-label={mockMode ? 'Disable Mock Mode' : 'Enable Mock Mode'}
-      >
-        <Settings className={`w-6 h-6 ${mockMode ? 'animate-spin' : ''}`} />
-      </button>
       
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp

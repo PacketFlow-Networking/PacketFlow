@@ -37,6 +37,102 @@ export interface AIMessage {
   event_ids: string[];
   confidence?: 'low' | 'medium' | 'high';
   type: 'insight' | 'warning' | 'summary' | 'response';
+  
+  // CHAT DISPLAY: Brief fields only
+  text?: string;                    // Brief summary for chat window (one-liner)
+  ai_explanation?: string;          // 2-3 sentence summary for tooltips
+  threat_level?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  cvss_score?: number;              // CVSS v4.0 score (0-10)
+  risk_score?: number;              // Business risk score (0-100)
+  quick_recommendations?: Array<{   // Max 2 recommendations for chat
+    action: string;
+    priority: 'critical' | 'high' | 'medium' | 'low';
+    timeframe?: 'immediate' | '1_hour' | '4_hours' | '24_hours' | 'asap';
+  }>;
+  
+  // LEGACY/BASIC FIELDS: For fallback compatibility
+  brief_summary?: string;           // Short summary for chat display
+  full_summary?: string;            // Full 2-3 sentence summary
+  what_happened?: string;           // Observable behavior
+  why_suspicious?: string;          // Why anomalous
+  detection_method?: string;        // How detected
+  attack_context?: string;          // Attack type & objectives
+  threat_indicators?: Array<{
+    type: string;
+    confidence: number;
+    evidence: string;
+    explanation: string;
+    cwe_ids?: string[];
+    owasp_references?: string[];
+    mitre_techniques?: string[];
+  }>;
+  recommendations?: Array<{
+    action: string;
+    priority: 'critical' | 'high' | 'medium' | 'low';
+    details: string;
+    timeframe?: 'immediate' | '1_hour' | '4_hours' | '24_hours' | 'asap';
+    affected_systems?: string[];
+    compliance_impact?: string[];
+  }>;
+  technical_details?: Record<string, any>;
+  
+  // FULL MODAL DISPLAY: Industry-standard structured analysis
+  structured_analysis?: {
+    // EXECUTIVE SUMMARIES
+    brief_summary?: string;
+    summary?: string;
+    threat_level?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+    cvss_score?: number;
+    risk_score?: number;
+    
+    // FORENSIC ANALYSIS
+    what_happened?: string;
+    why_suspicious?: string;
+    detection_method?: string;
+    
+    // THREAT CLASSIFICATION
+    threat_indicators?: Array<{
+      type: string;
+      confidence: number;
+      evidence: string;
+      explanation: string;
+      cwe_ids?: string[];
+      owasp_references?: string[];
+      mitre_techniques?: string[];
+    }>;
+    
+    // INCIDENT RESPONSE
+    recommendations?: Array<{
+      action: string;
+      priority: 'critical' | 'high' | 'medium' | 'low';
+      details: string;
+      timeframe?: 'immediate' | '1_hour' | '4_hours' | '24_hours' | 'asap';
+      affected_systems?: string[];
+      compliance_impact?: string[];
+    }>;
+    
+    // ATTACK CONTEXT & FRAMEWORK MAPPING
+    attack_context?: string;
+    mitre_attack_stages?: string[];
+    
+    // FORENSIC EVIDENCE
+    technical_details?: Record<string, any>;
+    affected_assets?: Array<{
+      ip?: string;
+      type?: string;
+      criticality?: string;
+      department?: string;
+    }>;
+    compliance_implications?: string[];
+    forensic_chain?: Record<string, any>;
+    
+    // SOC ANALYST SUPPORT
+    investigation_checklist?: string[];
+    false_positive_indicators?: string[];
+    
+    // CONFIDENCE & UNCERTAINTY
+    confidence?: number;
+  };
 }
 
 export interface UserMessage {

@@ -2,7 +2,7 @@
 
 > Intelligent User Interface for real-time network analysis with AI-powered insights
 
-## 📚 Documentation
+##  Documentation
 
 **All documentation has been organized into the [`docs/`](./docs/) folder.**
 
@@ -30,65 +30,65 @@ This is the frontend for PacketFlow - a modern, explainable, real-time UI for ne
 ### Folder Structure
 ```
 frontend/
-├── docs/                    # 📚 All documentation (19 files)
-│   ├── INDEX.md            # Navigation guide
-│   ├── FEATURE_*.md        # Feature documentation
-│   ├── PROGRESS.md         # Completion tracker
-│   └── ...more docs...
-├── src/
-│   ├── components/         # React components (organized, 39 files)
-│   │   ├── core/          # 📌 Core UI layout components (4 files)
-│   │   │   ├── ChatPanel.tsx
-│   │   │   ├── MetricsBar.tsx
-│   │   │   ├── StatsDashboard.tsx
-│   │   │   ├── TopologyView.tsx
-│   │   │   └── index.ts
-│   │   ├── events/        # 📊 Event handling components (5 files)
-│   │   │   ├── EventStream.tsx
-│   │   │   ├── FilterBar.tsx
-│   │   │   ├── GraphView.tsx
-│   │   │   ├── ExportMenu.tsx
-│   │   │   └── index.ts
-│   │   ├── modals/        # 🔲 Reusable modal components (4 files)
-│   │   │   ├── AIDetailsModal.tsx
-│   │   │   ├── EventDetailsModal.tsx
-│   │   │   ├── TooltipModal.tsx
-│   │   │   └── index.ts
-│   │   ├── panels/        # 📋 Side panel components (6 files)
-│   │   │   ├── AIExplanationPanel.tsx
-│   │   │   ├── FeedbackPanel.tsx
-│   │   │   ├── GlossaryPanel.tsx
-│   │   │   ├── IncidentPanel.tsx
-│   │   │   ├── ProactiveSuggestions.tsx
-│   │   │   └── index.ts
-│   │   ├── shared/        # 🔧 Shared utility components (4 files)
-│   │   │   ├── ExpandableText.tsx
-│   │   │   ├── KeyboardShortcuts.tsx
-│   │   │   ├── ShortcutHint.tsx
-│   │   │   └── index.ts
-│   │   ├── alerts/        # ⚙️ Alert configuration system (7 files)
-│   │   ├── incidents/     # 📌 Incident management (2 files)
-│   │   ├── topology/      # 🌐 Network topology visualization (1 file)
-│   │   └── Toast/         # 🔔 Toast notifications (5 files)
-│   ├── hooks/             # Custom hooks
-│   │   ├── useWebSocket.ts    # Auto-reconnecting WebSocket
-│   │   └── useApi.ts          # REST API layer
-│   ├── context/           # Global state
-│   │   ├── store.ts           # Zustand store with 40+ actions
-│   │   └── ToastContext.tsx   # Toast state management
-│   ├── types/             # TypeScript definitions
-│   │   └── index.ts           # 300+ lines of type definitions
-│   ├── utils/             # Utilities
-│   │   ├── export.ts          # CSV/JSON/text export
-│   │   └── graph.config.ts    # Graph configuration
-│   ├── styles/            # Global styling
-│   │   └── globals.css        # Tailwind + custom CSS
-│   ├── config/            # App configuration
-│   └── App.tsx            # Main component
-├── package.json           # Dependencies (0 vulnerabilities ✅)
-├── vite.config.ts         # Vite configuration (optimized)
-├── tsconfig.json          # TypeScript config (strict mode, no unused checks)
-└── index.html             # HTML entry point
+ docs/                    #  All documentation (19 files)
+    INDEX.md            # Navigation guide
+    FEATURE_*.md        # Feature documentation
+    PROGRESS.md         # Completion tracker
+    ...more docs...
+ src/
+    components/         # React components (organized, 39 files)
+       core/          #  Core UI layout components (4 files)
+          ChatPanel.tsx
+          MetricsBar.tsx
+          StatsDashboard.tsx
+          TopologyView.tsx
+          index.ts
+       events/        #  Event handling components (5 files)
+          EventStream.tsx
+          FilterBar.tsx
+          GraphView.tsx
+          ExportMenu.tsx
+          index.ts
+       modals/        #  Reusable modal components (4 files)
+          AIDetailsModal.tsx
+          EventDetailsModal.tsx
+          TooltipModal.tsx
+          index.ts
+       panels/        #  Side panel components (6 files)
+          AIExplanationPanel.tsx
+          FeedbackPanel.tsx
+          GlossaryPanel.tsx
+          IncidentPanel.tsx
+          ProactiveSuggestions.tsx
+          index.ts
+       shared/        #  Shared utility components (4 files)
+          ExpandableText.tsx
+          KeyboardShortcuts.tsx
+          ShortcutHint.tsx
+          index.ts
+       alerts/        #  Alert configuration system (7 files)
+       incidents/     #  Incident management (2 files)
+       topology/      #  Network topology visualization (1 file)
+       Toast/         #  Toast notifications (5 files)
+    hooks/             # Custom hooks
+       useWebSocket.ts    # Auto-reconnecting WebSocket
+       useApi.ts          # REST API layer
+    context/           # Global state
+       store.ts           # Zustand store with 40+ actions
+       ToastContext.tsx   # Toast state management
+    types/             # TypeScript definitions
+       index.ts           # 300+ lines of type definitions
+    utils/             # Utilities
+       export.ts          # CSV/JSON/text export
+       graph.config.ts    # Graph configuration
+    styles/            # Global styling
+       globals.css        # Tailwind + custom CSS
+    config/            # App configuration
+    App.tsx            # Main component
+ package.json           # Dependencies (0 vulnerabilities )
+ vite.config.ts         # Vite configuration (optimized)
+ tsconfig.json          # TypeScript config (strict mode, no unused checks)
+ index.html             # HTML entry point
 ```
 
 ##  Quick Start
@@ -125,36 +125,36 @@ npm run preview
 ##  Features
 
 ### Completed Features (9/25 = 36%)
-✅ **Real-Time Event Streaming** - Live WebSocket with auto-reconnect  
-✅ **Export Functionality** - CSV, JSON, text, and statistics formats  
-✅ **Toast Notifications** - 4 types with sound alerts  
-✅ **Event Details Modal** - Full metadata and AI insights  
-✅ **Reactive UI** - Real-time updates with 1s latency target  
-✅ **Keyboard Shortcuts** - `?` for help, `Ctrl+K` for search  
-✅ **Glossary & Help** - Contextual tooltips and definitions  
-✅ **Alert Configuration** - Sensitivity, thresholds, IP lists, custom rules  
-✅ **Incident Management** - Create, track, resolve security incidents  
+ **Real-Time Event Streaming** - Live WebSocket with auto-reconnect  
+ **Export Functionality** - CSV, JSON, text, and statistics formats  
+ **Toast Notifications** - 4 types with sound alerts  
+ **Event Details Modal** - Full metadata and AI insights  
+ **Reactive UI** - Real-time updates with 1s latency target  
+ **Keyboard Shortcuts** - `?` for help, `Ctrl+K` for search  
+ **Glossary & Help** - Contextual tooltips and definitions  
+ **Alert Configuration** - Sensitivity, thresholds, IP lists, custom rules  
+ **Incident Management** - Create, track, resolve security incidents  
 
 ### IUI Phase 1 Features (Complete)
-- ✅ Proactive suggestions based on context
-- ✅ Event feedback system (true/false positive labeling)
-- ✅ User profile tracking (expertise level, interaction count)
-- ✅ Learning progress (concepts seen, tutorials completed)
-- ✅ Adaptive UI based on expertise level
+-  Proactive suggestions based on context
+-  Event feedback system (true/false positive labeling)
+-  User profile tracking (expertise level, interaction count)
+-  Learning progress (concepts seen, tutorials completed)
+-  Adaptive UI based on expertise level
 
 ### In Development / Planned
-- 🔄 Predictive analytics
-- ⏳ Advanced filtering UI
-- ⏳ Mobile responsiveness
-- ⏳ Custom dashboards
-- ⏳ Report generation (PDF)
-- ⏳ And 13 more features...
+-  Predictive analytics
+-  Advanced filtering UI
+-  Mobile responsiveness
+-  Custom dashboards
+-  Report generation (PDF)
+-  And 13 more features...
 
 See [PROGRESS.md](./docs/PROGRESS.md) for detailed status.
 
 ### 1. Real-Time Event Streaming
 - Live network events via WebSocket
-- Auto-reconnect with exponential backoff (20s → 40s → 60s)
+- Auto-reconnect with exponential backoff (20s  40s  60s)
 - Event deduplication and aggregation
 - Stores last 200 events in memory
 
@@ -254,7 +254,7 @@ Edit `tailwind.config.js` or `src/styles/globals.css`:
 }
 ```
 
-## 📦 Component Organization
+##  Component Organization
 
 ### Architecture Overview
 
@@ -262,15 +262,15 @@ Components are organized into **6 logical categories** for maintainability and s
 
 ```
 src/components/
-├── core/           # Main layout & stateful containers
-├── events/         # Event display & filtering
-├── modals/         # Reusable dialog components
-├── panels/         # Sidebar panel components
-├── shared/         # Utility & helper components
-├── alerts/         # Alert configuration UI
-├── incidents/      # Incident management UI
-├── topology/       # Network visualization
-└── Toast/          # Notification system
+ core/           # Main layout & stateful containers
+ events/         # Event display & filtering
+ modals/         # Reusable dialog components
+ panels/         # Sidebar panel components
+ shared/         # Utility & helper components
+ alerts/         # Alert configuration UI
+ incidents/      # Incident management UI
+ topology/       # Network visualization
+ Toast/          # Notification system
 ```
 
 ### Core Components (`core/`)
@@ -379,11 +379,11 @@ import { ExpandableText, KeyboardShortcutsHelp, ShortcutHint } from '@/component
 
 **Prefer folder imports with index.ts:**
 ```typescript
-// ✅ GOOD - Clean, organized
+//  GOOD - Clean, organized
 import { ChatPanel, MetricsBar } from '@/components/core';
 import { EventStream, FilterBar } from '@/components/events';
 
-// ❌ AVOID - Direct file imports
+//  AVOID - Direct file imports
 import ChatPanel from '@/components/core/ChatPanel';
 import MetricsBar from '@/components/core/MetricsBar';
 ```
@@ -521,28 +521,28 @@ npm run lint      # Run ESLint checks
 ### Recent Updates
 
 **Fixed Issues:**
-- ✅ npm audit vulnerabilities (0 remaining)
+-  npm audit vulnerabilities (0 remaining)
   - Updated Vite to 7.2.4
   - Fixed esbuild, glob, js-yaml vulnerabilities
   - See [package.json](./package.json) for versions
 
-- ✅ TypeScript configuration
+-  TypeScript configuration
   - Removed `ignoreDeprecations` (caused build errors)
   - Configured path alias `@/*` for imports
   - Full type safety enabled (strict: true)
   - Added `vite/client` types for import.meta support
 
-- ✅ Module imports
+-  Module imports
   - Fixed Vite config path resolution using `node:path`
   - Using relative path aliases (`@/*: ./src/*`)
   - ES module compatibility
 
-- ✅ Documentation organization
+-  Documentation organization
   - Consolidated 19 markdown files to `docs/` folder
   - Created INDEX.md navigation
   - Clean root directory structure
 
-- ✅ **Component Reorganization** (NEW!)
+-  **Component Reorganization** (NEW!)
   - Organized 39 components into 6 logical categories
   - Created `core/`, `events/`, `modals/`, `panels/`, `shared/` folders
   - Added index.ts files for clean imports
@@ -699,14 +699,14 @@ npm run test
 
 ---
 
-## 📊 Project Status
+##  Project Status
 
 ### Code Quality
-- ✅ **TypeScript**: 95%+ typed, strict mode enabled
-- ✅ **Dependencies**: 0 vulnerabilities (all patched)
-- ✅ **Organization**: 7-tier architecture with clear separation
-- ✅ **Documentation**: 19 markdown files with navigation index
-- ✅ **Naming**: Full PacketFlow branding (no AINetUI references)
+-  **TypeScript**: 95%+ typed, strict mode enabled
+-  **Dependencies**: 0 vulnerabilities (all patched)
+-  **Organization**: 7-tier architecture with clear separation
+-  **Documentation**: 19 markdown files with navigation index
+-  **Naming**: Full PacketFlow branding (no AINetUI references)
 
 ### Feature Completion
 - **9/25 features completed (36%)**
@@ -720,14 +720,14 @@ npm run test
 - **Bundle size**: ~200KB gzipped
 
 ### Browser Support
-- ✅ Chrome/Chromium 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Edge 90+
+-  Chrome/Chromium 90+
+-  Firefox 88+
+-  Safari 14+
+-  Edge 90+
 
 ---
 
-## 📖 Documentation
+##  Documentation
 
 All documentation is in [`docs/`](./docs/) folder:
 

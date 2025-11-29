@@ -88,20 +88,20 @@ The favicon is served from the `public/icons/` directory and loaded correctly by
 ### Directory Structure
 ```
 public/
-├── images/
-│   └── logo/
-│       ├── dark/
-│       │   ├── packetflow-long-dark.svg
-│       │   ├── packetflow-short-ruf-dark.svg
-│       │   └── packetflow-short-udf-dark.svg
-│       └── light/
-│           ├── packetflow-long-light.svg
-│           ├── packetflow-short-ruf-light.svg
-│           └── packetflow-short-udf-light.svg
-├── icons/
-│   └── favicon.ico
-└── fonts/
-    └── (reserved for custom fonts)
+ images/
+    logo/
+        dark/
+           packetflow-long-dark.svg
+           packetflow-short-ruf-dark.svg
+           packetflow-short-udf-dark.svg
+        light/
+            packetflow-long-light.svg
+            packetflow-short-ruf-light.svg
+            packetflow-short-udf-light.svg
+ icons/
+    favicon.ico
+ fonts/
+     (reserved for custom fonts)
 ```
 
 ### Asset Guidelines
@@ -113,7 +113,7 @@ public/
 
 **Favicon**:
 - Format: ICO (binary format)
-- Status: ✅ Working correctly, loads on all browser tabs
+- Status:  Working correctly, loads on all browser tabs
 - Size: 48x48 pixels recommended
 
 ## Future Improvements
@@ -139,10 +139,10 @@ npx svgo public/images/logo --pretty
 
 ## Browser Compatibility
 
-- ✅ Chrome/Edge 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Mobile browsers (iOS Safari 14+, Chrome Android 90+)
+-  Chrome/Edge 90+
+-  Firefox 88+
+-  Safari 14+
+-  Mobile browsers (iOS Safari 14+, Chrome Android 90+)
 
 ## Performance Notes
 
