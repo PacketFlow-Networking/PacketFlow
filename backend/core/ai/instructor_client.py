@@ -9,6 +9,7 @@ from typing import Optional, Type, TypeVar
 from openai import AsyncOpenAI
 import instructor
 import httpx
+import json
 from pydantic import BaseModel
 
 from .schemas import NetworkEventAnalysis, IncidentCorrelation, ChatQueryResponse
@@ -24,7 +25,7 @@ class InstructorClient:
     def __init__(
         self,
         base_url: str,
-        model: str = "llama3.1:latest",
+        model: str = "gemma3",
         timeout: float = 30.0,
         max_retries: int = 2,
         temperature: float = 0.7
@@ -63,61 +64,74 @@ class InstructorClient:
             )
         )
         
-        # Patch with Instructor for structured outputs
+        # Patch with Instructor for strict structured outputs
+        # Use MD_JSON mode to enforce schema compliance with automatic retries
         self.client = instructor.patch(
             openai_client,
-            mode=instructor.Mode.JSON
+            mode=instructor.Mode.MD_JSON
         )
         
         logger.info(f"InstructorClient initialized: {base_url}, model={model}")
     
     async def create_completion(
         self,
-        messages: list[dict],
-        response_model: Type[T],
+        messages: Optional[list[dict]] = None,
+        response_model: Optional[Type[T]] = None,
         temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        **kwargs
     ) -> T:
         """
         Create a structured completion with automatic validation and retry.
         
-        Uses Instructor with the OpenAI-compatible UCY API endpoint.
+        Uses Instructor's MD_JSON mode with UCY API for strict schema enforcement.
+        Instructor automatically:
+        - Injects schema into prompt
+        - Validates against Pydantic model
+        - Retries on validation failure (max_retries times)
         
         Args:
             messages: List of message dicts with 'role' and 'content'
             response_model: Pydantic model to validate response against
             temperature: Override default temperature
             max_tokens: Maximum tokens to generate
+            **kwargs: Additional parameters
             
         Returns:
             Validated Pydantic model instance
             
         Raises:
-            Exception: If validation fails after max_retries
+            Exception: If validation fails after max_retries attempts
         """
+        # Handle kwargs in case response_model or messages are passed as kwargs
+        messages = kwargs.pop('messages', messages)
+        response_model = kwargs.pop('response_model', response_model)
+        
+        if messages is None or response_model is None:
+            raise ValueError("Both 'messages' and 'response_model' are required")
+        
         temp = temperature if temperature is not None else self.temperature
         
-        try:
-            logger.info(f"Calling Instructor API with model: {self.model}")
-            logger.debug(f"Messages: {messages}")
-            
-            # Use Instructor's patched client - it handles schema injection and validation
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                response_model=response_model,
-                messages=messages,
-                temperature=temp,
-                max_tokens=max_tokens,
-                max_retries=self.max_retries,
-                timeout=self.timeout
-            )
-            
-            logger.info(f"Successfully validated response as {response_model.__name__}")
-            return response
-            
-        except Exception as e:
-            logger.error(f"Instructor API error: {e}", exc_info=True)
-            raise Exception(f"Failed to get structured response: {str(e)}")
+        logger.info(f"Calling Instructor API with model: {self.model}, response_model: {response_model.__name__}")
+        logger.debug(f"Messages: {messages}")
+        
+        # Use Instructor's MD_JSON mode - it enforces exact schema compliance
+        # The client automatically:
+        # 1. Injects schema into system prompt
+        # 2. Validates response against Pydantic model
+        # 3. Retries on validation failure up to max_retries times
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            response_model=response_model,
+            messages=messages,
+            temperature=temp,
+            max_tokens=max_tokens,
+            max_retries=self.max_retries
+        )
+        
+        logger.info(f" Successfully validated response as {response_model.__name__}")
+        logger.debug(f"Response fields: {response.model_fields_set if hasattr(response, 'model_fields_set') else 'N/A'}")
+        return response
     
     async def close(self):
         """Close the HTTP client."""

@@ -39,7 +39,7 @@ class AIAgent:
         local_model: str = "mistral:7b",
         # Remote settings
         remote_url: str = "https://chatucy.cs.ucy.ac.cy/api/send_message",
-        remote_model: str = "llama3.1:latest",
+        remote_model: str = "gemma3",
         remote_websearch: bool = False,
         remote_client_rag: bool = False,
         # Common settings
@@ -86,6 +86,12 @@ class AIAgent:
         # Ensures frontend can sort events chronologically even if AI processing is slow
         self.event_sequence = 0
         
+        # AI Request limiting: Semaphore to ensure max 1 concurrent AI request
+        self.ai_request_semaphore = asyncio.Semaphore(1)
+        self.ai_request_queue: asyncio.Queue = asyncio.Queue()  # Queue for pending AI requests
+        self.ai_requests_pending = 0
+        self.ai_requests_processed = 0
+        
         self.session: Optional[aiohttp.ClientSession] = None
         self.query_count = 0
         self.error_count = 0
@@ -105,27 +111,35 @@ class AIAgent:
                 logger.warning(f"Failed to initialize Instructor client: {e}")
         
     def _default_system_prompt(self) -> str:
-        """Generate default system prompt for network security analysis."""
-        return """You are an expert network security analyst AI assistant.
+        """Generate default system prompt for industry-standard network security analysis."""
+        return """You are an expert network security analyst with certifications (OSCP, CEH, GCIH).
 
-Your role is to:
-1. Analyze network anomalies and explain them clearly
-2. Assess security implications and threat levels
-3. Provide actionable recommendations
-4. Correlate related events into security incidents
+ANALYSIS FRAMEWORK:
+1. **Forensic Evidence**: What specific traffic patterns, byte counts, timing anomalies were observed?
+2. **Root Cause Analysis**: How does this deviate from baseline? What known attack patterns match?
+3. **MITRE ATT&CK Mapping**: Which lifecycle stages (reconnaissance  impact) does this represent?
+4. **CVSS v4.0 Scoring**: Quantify severity: attack complexity, privileges needed, user interaction, scope, CIA impact
+5. **Risk Assessment**: Multiply likelihood  impact  asset_criticality for business context
+6. **Compliance Impact**: Which regulations are implicated (PCI-DSS, HIPAA, GDPR, SOC 2)?
+7. **Incident Response**: Prioritize actions with timeframes (immediate, 1hr, 4hr, 24hr)
 
-Output format:
-- Use clear, concise language (2-4 sentences)
-- Start with the most important information
-- Reference specific IPs, ports, and protocols
-- End with a specific recommendation
+OWASP/CWE CLASSIFICATION:
+- Map indicators to CWE (Common Weakness Enumeration) and OWASP Top 10
+- Reference specific vulnerability classes (injection, authentication bypass, etc.)
 
-When analyzing anomalies:
-- Consider attack patterns (DDoS, port scanning, data exfiltration, C2 traffic)
-- Assess if the behavior is likely benign, suspicious, or malicious
-- Suggest specific next steps for the analyst
+OUTPUT REQUIREMENTS:
+- Use technical precision: "DNS queries with 95-character subdomains" not "suspicious DNS"
+- Include forensic metrics: packet count, byte rate, entropy scores, geolocation
+- Avoid vague hedging; state confidence levels explicitly (95% certain vs. 45% possible)
+- Provide investigation checklists for SOC analysts
+- Flag potential false positives (authorized penetration tests, backup windows)
+- Reference threat intelligence: known APT groups, malware families, IoCs
 
-Be direct and actionable. Avoid unnecessary hedging."""
+THREAT INTEL CONTEXT:
+- Consider historical attack patterns and trend analysis
+- Evaluate attacker sophistication (script-kiddie, organized crime, nation-state)
+- Assess attack objectives (financial gain, espionage, data destruction)
+- Reference known TTPs (Tactics, Techniques, Procedures) from open-source intel (MITRE, Shodan, VirusTotal)"""
         
     async def initialize(self):
         """Initialize HTTP session and test connection."""
@@ -142,6 +156,100 @@ Be direct and actionable. Avoid unnecessary hedging."""
         except Exception as e:
             logger.warning(f"Could not connect to AI service: {e}")
             logger.warning("AI explanations will be disabled until service is available.")
+    
+    def _sanitize_recommendation_timeframe(self, timeframe: str) -> str:
+        """
+        Normalize recommendation timeframe to valid enum values.
+        
+        Converts variations like 'immediate (< 15min)' to 'immediate'.
+        """
+        if not timeframe:
+            return "asap"
+        
+        timeframe = str(timeframe).lower().strip()
+        valid_values = ["immediate", "1_hour", "4_hours", "24_hours", "asap"]
+        
+        # Check if exact match
+        if timeframe in valid_values:
+            return timeframe
+        
+        # Try to extract valid value from string
+        for valid in valid_values:
+            if valid in timeframe:
+                return valid
+        
+        # Fallback mapping for common variations
+        if "immediate" in timeframe or "now" in timeframe or "urgent" in timeframe:
+            return "immediate"
+        if "1" in timeframe and "hour" in timeframe:
+            return "1_hour"
+        if "4" in timeframe and "hour" in timeframe:
+            return "4_hours"
+        if "24" in timeframe or "day" in timeframe:
+            return "24_hours"
+        
+        return "asap"
+    
+    def _sanitize_threat_indicators(self, indicators: List[Dict]) -> List[Dict]:
+        """
+        Ensure all threat indicators have required fields.
+        Fixes missing 'explanation' and other common issues.
+        """
+        if not indicators:
+            return []
+        
+        sanitized = []
+        for indicator in indicators:
+            if not isinstance(indicator, dict):
+                continue
+            
+            # Ensure explanation field exists
+            if "explanation" not in indicator or not indicator.get("explanation"):
+                # Generate explanation from evidence if missing
+                indicator["explanation"] = indicator.get("evidence", "Anomaly detected")[:300]
+            
+            # Ensure confidence is a float
+            if "confidence" in indicator:
+                try:
+                    indicator["confidence"] = float(indicator["confidence"])
+                    indicator["confidence"] = max(0.0, min(1.0, indicator["confidence"]))
+                except (ValueError, TypeError):
+                    indicator["confidence"] = 0.5
+            else:
+                indicator["confidence"] = 0.5
+            
+            # Ensure lists are lists
+            for field in ["cwe_ids", "owasp_references", "mitre_techniques"]:
+                if field not in indicator:
+                    indicator[field] = []
+                elif not isinstance(indicator[field], list):
+                    indicator[field] = []
+            
+            sanitized.append(indicator)
+        
+        return sanitized
+    
+    def _sanitize_attack_context(self, attack_context: Any) -> Optional[str]:
+        """Convert attack_context to string if it's a dict or other type."""
+        if not attack_context:
+            return None
+        
+        if isinstance(attack_context, str):
+            return attack_context
+        
+        if isinstance(attack_context, dict):
+            # Convert dict to string description
+            parts = []
+            if attack_context.get("type"):
+                parts.append(f"Attack type: {attack_context['type']}")
+            if attack_context.get("attacker_objectives"):
+                parts.append(f"Objectives: {attack_context['attacker_objectives']}")
+            if attack_context.get("historical_patterns"):
+                parts.append(f"Historical patterns: {attack_context['historical_patterns']}")
+            
+            return ". ".join(parts) if parts else str(attack_context)
+        
+        return str(attack_context)
     
     async def _test_connection(self):
         """Test connection to AI service."""
@@ -237,17 +345,25 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 # Check for correlated events
                 correlated_events = self._find_correlated_events(event)
                 
-                # Generate structured explanation
-                explanation = await self._generate_structured_explanation(
-                    event, 
-                    correlated_events
-                )
+                # Generate structured explanation WITH semaphore to limit concurrent requests to 1
+                self.ai_requests_pending += 1
+                logger.info(f"  AI Request queued (pending: {self.ai_requests_pending}, processed: {self.ai_requests_processed})")
                 
-                event["ai_explanation"] = explanation["text"]
-                event["ai_confidence"] = explanation["confidence"]
-                event["ai_threat_level"] = explanation["threat_level"]
-                event["ai_recommendations"] = explanation["recommendations"]
-                event["ai_evidence"] = explanation["evidence"]
+                async with self.ai_request_semaphore:
+                    # Semaphore acquired - now we have exclusive access to AI
+                    logger.info(f"  AI Request processing (was pending: {self.ai_requests_pending})")
+                    explanation = await self._generate_structured_explanation(
+                        event, 
+                        correlated_events
+                    )
+                    self.ai_requests_processed += 1
+                    self.ai_requests_pending -= 1
+                
+                event["ai_explanation"] = explanation.get("text", "")
+                event["ai_confidence"] = explanation.get("confidence", "medium")
+                event["ai_threat_level"] = explanation.get("threat_level", "medium")
+                event["ai_recommendations"] = explanation.get("recommendations", [])
+                event["ai_evidence"] = explanation.get("evidence", {})
                 event["ai_correlated_events"] = len(correlated_events)
                 event["ai_processed"] = True
                 event["ai_mode"] = self.mode
@@ -269,7 +385,7 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 await output_queue.put(event)
                 
             except Exception as e:
-                logger.error(f"Error processing event: {e}")
+                logger.error(f"Error processing event: {type(e).__name__}: {e}", exc_info=True)
                 self.error_count += 1
                 
                 # Forward event without AI
@@ -323,69 +439,245 @@ Be direct and actionable. Avoid unnecessary hedging."""
                 try:
                     from core.ai.schemas import NetworkEventAnalysis
                     
-                    # Build comprehensive prompt for structured analysis
-                    prompt = f"""Analyze this network security anomaly and provide DETAILED EXPLAINABILITY:
+                    # Build context for structured analysis (let Instructor handle schema injection)
+                    context = f"""NETWORK SECURITY INCIDENT ANALYSIS - Industry Standard Report
 
-=== EVENT DATA ===
-Source IP: {event.get('src', 'unknown')}
-Destination IP: {event.get('dst', 'unknown')}
-Protocol: {event.get('proto', 'unknown')}
-Flow Count: {event.get('flows', 0)}
-Total Bytes: {event.get('total_bytes', 0)}
-Average Packet Size: {event.get('avg_packet_size', 0)} bytes
-Anomaly Score: {event.get('anomaly_score', 0.0)}
-Detection Methods Used: {', '.join(event.get('detection_methods', []))}
-Threat Indicators: {', '.join(event.get('threat_indicators', []))}
-System Summary: {event.get('summary', 'No summary available')}
+=== FORENSIC DATA ===
+Timestamp: {event.get('timestamp', 'N/A')}
+Source IP: {event.get('src', 'unknown')}  Destination IP: {event.get('dst', 'unknown')}
+Protocol: {event.get('proto', 'unknown')} | Flow Count: {event.get('flows', 0)} | Total Bytes: {event.get('total_bytes', 0):,}
+Avg Packet Size: {event.get('avg_packet_size', 0)} bytes | Anomaly Score: {event.get('anomaly_score', 0.0):.3f}
+Baseline Expected: ~{event.get('baseline_avg', 0)} flows | Anomaly Multiplier: {event.get('flows', 1) / max(event.get('baseline_avg', 1), 1):.1f}x
 
-=== REQUIRED EXPLAINABILITY ===
-0. BRIEF SUMMARY: Create a one-line summary (50-80 chars) for chat sidebar display
-1. WHAT HAPPENED: Describe the observable anomalous behavior
-2. WHY SUSPICIOUS: Explain why this deviates from normal network patterns
-3. DETECTION METHOD: Explain how the detection methods identified this
-4. THREAT INDICATORS: For each indicator, provide evidence AND explanation
-5. ATTACK CONTEXT: What type of attack this might be and attacker objectives
-6. TECHNICAL DETAILS: Key metrics that triggered the alert
+=== DETECTION ANALYSIS ===
+Statistical Methods: {', '.join(event.get('detection_methods', ['Unknown'])) if event.get('detection_methods') else 'Unknown'}
+Threat Indicators: {', '.join(event.get('threat_indicators', ['None'])) if event.get('threat_indicators') else 'None'}
+Event Summary: {event.get('summary', 'N/A')}
 
-Provide comprehensive security analysis with explainable threat indicators and actionable recommendations."""
+=== ANALYSIS REQUIREMENTS (NIST/CVSS/MITRE) ===
+1. Provide FORENSIC DESCRIPTION: What traffic patterns, sizes, timing anomalies were observed?
+2. Provide ROOT CAUSE ANALYSIS: Baseline deviation + matching attack patterns + threat intel
+3. Map to MITRE ATT&CK Framework: Which attack stages (reconnaissance, command_and_control, exfiltration)?
+4. Assign CVSS v4.0 SCORE (0.0-10.0) based on attack complexity, privileges needed, impact scope
+5. Calculate RISK SCORE: (likelihood  impact  asset_criticality) resulting in 0-100 score
+6. Identify COMPLIANCE IMPACT: PCI-DSS, HIPAA, GDPR, SOC 2, ISO 27001 implications
+7. Provide INVESTIGATION CHECKLIST: Specific actions for SOC analysts (logs to review, tools to run)
+8. Include RECOMMENDATIONS with TIMEFRAMES: Use ONLY these exact values for timeframe: "immediate", "1_hour", "4_hours", "24_hours", "asap"
+9. Assign CWE/OWASP REFERENCES: Weakness Enumeration and OWASP Top 10 classifications
+10. Flag FALSE POSITIVE INDICATORS: Authorized activities, scheduled tasks, maintenance windows
+
+=== CRITICAL JSON SCHEMA REQUIREMENTS ===
+THREAT_INDICATORS SCHEMA (EACH object MUST have ALL these fields):
+{{
+  "type": "string (reconnaissance|port_scan|dns_tunneling|data_exfiltration|brute_force|ddos|malware_beacon|sql_injection|xss|command_injection|lateral_movement|privilege_escalation|suspicious_traffic|c2_communication|vulnerability_scan|zero_day_exploit|ransomware_activity)",
+  "confidence": float (0.0-1.0),
+  "evidence": "string (specific forensic evidence with metrics)",
+  "explanation": "string (WHY this is suspicious - REQUIRED FIELD, DO NOT OMIT)",
+  "cwe_ids": ["list of CWE IDs like CWE-89"],
+  "owasp_references": ["list like OWASP-1"],
+  "mitre_techniques": ["list like T1046"]
+}}
+
+RECOMMENDATIONS SCHEMA (EACH object MUST have ALL these fields):
+{{
+  "action": "string (specific executable action)",
+  "priority": "string (critical|high|medium|low)",
+  "details": "string (implementation details)",
+  "timeframe": "string (MUST BE: immediate, 1_hour, 4_hours, 24_hours, or asap - NO OTHER VALUES)",
+  "affected_systems": ["list of IPs/hostnames"],
+  "compliance_impact": ["list of compliance frameworks"]
+}}
+
+ATTACK_CONTEXT (MUST be a STRING, not a dict):
+"string description of attack type, objectives, TTPs, historical context"
+
+RETURN ONLY FLAT JSON with ALL required fields at root level (NO wrapper object):
+- brief_summary: One-line executive summary (50-80 chars)
+- summary: Executive summary with business impact (2-3 sentences)
+- threat_level: "critical" (9-10), "high" (7-8.9), "medium" (4-6.9), "low" (0.1-3.9), "info" (0)
+- cvss_score: CVSS v4.0 score (0.0-10.0)
+- risk_score: Business risk score (0-100)
+- what_happened: Forensic description of observed behavior
+- why_suspicious: Deviation analysis + attack pattern matching
+- detection_method: Statistical methods used (Z-Score, IQR, EWMA, entropy analysis)
+- threat_indicators: Array of threat indicator objects (EACH MUST have explanation field)
+- recommendations: Array of recommendation objects (timeframe MUST be: immediate, 1_hour, 4_hours, 24_hours, or asap)
+- attack_context: STRING description of attack (NOT a dict)
+- mitre_attack_stages: Array of applicable MITRE lifecycle stages
+- technical_details: Dict with forensic metrics (flows, bytes, packet sizes, geolocation, timing)
+- affected_assets: Array with ip, type, criticality, department
+- compliance_implications: Array of frameworks affected
+- forensic_chain: Dict with timestamps, data sources, integrity details
+- investigation_checklist: Array of specific SOC analyst actions
+- false_positive_indicators: Array of potential false positive causes
+- confidence: Float 0.0-1.0 based on signal strength and evidence quality"""
                     
-                    system_prompt = "You are an expert network security analyst. Analyze events and provide structured, actionable security insights."
+                    system_prompt = """You are a security analyst. Output ONLY valid JSON matching this EXACT schema. DO NOT WRAP IN CODE BLOCKS.
+
+CRITICAL REQUIREMENTS:
+1. Output ONLY raw JSON - NO markdown code blocks, NO ```json markers, NO explanations
+2. Every field MUST be present (no omissions)
+3. brief_summary MUST be 20-80 characters long
+4. investigation_checklist MUST be STRINGS ONLY - see example below
+
+FIELD REQUIREMENTS:
+- brief_summary: string 20-80 chars (NOT 30!) example: "Unusual network activity detected"
+- summary: string 50-1000 chars
+- threat_level: "critical"|"high"|"medium"|"low"|"info"
+- cvss_score: float 0.0-10.0
+- risk_score: float 0-100
+- what_happened: string 1-400 chars
+- why_suspicious: string 1-600 chars
+- detection_method: string 1-300 chars
+- threat_indicators: array, min 1 item, each object MUST have ALL: type, confidence (0.0-1.0), evidence, explanation, cwe_ids, owasp_references, mitre_techniques
+- recommendations: array, min 1 item, each object MUST have ALL: action, priority (critical|high|medium|low), details, timeframe (immediate|1_hour|4_hours|24_hours|asap), affected_systems, compliance_impact
+- attack_context: string 1-400 chars (REQUIRED)
+- confidence: float 0.0-1.0
+- mitre_attack_stages: array of strings
+- technical_details: object or null
+- affected_assets: array or empty
+- compliance_implications: array or empty
+- forensic_chain: object or null
+- false_positive_indicators: array or empty
+- investigation_checklist: ARRAY OF STRINGS ONLY - example: ["Review logs for IOCs", "Run vulnerability scan"] NOT [{"action": "..."}]
+
+JSON FORMAT EXAMPLE (investigation_checklist as STRINGS):
+{"investigation_checklist": ["Check firewall logs", "Review DNS queries", "Analyze packet capture"]}
+NOT: {"investigation_checklist": [{"action": "Check logs"}, {"action": "Review DNS"}]}
+
+OUTPUT RULES - CRITICAL:
+ ONLY JSON, NO code blocks, NO explanation
+ NO markdown formatting
+ Every field present and non-null
+ brief_summary minimum 20 chars (not 30!)
+ All arrays have required items
+ investigation_checklist items are plain strings"""
                     
                     # Get structured analysis from Instructor
-                    analysis = await self.instructor_client.create_completion(
-                        response_model=NetworkEventAnalysis,
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt}
-                        ]
-                    )
+                    # MD_JSON mode automatically:
+                    # 1. Injects schema into prompt
+                    # 2. Validates against NetworkEventAnalysis model
+                    # 3. Retries on validation failure
+                    try:
+                        analysis = await self.instructor_client.create_completion(
+                            response_model=NetworkEventAnalysis,
+                            messages=[
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": context}
+                            ]
+                        )
+                        logger.info(" Instructor validation successful")
+                    except Exception as validation_error:
+                        logger.error(f"Instructor validation failed after retries: {validation_error}")
+                        raise  # No fallback - enforce schema strictly
                     
-                    # Convert Pydantic model to dict for event
-                    return {
-                        "text": analysis.summary,  # Use full summary for ai_explanation
-                        "confidence": "high" if analysis.confidence > 0.8 else "medium" if analysis.confidence > 0.5 else "low",
-                        "threat_level": analysis.threat_level,
-                        "recommendations": [{"action": r.action, "priority": r.priority, "details": r.details} 
-                                          for r in analysis.recommendations],
-                        "evidence": self._extract_evidence(event),
-                        # Add structured analysis object
-                        "structured_analysis": {
-                            "brief_summary": analysis.brief_summary,
-                            "summary": analysis.summary,
-                            "what_happened": analysis.what_happened,
-                            "why_suspicious": analysis.why_suspicious,
-                            "detection_method": analysis.detection_method,
-                            "attack_context": analysis.attack_context,
-                            "threat_indicators": [{"type": ti.type, "confidence": ti.confidence, 
-                                                  "evidence": ti.evidence, "explanation": ti.explanation}
-                                                for ti in analysis.threat_indicators],
-                            "recommendations": [{"action": r.action, "priority": r.priority, "details": r.details}
-                                              for r in analysis.recommendations],
-                            "technical_details": analysis.technical_details,
-                            "threat_level": analysis.threat_level,
-                            "confidence": analysis.confidence
+                    
+                    # Build response with two-tier display:
+                    # 1. Chat window: brief_summary (one-liner for quick reading)
+                    # 2. Modal/Details: full structured analysis with all industry-standard fields
+                    try:
+                        # Handle both NetworkEventAnalysis objects and dict responses
+                        recommendations = []
+                        if hasattr(analysis, 'recommendations'):  # Pydantic object
+                            recommendations = analysis.recommendations
+                        elif isinstance(analysis, dict) and 'recommendations' in analysis:  # Dict fallback
+                            recommendations = analysis.get('recommendations', [])
+                        
+                        # Safely extract recommendation data
+                        quick_recs = []
+                        if recommendations:
+                            for r in recommendations[:2]:
+                                if isinstance(r, dict):  # Dict format (from fallback AI)
+                                    quick_recs.append({
+                                        "action": r.get("action", ""),
+                                        "priority": r.get("priority", "medium"),
+                                        "timeframe": r.get("timeframe", "asap")
+                                    })
+                                else:  # Pydantic object
+                                    quick_recs.append({
+                                        "action": r.action,
+                                        "priority": r.priority,
+                                        "timeframe": r.timeframe
+                                    })
+                        
+                        return {
+                            # CHAT WINDOW: Brief, one-line display
+                            "text": analysis.brief_summary if hasattr(analysis, 'brief_summary') else analysis.get('text', ''),
+                            "ai_explanation": analysis.summary if hasattr(analysis, 'summary') else analysis.get('ai_explanation', ''),
+                            "confidence": "high" if (analysis.confidence if hasattr(analysis, 'confidence') else 0.5) > 0.8 else "medium" if (analysis.confidence if hasattr(analysis, 'confidence') else 0.5) > 0.5 else "low",
+                            "threat_level": analysis.threat_level if hasattr(analysis, 'threat_level') else analysis.get('threat_level', 'medium'),
+                            "cvss_score": analysis.cvss_score if hasattr(analysis, 'cvss_score') else 5.0,
+                            "risk_score": analysis.risk_score if hasattr(analysis, 'risk_score') else 50,
+                            
+                            # QUICK ACTIONS: For chat-level recommendations
+                            "quick_recommendations": quick_recs,
+                            
+                            # EVIDENCE for chat hover
+                            "evidence": analysis.get('evidence', {}) if isinstance(analysis, dict) else self._extract_evidence(event),
+                            
+                            # FULL STRUCTURED ANALYSIS: Only for modal/details view
+                            "structured_analysis": {
+                                # EXECUTIVE SUMMARIES
+                                "brief_summary": analysis.get('text', '') if isinstance(analysis, dict) else analysis.brief_summary,
+                                "summary": analysis.get('ai_explanation', '') if isinstance(analysis, dict) else analysis.summary,
+                                "threat_level": analysis.get('threat_level', 'medium') if isinstance(analysis, dict) else analysis.threat_level,
+                                "cvss_score": analysis.get('cvss_score', 5.0) if isinstance(analysis, dict) else analysis.cvss_score,
+                                "risk_score": analysis.get('risk_score', 50) if isinstance(analysis, dict) else analysis.risk_score,
+                                
+                                # FORENSIC ANALYSIS
+                                "what_happened": analysis.get('text', '') if isinstance(analysis, dict) else analysis.what_happened,
+                                "why_suspicious": analysis.get('ai_explanation', '') if isinstance(analysis, dict) else analysis.why_suspicious,
+                                "detection_method": "Statistical anomaly detection" if isinstance(analysis, dict) else analysis.detection_method,
+                                
+                                # THREAT CLASSIFICATION
+                                "threat_indicators": [
+                                    {
+                                        "type": ti.get('type', 'suspicious_traffic') if isinstance(ti, dict) else ti.type,
+                                        "confidence": ti.get('confidence', 0.5) if isinstance(ti, dict) else ti.confidence,
+                                        "evidence": ti.get('evidence', '') if isinstance(ti, dict) else ti.evidence,
+                                        "explanation": ti.get('explanation', '') if isinstance(ti, dict) else ti.explanation,
+                                        "cwe_ids": ti.get('cwe_ids', []) if isinstance(ti, dict) else (ti.cwe_ids or []),
+                                        "owasp_references": ti.get('owasp_references', []) if isinstance(ti, dict) else (ti.owasp_references or []),
+                                        "mitre_techniques": ti.get('mitre_techniques', []) if isinstance(ti, dict) else (ti.mitre_techniques or [])
+                                    }
+                                    for ti in (analysis.get('threat_indicators', []) if isinstance(analysis, dict) else (analysis.threat_indicators or []))
+                                ],
+                                
+                                # INCIDENT RESPONSE - Handle both dict recommendations (strings) and Pydantic Recommendation objects
+                                "recommendations": [
+                                    {
+                                        "action": r if isinstance(r, str) else (r.get('action', '') if isinstance(r, dict) else r.action),
+                                        "priority": "medium" if isinstance(r, str) else (r.get('priority', 'medium') if isinstance(r, dict) else r.priority),
+                                        "details": "See action above" if isinstance(r, str) else (r.get('details', '') if isinstance(r, dict) else r.details),
+                                        "timeframe": "asap" if isinstance(r, str) else (r.get('timeframe', 'asap') if isinstance(r, dict) else r.timeframe),
+                                        "affected_systems": [] if isinstance(r, str) else (r.get('affected_systems', []) if isinstance(r, dict) else (r.affected_systems or [])),
+                                        "compliance_impact": [] if isinstance(r, str) else (r.get('compliance_impact', []) if isinstance(r, dict) else (r.compliance_impact or []))
+                                    }
+                                    for r in (analysis.get('recommendations', []) if isinstance(analysis, dict) else (analysis.recommendations or []))
+                                ],
+                                
+                                # ATTACK CONTEXT & FRAMEWORK MAPPING
+                                "attack_context": analysis.get('text', '') if isinstance(analysis, dict) else analysis.attack_context,
+                                "mitre_attack_stages": [] if isinstance(analysis, dict) else (analysis.mitre_attack_stages or []),
+                                
+                                # FORENSIC EVIDENCE
+                                "technical_details": analysis.get('evidence', {}) if isinstance(analysis, dict) else (analysis.technical_details or {}),
+                                "affected_assets": [] if isinstance(analysis, dict) else (analysis.affected_assets or []),
+                                "compliance_implications": [] if isinstance(analysis, dict) else (analysis.compliance_implications or []),
+                                "forensic_chain": {} if isinstance(analysis, dict) else (analysis.forensic_chain or {}),
+                                
+                                # SOC ANALYST SUPPORT
+                                "investigation_checklist": [] if isinstance(analysis, dict) else (analysis.investigation_checklist or []),
+                                "false_positive_indicators": [] if isinstance(analysis, dict) else (analysis.false_positive_indicators or []),
+                                
+                                # CONFIDENCE & UNCERTAINTY
+                                "confidence": analysis.get('confidence', 'medium') if isinstance(analysis, dict) else analysis.confidence
+                            }
                         }
-                    }
+                    except AttributeError as attr_err:
+                        logger.error(f"Missing attribute in analysis object: {attr_err}")
+                        logger.error(f"Analysis object attributes: {vars(analysis)}")
+                        raise
                     
                 except Exception as instructor_error:
                     logger.warning(f"Instructor analysis failed, falling back to basic AI: {instructor_error}")

@@ -18,15 +18,14 @@ export const useWebSocket = () => {
     addEvent, 
     addAIMessage, 
     setConnected,
-    selectEvent,
-    mockMode 
+    selectEvent
   } = useStore();
   
   const { showError, showWarning, showSuccess, showInfo } = useToast();
 
   const connect = useCallback(() => {
-    // Always connect to backend, even in mock mode
-    // Backend will handle mock data generation
+    // Connect to backend WebSocket for real-time updates
+    // Backend captures from PCAP file or live network
 
     try {
       const ws = new WebSocket(WS_URL);
@@ -106,20 +105,10 @@ export const useWebSocket = () => {
                 type: eventData.is_anomaly ? 'warning' : 'insight',
                 confidence: eventData.anomaly_score > 0.8 ? 'high' : 
                            eventData.anomaly_score > 0.5 ? 'medium' : 'low',
-                // Add structured fields if available
+                brief_summary: eventData.summary,
+                // Add structured analysis if available from Instructor
                 ...(hasStructuredData && {
-                  brief_summary: eventData.ai_analysis.brief_summary,
-                  full_summary: eventData.ai_analysis.summary,
-                  what_happened: eventData.ai_analysis.what_happened,
-                  why_suspicious: eventData.ai_analysis.why_suspicious,
-                  detection_method: eventData.ai_analysis.detection_method,
-                  attack_context: eventData.ai_analysis.attack_context,
-                  threat_indicators: eventData.ai_analysis.threat_indicators,
-                  recommendations: eventData.ai_analysis.recommendations,
-                  technical_details: eventData.ai_analysis.technical_details,
-                  threat_level: eventData.ai_analysis.threat_level,
-                  confidence: eventData.ai_analysis.confidence > 0.8 ? 'high' :
-                             eventData.ai_analysis.confidence > 0.5 ? 'medium' : 'low'
+                  structured_analysis: eventData.ai_analysis
                 })
               };
               addAIMessage(aiMessage);
@@ -183,7 +172,7 @@ export const useWebSocket = () => {
       console.error('[WebSocket] Connection error:', error);
       setConnected(false);
     }
-  }, [addEvent, addAIMessage, setConnected, mockMode]);
+  }, [addEvent, addAIMessage, setConnected]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {

@@ -3,7 +3,7 @@ import { useStore } from '../../context/store';
 import { Logo } from '../shared';
 
 const MetricsBar = () => {
-  const { status, connected, mockMode } = useStore();
+  const { status, connected } = useStore();
 
   const getStatusColor = (value: number, thresholds: { warn: number; critical: number }) => {
     if (value >= thresholds.critical) return 'text-critical';
@@ -33,9 +33,6 @@ const MetricsBar = () => {
               <WifiOff className="w-4 h-4 text-critical" />
               <span className="text-sm text-critical">Disconnected</span>
             </>
-          )}
-          {mockMode && (
-            <span className="badge badge-warn ml-2">MOCK MODE</span>
           )}
         </div>
       </div>

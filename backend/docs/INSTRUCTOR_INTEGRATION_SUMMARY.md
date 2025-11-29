@@ -100,7 +100,7 @@ Already configured in your `.env`:
 ```bash
 AI_MODE=remote
 REMOTE_AI_URL=https://chatucy.cs.ucy.ac.cy/api/send_message
-REMOTE_AI_MODEL=llama3.1:latest
+REMOTE_AI_MODEL=gemma3
 DEBUG=true
 ```
 

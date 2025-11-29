@@ -30,7 +30,6 @@ interface UIState {
   
   // UI State
   connected: boolean;
-  mockMode: boolean;
   selectedEventId: string | null;
   selectedIncidentId: string | null;
   focusedMessageId: string | null;
@@ -53,7 +52,6 @@ interface UIState {
   addUserMessage: (message: UserMessage) => void;
   updateStatus: (status: SystemStatus) => void;
   setConnected: (connected: boolean) => void;
-  toggleMockMode: () => void;
   selectEvent: (eventId: string | null) => void;
   selectIncident: (incidentId: string | null) => void;
   focusMessage: (messageId: string | null) => void;
@@ -108,7 +106,6 @@ export const useStore = create<UIState>()(
   status: null,
   incidents: [],
   connected: false,
-  mockMode: false,
   selectedEventId: null,
   selectedIncidentId: null,
   focusedMessageId: null,
@@ -141,8 +138,6 @@ export const useStore = create<UIState>()(
   updateStatus: (status) => set({ status }),
   
   setConnected: (connected) => set({ connected }),
-  
-  toggleMockMode: () => set((state) => ({ mockMode: !state.mockMode })),
   
   selectEvent: (eventId) => set({ selectedEventId: eventId }),
   
@@ -421,7 +416,6 @@ export const useStore = create<UIState>()(
       name: 'packetflow-store',
       partialize: (state) => ({ 
         alertConfig: state.alertConfig,
-        mockMode: state.mockMode,
         userProfile: state.userProfile,
         dismissedSuggestions: state.dismissedSuggestions,
         eventFeedback: state.eventFeedback,

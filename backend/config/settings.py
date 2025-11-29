@@ -96,7 +96,6 @@ class CaptureConfig:
     
     def __init__(self):
         self.interface = os.getenv('CAPTURE_INTERFACE', '5')
-        self.mock_mode = os.getenv('MOCK_MODE', 'false').lower() == 'true'
         self.buffer_size = int(os.getenv('BUFFER_SIZE', '1000'))
         self.tshark_path = os.getenv('TSHARK_PATH', 'tshark')
         self.filter = os.getenv('CAPTURE_FILTER', '')  # BPF filter
@@ -107,7 +106,7 @@ class CaptureConfig:
         self.pcap_speed = float(os.getenv('PCAP_SPEED', '1.0'))
     
     def __repr__(self):
-        mode_str = "mock" if self.mock_mode else ("pcap" if self.pcap_file else "live")
+        mode_str = "pcap" if self.pcap_file else "live"
         return (f"CaptureConfig(mode={mode_str}, interface={self.interface}, "
                 f"pcap_file='{self.pcap_file}', filter='{self.filter}')")
 
@@ -139,7 +138,7 @@ class AIConfig:
         
         # Remote UCY server settings
         self.remote_url = os.getenv('REMOTE_AI_URL', 'https://chatucy.cs.ucy.ac.cy/api/send_message')
-        self.remote_model = os.getenv('REMOTE_AI_MODEL', 'llama3.1:latest')
+        self.remote_model = os.getenv('REMOTE_AI_MODEL', 'gemma3').strip()  # gemma3 is the correct model
         self.remote_websearch = os.getenv('REMOTE_WEBSEARCH', 'false').lower() == 'true'
         self.remote_client_rag = os.getenv('REMOTE_CLIENT_RAG', 'false').lower() == 'true'
         
@@ -147,7 +146,6 @@ class AIConfig:
         self.timeout = int(os.getenv('AI_TIMEOUT', '30'))
         self.temperature = float(os.getenv('AI_TEMPERATURE', '0.7'))
         self.max_tokens = int(os.getenv('AI_MAX_TOKENS', '250'))
-        self.mock_mode = os.getenv('AI_MOCK_MODE', 'false').lower() == 'true'
         
         # System prompt for network analysis
         self.system_prompt = os.getenv('AI_SYSTEM_PROMPT', 

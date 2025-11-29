@@ -501,6 +501,9 @@ class FlowCondenser:
             # Prepare protocol stats
             protocol_stats = self._serialize_protocol_stats(flow_data["protocol_stats"])
             
+            # Determine if flow is still in warmup (needs 2 samples for detection)
+            flow_in_warmup = baseline["sample_count"] < 2
+            
             # Create event
             event = {
                 "timestamp": current_time.isoformat(),
@@ -522,7 +525,7 @@ class FlowCondenser:
                 "baseline_avg": baseline["avg_packets"],
                 "baseline_std": baseline["std_packets"],
                 "z_score": anomaly_results.get("z_score", 0),
-                "is_warmup": not self.is_warmed_up,
+                "is_warmup": flow_in_warmup,
             }
             
             # Add payload samples
@@ -599,7 +602,7 @@ class FlowCondenser:
                 methods_triggered.append("Z-Score")
                 score = min(abs(z_score) / (self.thresholds["z_score"] * 2), 1.0)
                 max_score = max(max_score, score)
-                reason = f"Statistical anomaly: Z={z_score:.2f}, {packet_count} pkts vs {baseline['avg_packets']:.0f}±{baseline['std_packets']:.0f}"
+                reason = f"Statistical anomaly: Z={z_score:.2f}, {packet_count} pkts vs {baseline['avg_packets']:.0f}{baseline['std_packets']:.0f}"
         # EARLY DETECTION: If std not yet available but spike is obvious (10x+)
         elif baseline["avg_packets"] > 0 and packet_count >= self.min_flows_for_alert:
             if packet_count > baseline["avg_packets"] * 10:

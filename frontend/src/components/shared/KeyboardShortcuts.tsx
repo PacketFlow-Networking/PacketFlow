@@ -128,7 +128,6 @@ interface UseKeyboardShortcutsOptions {
   onPreviousEvent: () => void;
   onOpenEvent: () => void;
   onExport: () => void;
-  onToggleMockMode: () => void;
   onOpenSettings: () => void;
   onToggleTab?: () => void;
   onToggleLeftPanel?: () => void;
@@ -148,7 +147,6 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
     onPreviousEvent,
     onOpenEvent,
     onExport,
-    onToggleMockMode,
     onOpenSettings,
     onToggleTab,
     onToggleLeftPanel,
@@ -227,10 +225,6 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
           e.preventDefault();
           onExport();
           break;
-        case 'm':
-          e.preventDefault();
-          onToggleMockMode();
-          break;
         case 's':
           e.preventDefault();
           onOpenSettings();
@@ -262,7 +256,6 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
     onPreviousEvent,
     onOpenEvent,
     onExport,
-    onToggleMockMode,
     onOpenSettings,
     isModalOpen,
   ]);
