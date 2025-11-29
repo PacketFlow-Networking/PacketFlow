@@ -11,17 +11,25 @@ import { IncidentPanel } from './components/panels';
 import AlertConfigModal from './components/alerts/AlertConfigModal';
 import { ProactiveSuggestions } from './components/panels';
 import { GlossaryPanel } from './components/panels';
-import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network } from 'lucide-react';
+import ThreeDTopologyModal from './components/ThreeDTopologyModal';
+import OnboardingModal from './components/modals/OnboardingModal';
+import UserProfileModal from './components/modals/UserProfileModal';
+import PacketFlowIntro from './components/modals/PacketFlowIntro';
+import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network, Box } from 'lucide-react';
 
 function App() {
   useWebSocket();
   useApi();
   
-  const { clearOldEvents, filters, setFilters, resetFilters } = useStore();
+  const { clearOldEvents, filters, setFilters, resetFilters, userProfile } = useStore();
   const { showInfo } = useToast();
   
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showAlertConfig, setShowAlertConfig] = useState(false);
+  const [show3DTopology, setShow3DTopology] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(!userProfile.onboarding_completed);
+  const [showUserProfile, setShowUserProfile] = useState(false);
+  const [showPacketFlowIntro, setShowPacketFlowIntro] = useState(false);
   const [activeTab, setActiveTab] = useState<'events' | 'stats' | 'topology'>('events');
   const [leftPanelTab, setLeftPanelTab] = useState<'chat' | 'incidents'>('chat');
 
@@ -112,7 +120,15 @@ function App() {
       setActiveTab('topology');
       showInfo('Network Topology', 'Viewing network topology graph');
     },
-    isModalOpen: showShortcutsHelp || showAlertConfig,
+    onShow3DTopology: () => {
+      setShow3DTopology(true);
+      showInfo('3D Network Topology', 'Opening immersive 3D view (Escape to close)');
+    },
+    onOpenUserProfile: () => {
+      setShowUserProfile(true);
+      showInfo('User Profile', 'View and manage your preferences');
+    },
+    isModalOpen: showShortcutsHelp || showAlertConfig || show3DTopology || showOnboarding || showUserProfile,
   });
 
   return (
@@ -197,6 +213,14 @@ function App() {
                 <Network className="w-4 h-4" />
                 Topology
               </button>
+              <button
+                onClick={() => setShow3DTopology(true)}
+                className="flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 border-transparent text-text-dim hover:text-text hover:bg-panel-hover"
+                title="Open 3D immersive network view (Ctrl+Shift+3)"
+              >
+                <Box className="w-4 h-4" />
+                3D View
+              </button>
             </div>
             
             {/* Tab Content */}
@@ -211,6 +235,23 @@ function App() {
         </div>
       </div>
       
+      {/* Intro Animation - Only show on first app load */}
+      {showPacketFlowIntro && (
+        <PacketFlowIntro onComplete={() => setShowPacketFlowIntro(false)} />
+      )}
+      
+      {/* Onboarding Modal - IUI Feature */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+      />
+      
+      {/* User Profile Modal - IUI Feature */}
+      <UserProfileModal
+        isOpen={showUserProfile}
+        onClose={() => setShowUserProfile(false)}
+      />
+      
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp
         isOpen={showShortcutsHelp}
@@ -223,15 +264,23 @@ function App() {
         onClose={() => setShowAlertConfig(false)}
       />
 
+      {/* 3D Topology Modal */}
+      <ThreeDTopologyModal
+        isOpen={show3DTopology}
+        onClose={() => setShow3DTopology(false)}
+      />
+
       {/* Glossary Panel - IUI Feature */}
       <GlossaryPanel />
       
       {/* Floating hint - positioned bottom-center to avoid panel interference */}
-      {!showShortcutsHelp && !showAlertConfig && (
+      {!showShortcutsHelp && !showAlertConfig && !showOnboarding && !showUserProfile && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs text-text-dim">
           Press <kbd className="px-2 py-1 bg-panel border border-border rounded text-text">?</kbd> for shortcuts
           {' | '}
           <kbd className="px-2 py-1 bg-panel border border-border rounded text-text">Ctrl+,</kbd> for alerts
+          {' | '}
+          <kbd className="px-2 py-1 bg-panel border border-border rounded text-text">Ctrl+P</kbd> for profile
         </div>
       )}
     </div>

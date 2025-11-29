@@ -10,6 +10,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import type { AIMessage, NetworkEvent } from '../../types';
+import { ConfidenceDisplay } from '../explanations/ConfidenceDisplay';
 
 interface AIExplanationPanelProps {
   aiMessage?: AIMessage;
@@ -88,6 +89,15 @@ const AIExplanationPanel = ({ aiMessage, event, onOpenModal }: AIExplanationPane
       <div className="text-sm text-text leading-relaxed">
         {briefText}
       </div>
+
+      {/* IUI Feature: Explanation Confidence Display */}
+      {(aiMessage.structured_analysis?.explanation_confidence || aiMessage.structured_analysis?.confidence) && (
+        <div className="border-t border-border pt-3 mt-3">
+          <ConfidenceDisplay 
+            confidence={aiMessage.structured_analysis.explanation_confidence}
+          />
+        </div>
+      )}
 
       {/* Threat Metrics */}
       {(aiMessage.cvss_score !== undefined || aiMessage.risk_score !== undefined) && (

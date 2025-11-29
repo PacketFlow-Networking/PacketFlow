@@ -16,7 +16,8 @@ import type {
   ProactiveSuggestion,
   EventFeedback,
   Prediction,
-  ContextualTip
+  ContextualTip,
+  PreferredView
 } from '../types';
 import { DEFAULT_FILTERS as FILTERS, DEFAULT_ALERT_CONFIG, DEFAULT_USER_PROFILE } from '../types';
 
@@ -94,6 +95,10 @@ interface UIState {
   markConceptSeen: (concept: string) => void;
   dismissTooltip: (tooltipId: string) => void;
   clearChat: () => void; // Clear chat messages (privacy)
+  
+  // Onboarding
+  completeOnboarding: () => void;
+  setPreferredDefaultView: (view: PreferredView) => void;
 }
 
 export const useStore = create<UIState>()(
@@ -410,7 +415,21 @@ export const useStore = create<UIState>()(
   clearChat: () => set({
     aiMessages: [],
     userMessages: []
-  })
+  }),
+
+  completeOnboarding: () => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      onboarding_completed: true
+    }
+  })),
+
+  setPreferredDefaultView: (view: PreferredView) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      preferred_default_view: view
+    }
+  }))
     }),
     {
       name: 'packetflow-store',

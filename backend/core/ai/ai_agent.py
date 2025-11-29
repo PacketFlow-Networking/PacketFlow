@@ -671,7 +671,10 @@ OUTPUT RULES - CRITICAL:
                                 "false_positive_indicators": [] if isinstance(analysis, dict) else (analysis.false_positive_indicators or []),
                                 
                                 # CONFIDENCE & UNCERTAINTY
-                                "confidence": analysis.get('confidence', 'medium') if isinstance(analysis, dict) else analysis.confidence
+                                "confidence": analysis.get('confidence', 'medium') if isinstance(analysis, dict) else analysis.confidence,
+                                
+                                # IUI FEATURE: Explanation confidence with detection methods and threat distribution
+                                "explanation_confidence": self._compute_explanation_confidence(event, analysis)
                             }
                         }
                     except AttributeError as attr_err:
@@ -1290,6 +1293,117 @@ Provide a concise answer (2-3 sentences)."""
             "events_in_memory": len(self.recent_events)
         }
     
+    def _compute_explanation_confidence(self, event: Dict, analysis: Any) -> Optional[Dict]:
+        """
+        Compute explanation confidence with detection methods and threat distribution.
+        
+        Returns dict with:
+        - confidence: 0.0-1.0 (HIGH: 0.9+, MEDIUM: 0.7-0.9, LOW: <0.7)
+        - detection_methods: List of detection method objects
+        - threat_distribution: Probability distribution of threat types
+        """
+        try:
+            # Extract anomaly score (use as base confidence)
+            anomaly_score = float(event.get('anomaly_score', 0.5))
+            
+            # Extract detection methods used
+            detection_methods = event.get('detection_methods', [])
+            threat_indicators = []
+            
+            if hasattr(analysis, 'threat_indicators') and analysis.threat_indicators:
+                threat_indicators = analysis.threat_indicators
+            elif isinstance(analysis, dict) and 'threat_indicators' in analysis:
+                threat_indicators = analysis['threat_indicators']
+            
+            # Map backend detection methods to frontend format
+            method_names = [
+                "Z-Score",
+                "IQR",
+                "EWMA",
+                "Rate-Based",
+                "Behavioral",
+                "Port Scan",
+                "Protocol-Specific",
+                "Payload Threats"
+            ]
+            
+            # Mark which methods were triggered
+            computed_methods = []
+            triggered_count = 0
+            
+            for method_name in method_names:
+                triggered = method_name in detection_methods if isinstance(detection_methods, list) else False
+                if triggered:
+                    triggered_count += 1
+                
+                # Confidence per method: anomaly_score for triggered, 0.2 for not triggered
+                method_confidence = anomaly_score if triggered else 0.2
+                
+                computed_methods.append({
+                    "name": method_name,
+                    "triggered": triggered,
+                    "confidence": min(1.0, max(0.0, method_confidence))
+                })
+            
+            # Calculate overall confidence based on methods triggered
+            # More methods triggered = higher confidence
+            triggered_ratio = triggered_count / len(method_names) if method_names else 0.5
+            overall_confidence = (anomaly_score * 0.6) + (triggered_ratio * 0.4)
+            overall_confidence = min(1.0, max(0.0, overall_confidence))
+            
+            # Build threat distribution from threat_indicators
+            threat_distribution = []
+            
+            if threat_indicators:
+                for ti in threat_indicators:
+                    threat_type = ti.get('type') if isinstance(ti, dict) else (ti.type if hasattr(ti, 'type') else 'unknown')
+                    ti_confidence = ti.get('confidence', 0.5) if isinstance(ti, dict) else (ti.confidence if hasattr(ti, 'confidence') else 0.5)
+                    
+                    threat_distribution.append({
+                        "threat_type": threat_type,
+                        "probability": min(1.0, max(0.0, ti_confidence))
+                    })
+            
+            # Normalize threat probabilities to sum to ~1.0
+            if threat_distribution:
+                total = sum(t['probability'] for t in threat_distribution)
+                if total > 0:
+                    threat_distribution = [
+                        {
+                            "threat_type": t["threat_type"],
+                            "probability": t["probability"] / total
+                        }
+                        for t in threat_distribution
+                    ]
+            else:
+                # Fallback: add generic threats based on anomaly score
+                if anomaly_score > 0.8:
+                    threat_distribution = [
+                        {"threat_type": "suspicious_traffic", "probability": 0.6},
+                        {"threat_type": "attack_attempt", "probability": 0.3},
+                        {"threat_type": "anomalous_behavior", "probability": 0.1}
+                    ]
+                elif anomaly_score > 0.5:
+                    threat_distribution = [
+                        {"threat_type": "potential_threat", "probability": 0.5},
+                        {"threat_type": "unusual_pattern", "probability": 0.5}
+                    ]
+                else:
+                    threat_distribution = [
+                        {"threat_type": "benign", "probability": 0.7},
+                        {"threat_type": "normal_variation", "probability": 0.3}
+                    ]
+            
+            return {
+                "confidence": overall_confidence,
+                "detection_methods": computed_methods,
+                "threat_distribution": threat_distribution
+            }
+        
+        except Exception as e:
+            logger.warning(f"Failed to compute explanation confidence: {e}")
+            return None
+    
     def switch_mode(self, new_mode: Literal['local', 'remote']):
         """Switch between local and remote mode."""
         if new_mode not in ['local', 'remote']:
@@ -1298,3 +1412,4 @@ Provide a concise answer (2-3 sentences)."""
         old_mode = self.mode
         self.mode = new_mode
         logger.info(f"AI mode switched from {old_mode} to {new_mode}")
+

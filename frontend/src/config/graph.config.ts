@@ -58,6 +58,13 @@ export const GRAPH_CONFIG = {
    * Anomaly score threshold for "critical" severity
    */
   CRITICAL_THRESHOLD: 0.8,
+
+  /**
+   * 3D Topology View Parameters
+   */
+  ROOM_SPACING_3D: 600,        // Distance between rooms in 3D space
+  NODE_SIZE_SCALE: 1,          // Scale factor for node size
+  LABEL_DISTANCE_3D: 10,       // Distance factor for label positioning
 } as const;
 
 /**
