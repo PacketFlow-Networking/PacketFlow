@@ -12,6 +12,7 @@ const shortcuts: Shortcut[] = [
   { key: '?', description: 'Show keyboard shortcuts', category: 'General' },
   { key: 'Esc', description: 'Close modal or dialog', category: 'General' },
   { key: 'Ctrl+,', description: 'Open alert configuration', category: 'General' },
+  { key: 'Ctrl+P', description: 'Open user profile', category: 'General' },
   { key: '/', description: 'Focus search bar', category: 'Navigation' },
   { key: 'f', description: 'Focus search bar', category: 'Navigation' },
   
@@ -135,6 +136,7 @@ interface UseKeyboardShortcutsOptions {
   onOpenAlertConfig?: () => void;
   onShowTopology?: () => void;
   onShow3DTopology?: () => void;
+  onOpenUserProfile?: () => void;
   isModalOpen?: boolean;
 }
 
@@ -155,6 +157,7 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
     onOpenAlertConfig,
     onShowTopology,
     onShow3DTopology,
+    onOpenUserProfile,
     isModalOpen = false,
   } = options;
 
@@ -195,6 +198,13 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
       if (e.key === '#' && e.ctrlKey && e.shiftKey && !isInput) {
         e.preventDefault();
         if (onShow3DTopology) onShow3DTopology();
+        return;
+      }
+
+      // Special case: 'Ctrl+P' for user profile
+      if (e.key === 'p' && (e.ctrlKey || e.metaKey) && !isInput) {
+        e.preventDefault();
+        if (onOpenUserProfile) onOpenUserProfile();
         return;
       }
 

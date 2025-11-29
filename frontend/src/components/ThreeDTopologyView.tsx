@@ -94,6 +94,11 @@ function NetworkNode({ node, onClick, showLabels }: { node: Node3D; onClick: () 
           roughness={0.5}
         />
       </mesh>
+      {/* Node edge/outline for clarity */}
+      <lineSegments>
+        <edgesGeometry args={[new THREE.SphereGeometry(size, 8, 8)]} />
+        <lineBasicMaterial color={color} linewidth={1} opacity={0.7} transparent />
+      </lineSegments>
       {node.anomalyScore > 0.5 && (
         <mesh position={[0, size + 3, 0]}>
           {/* Reduced poly count: 8,8 -> 4,4 */}

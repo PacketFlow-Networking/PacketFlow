@@ -16,6 +16,57 @@ from typing import List, Optional, Literal, Dict, Any
 from enum import Enum
 
 
+class DetectionMethod(BaseModel):
+    """Detection method with confidence score."""
+    name: str = Field(
+        ..., 
+        description="Name of detection method (Z-Score, IQR, EWMA, Rate-Based, Behavioral, Port Scan, Protocol-Specific, Payload Threats)"
+    )
+    triggered: bool = Field(..., description="Whether this method flagged the event")
+    confidence: float = Field(
+        ..., 
+        ge=0.0, 
+        le=1.0, 
+        description="Confidence score for this method (0.0-1.0)"
+    )
+
+
+class ThreatProbability(BaseModel):
+    """Threat type with probability distribution."""
+    threat_type: str = Field(
+        ..., 
+        description="Type of threat (dns_tunneling, c2_beaconing, lateral_movement, port_scan, etc.)"
+    )
+    probability: float = Field(
+        ..., 
+        ge=0.0, 
+        le=1.0, 
+        description="Probability this threat type is occurring (0.0-1.0)"
+    )
+
+
+class ExplanationConfidence(BaseModel):
+    """Enhanced explanation with confidence metrics."""
+    confidence: float = Field(
+        ..., 
+        ge=0.0, 
+        le=1.0, 
+        description="Overall confidence in explanation (0.9+: HIGH, 0.7-0.9: MEDIUM, <0.7: LOW)"
+    )
+    detection_methods: List[DetectionMethod] = Field(
+        ...,
+        description="List of detection methods and their status",
+        min_items=1,
+        max_items=8
+    )
+    threat_distribution: List[ThreatProbability] = Field(
+        ...,
+        description="Probability distribution of threat types",
+        min_items=1,
+        max_items=10
+    )
+
+
 class MITREATTACKStage(str, Enum):
     """MITRE ATT&CK Framework attack stages."""
     RECONNAISSANCE = "reconnaissance"
@@ -233,6 +284,12 @@ class NetworkEventAnalysis(BaseModel):
         ge=0.0,
         le=1.0,
         description="Confidence (0.0-1.0): signal strength, evidence quality, model accuracy"
+    )
+    
+    # IUI FEATURE: Explanation confidence with detection methods and threat distribution
+    explanation_confidence: Optional[ExplanationConfidence] = Field(
+        default=None,
+        description="Enhanced confidence metrics including detection methods and threat distribution"
     )
     
     false_positive_indicators: List[str] = Field(

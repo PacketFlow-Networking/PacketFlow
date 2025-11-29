@@ -133,7 +133,37 @@ export interface AIMessage {
     
     // CONFIDENCE & UNCERTAINTY
     confidence?: number;
+    explanation_confidence?: {
+      confidence: number;
+      detection_methods: Array<{
+        name: string;
+        triggered: boolean;
+        confidence: number;
+      }>;
+      threat_distribution: Array<{
+        threat_type: string;
+        probability: number;
+      }>;
+    };
   };
+}
+
+// IUI Feature: Explanation Confidence Display
+export interface DetectionMethod {
+  name: string;
+  triggered: boolean;
+  confidence: number; // 0-1
+}
+
+export interface ThreatProbability {
+  threat_type: string;
+  probability: number; // 0-1
+}
+
+export interface ExplanationConfidence {
+  confidence: number; // 0-1 (HIGH: 0.9+, MEDIUM: 0.7-0.9, LOW: <0.7)
+  detection_methods: DetectionMethod[];
+  threat_distribution: ThreatProbability[];
 }
 
 export interface UserMessage {
@@ -348,11 +378,28 @@ export interface ProactiveSuggestion {
 
 // 3. User Profile & Learning Types
 export type ExpertiseLevel = 'novice' | 'intermediate' | 'expert';
+export type PreferredView = 'auto' | 'events' | 'topology' | 'stats';
+export type CognitiveStyle = 'wholist' | 'analyst' | 'unknown';
+
+export interface InteractionHistory {
+  view_switches: string[];
+  event_clicks: number;
+  detail_expansions: number;
+  filter_applications: number;
+  topology_views: number;
+  list_views: number;
+  avg_click_depth: number;
+  session_start: string;
+}
 
 export interface UserProfile {
   expertise_level: ExpertiseLevel;
   interaction_count: number;
   preferred_views: string[];
+  preferred_default_view: PreferredView;
+  cognitive_style: CognitiveStyle;
+  interaction_history: InteractionHistory;
+  onboarding_completed: boolean;
   alert_history: {
     true_positives: number;
     false_positives: number;
@@ -371,6 +418,19 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   expertise_level: 'novice',
   interaction_count: 0,
   preferred_views: ['events'],
+  preferred_default_view: 'auto',
+  cognitive_style: 'unknown',
+  interaction_history: {
+    view_switches: [],
+    event_clicks: 0,
+    detail_expansions: 0,
+    filter_applications: 0,
+    topology_views: 0,
+    list_views: 0,
+    avg_click_depth: 0,
+    session_start: new Date().toISOString(),
+  },
+  onboarding_completed: false,
   alert_history: {
     true_positives: 0,
     false_positives: 0,
