@@ -75,14 +75,18 @@ class Config:
     @classmethod
     def load_from_env(cls) -> 'Config':
         """Load configuration from environment variables."""
-        # Load .env file if it exists
-        env_file = Path(__file__).parent / '.env'
+        # Load .env file if it exists (backend root, not config/)
+        env_file = Path(__file__).parent.parent / '.env'
+        print(f"[Config] Looking for .env at: {env_file}")
         if env_file.exists():
             try:
                 from dotenv import load_dotenv
                 load_dotenv(env_file)
+                print(f"✓ Loaded environment from: {env_file}")
             except ImportError:
                 print("Warning: python-dotenv not installed, using system env vars only")
+        else:
+            print(f"⚠️  WARNING: .env file not found at {env_file}")
         
         return cls()
 
