@@ -9,6 +9,7 @@ import FilterBar from './FilterBar';
 import type { NetworkEvent } from '../../types';
 import { groupEvents } from '../../utils/EventGrouping';
 import type { EventGroup } from '../../utils/EventGrouping';
+import { useAdaptiveDisplay, useAdaptiveLabels, useClickDepthTracker } from '../../hooks/useAdaptiveUI';
 
 dayjs.extend(relativeTime);
 
@@ -17,6 +18,11 @@ const EventStream = () => {
   const [selectedEvent, setSelectedEvent] = useState<NetworkEvent | null>(null);
   const [useGrouping, setUseGrouping] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  
+  // Adaptive UI
+  const adaptiveDisplay = useAdaptiveDisplay();
+  const adaptiveLabels = useAdaptiveLabels();
+  const clickTracker = useClickDepthTracker();
 
   // Apply filters to events
   const filteredEvents = useMemo(() => {
@@ -125,11 +131,13 @@ const EventStream = () => {
   };
 
   const handleEventClick = (event: NetworkEvent) => {
+    clickTracker.incrementDepth();
     setSelectedEvent(event);
     selectEvent(event.id);
   };
 
   const handleCloseModal = () => {
+    clickTracker.resetDepth();
     setSelectedEvent(null);
     selectEvent(null);
   };
@@ -277,13 +285,24 @@ const EventStream = () => {
                     {/* Metrics */}
                     <div className="flex items-center justify-between gap-4 mt-2">
                       <div className="flex items-center gap-4 text-xs text-text-dim">
-                        <span>{event.flows} flows</span>
+                        <span>{event.flows} {adaptiveDisplay.preferCompactView ? 'f' : adaptiveLabels.flows}</span>
                         {event.anomaly_score > 0 && (
                           <span className={`font-semibold ${
                             event.anomaly_score >= 0.8 ? 'text-critical' :
                             event.anomaly_score >= 0.5 ? 'text-warn' : 'text-info'
                           }`}>
-                            Score: {(event.anomaly_score * 100).toFixed(0)}%
+                            {adaptiveDisplay.preferCompactView ? '' : adaptiveLabels.anomalyScore + ': '}
+                            {(event.anomaly_score * 100).toFixed(0)}%
+                          </span>
+                        )}
+                        {adaptiveDisplay.showDetectionMethods && event.detection_methods && event.detection_methods.length > 0 && (
+                          <span 
+                            className="text-purple-400" 
+                            title={event.detection_methods.join(', ')}
+                          >
+                            {adaptiveDisplay.preferCompactView 
+                              ? `${event.detection_methods.length}m` 
+                              : `${event.detection_methods.length} methods`}
                           </span>
                         )}
                       </div>
@@ -296,7 +315,7 @@ const EventStream = () => {
                         title="Ask AI about this event"
                       >
                         <MessageCircle className="w-3.5 h-3.5" />
-                        Ask
+                        {adaptiveDisplay.preferCompactView ? '' : 'Ask'}
                       </button>
                     </div>
                   </div>

@@ -15,6 +15,7 @@ import ThreeDTopologyModal from './components/ThreeDTopologyModal';
 import OnboardingModal from './components/modals/OnboardingModal';
 import UserProfileModal from './components/modals/UserProfileModal';
 import PacketFlowIntro from './components/modals/PacketFlowIntro';
+import SUSurveyModal from './components/modals/SUSurveyModal';
 import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network, Box } from 'lucide-react';
 
 function App() {
@@ -30,11 +31,13 @@ function App() {
   const [showOnboarding, setShowOnboarding] = useState(!userProfile.onboarding_completed);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showPacketFlowIntro, setShowPacketFlowIntro] = useState(false);
+  const [showSUSurvey, setShowSUSurvey] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState(500);
   const [activeTab, setActiveTab] = useState<'events' | 'stats' | 'topology'>('events');
   const [leftPanelTab, setLeftPanelTab] = useState<'chat' | 'incidents'>('chat');
+  const [graphCollapsed, setGraphCollapsed] = useState(false);
   
   // Drag reference for resizing
   const isDraggingRef = useRef(false);
@@ -46,6 +49,22 @@ function App() {
 
     return () => clearInterval(interval);
   }, [clearOldEvents]);
+
+  // Show SUS survey after 50 interactions (if not completed recently)
+  useEffect(() => {
+    const lastSurvey = userProfile.usability_metrics?.sus_surveys?.[userProfile.usability_metrics.sus_surveys.length - 1];
+    const daysSinceLastSurvey = lastSurvey 
+      ? (Date.now() - new Date(lastSurvey.timestamp).getTime()) / (1000 * 60 * 60 * 24)
+      : Infinity;
+    
+    // Show survey if: 50+ interactions AND (no previous survey OR 7+ days since last survey)
+    if (userProfile.interaction_count >= 50 && daysSinceLastSurvey >= 7) {
+      const timer = setTimeout(() => {
+        setShowSUSurvey(true);
+      }, 5000); // Show after 5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [userProfile.interaction_count]);
 
   // Handle left panel resize
   useEffect(() => {
@@ -154,7 +173,7 @@ function App() {
       setShowUserProfile(true);
       showInfo('User Profile', 'View and manage your preferences');
     },
-    isModalOpen: showShortcutsHelp || showAlertConfig || show3DTopology || showOnboarding || showUserProfile,
+    isModalOpen: showShortcutsHelp || showAlertConfig || show3DTopology || showOnboarding || showUserProfile || showSUSurvey,
   });
 
   return (
@@ -238,11 +257,11 @@ function App() {
         )}
 
         <div className="flex-1 flex flex-col min-w-0">
-          <div className="h-1/2 border-b border-border">
-            <GraphView />
+          <div className={`${graphCollapsed ? 'h-20' : 'h-[35vh]'} border-b border-border transition-all duration-300`}>
+            <GraphView onCollapseChange={setGraphCollapsed} />
           </div>
 
-          <div className="h-1/2">
+          <div className="flex-1">
             {/* Tab Header */}
             <div className="flex items-center border-b border-border bg-panel">
               <button
@@ -315,6 +334,12 @@ function App() {
       <UserProfileModal
         isOpen={showUserProfile}
         onClose={() => setShowUserProfile(false)}
+      />
+
+      {/* SUS Survey Modal - Usability Feedback */}
+      <SUSurveyModal
+        isOpen={showSUSurvey}
+        onClose={() => setShowSUSurvey(false)}
       />
       
       {/* Keyboard Shortcuts Help */}

@@ -1,14 +1,13 @@
-import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target, Shield, Zap, CheckCircle, BookOpen } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { NetworkEvent, AIMessage } from '../../types';
-import { useToast } from '../../context/ToastContext';
-import { useStore } from '../../context/store';
-import AIExplanationPanel from '../panels/AIExplanationPanel';
-import ExpandableText from '../shared/ExpandableText';
-import FeedbackPanel from '../panels/FeedbackPanel';
+import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target } from 'lucide-react';
+import { NetworkEvent } from '../types';
+import { useToast } from '../context/ToastContext';
+import { useStore } from '../context/store';
+import AIExplanationPanel from './AIExplanationPanel';
+import ExpandableText from './ExpandableText';
+import FeedbackPanel from './FeedbackPanel';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { useAdaptiveDisplay, useAdaptiveLabels, useDetailViewTracking } from '../../hooks/useAdaptiveUI';
+import { useEffect } from 'react';
 
 dayjs.extend(relativeTime);
 
@@ -21,32 +20,14 @@ interface EventDetailsModalProps {
 
 export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }: EventDetailsModalProps) => {
   const { showSuccess, showError } = useToast();
-  const { aiMessages } = useStore();
-  const [activeTab, setActiveTab] = useState<'overview' | 'analysis'>('overview');
+  const { trackDetailExpansion } = useStore();
   
-  // Adaptive UI
-  const adaptiveDisplay = useAdaptiveDisplay();
-  const adaptiveLabels = useAdaptiveLabels();
-  useDetailViewTracking(isOpen);
-  
-  // Find AI analysis for this event
-  const aiAnalysis = aiMessages.find(msg => 
-    msg.event_ids?.includes(event?.id || '') && msg.structured_analysis
-  ) as AIMessage | undefined;
-  
-  // Handle escape key to close modal
+  // Track detail expansion when modal opens
   useEffect(() => {
-    if (!isOpen) return;
-    
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+    if (isOpen && event) {
+      trackDetailExpansion();
+    }
+  }, [isOpen, event, trackDetailExpansion]);
   
   if (!isOpen || !event) return null;
 
@@ -57,24 +38,6 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
     return 'text-ok border-ok/30 bg-ok/10';
   };
 
-  const getThreatLevelColor = (level: string) => {
-    const colors: Record<string, string> = {
-      critical: 'text-critical bg-critical/10 border-critical/30',
-      high: 'text-warn bg-warn/10 border-warn/30',
-      medium: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30',
-      low: 'text-ok bg-ok/10 border-ok/30',
-      info: 'text-info bg-info/10 border-info/30'
-    };
-    return colors[level] || colors.info;
-  };
-
-  const getCVSSColor = (score: number) => {
-    if (score >= 9.0) return 'text-critical bg-critical/10';
-    if (score >= 7.0) return 'text-warn bg-warn/10';
-    if (score >= 4.0) return 'text-yellow-500 bg-yellow-500/10';
-    return 'text-ok bg-ok/10';
-  };
-
   const formatBytes = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
@@ -83,18 +46,6 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
 
   const formatRate = (rate: number, unit: string) => {
     return `${rate.toLocaleString()} ${unit}`;
-  };
-
-  const formatTimeframe = (tf?: string) => {
-    if (!tf) return 'ASAP';
-    const map: Record<string, string> = {
-      immediate: '< 15 min',
-      '1_hour': '1 hour',
-      '4_hours': '4 hours',
-      '24_hours': '24 hours',
-      asap: 'ASAP'
-    };
-    return map[tf] || tf;
   };
 
   return (
@@ -185,14 +136,12 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Target className="w-4 h-4 text-info" />
-                <h3 className="font-semibold text-text">
-                  {adaptiveDisplay.showSimplifiedView ? 'Threat Assessment' : 'Anomaly Analysis'}
-                </h3>
+                <h3 className="font-semibold text-text">Anomaly Analysis</h3>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="panel p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-text-dim">{adaptiveLabels.anomalyScore}</p>
+                    <p className="text-xs text-text-dim">Anomaly Score</p>
                     <span className={`badge ${getSeverityColor(event.anomaly_score)}`}>
                       {(event.anomaly_score * 100).toFixed(1)}%
                     </span>
@@ -209,18 +158,9 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
                       style={{ width: `${event.anomaly_score * 100}%` }}
                     />
                   </div>
-                  {adaptiveDisplay.showTooltips && (
-                    <p className="text-xs text-text-dim mt-2">
-                      {event.anomaly_score >= 0.8 
-                        ? 'High risk - immediate attention needed' 
-                        : event.anomaly_score >= 0.5 
-                        ? 'Medium risk - should be investigated'
-                        : 'Low risk - monitor activity'}
-                    </p>
-                  )}
                 </div>
 
-                {adaptiveDisplay.showZScores && event.z_score !== undefined && (
+                {event.z_score !== undefined && (
                   <div className="panel p-4">
                     <p className="text-xs text-text-dim mb-1">Z-Score</p>
                     <p className="text-2xl font-bold text-text">{event.z_score.toFixed(2)}</p>
@@ -230,7 +170,7 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
                   </div>
                 )}
 
-                {adaptiveDisplay.showStatisticalData && event.iqr_multiplier !== undefined && (
+                {event.iqr_multiplier !== undefined && (
                   <div className="panel p-4">
                     <p className="text-xs text-text-dim mb-1">IQR Multiplier</p>
                     <p className="text-2xl font-bold text-text">{event.iqr_multiplier.toFixed(2)}</p>
@@ -242,18 +182,12 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
               </div>
 
               {/* Detection Methods */}
-              {adaptiveDisplay.showDetectionMethods && event.detection_methods && event.detection_methods.length > 0 && (
+              {event.detection_methods && event.detection_methods.length > 0 && (
                 <div className="mt-4 panel p-4">
-                  <p className="text-xs text-text-dim mb-2">
-                    {adaptiveDisplay.showSimplifiedView ? 'How This Was Detected' : adaptiveLabels.detectionMethods}
-                  </p>
+                  <p className="text-xs text-text-dim mb-2">Detection Methods</p>
                   <div className="flex flex-wrap gap-2">
                     {event.detection_methods.map((method, idx) => (
-                      <span 
-                        key={idx} 
-                        className="badge badge-info text-xs"
-                        title={adaptiveDisplay.showTooltips ? `Detection method: ${method}` : undefined}
-                      >
+                      <span key={idx} className="badge badge-info text-xs">
                         {method}
                       </span>
                     ))}
@@ -411,6 +345,97 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
                     </p>
                   )}
                 </div>
+              </section>
+            )}
+
+            {/* Explainable AI Section */}
+            {event.ai_processed && event.ai_explanation && (
+              <section>
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle className="w-4 h-4 text-info" />
+                  <h3 className="font-semibold text-text">AI Explainability</h3>
+                  <span className="badge badge-info text-xs">{event.ai_mode}</span>
+                </div>
+                
+                {/* Main Explanation */}
+                <div className="panel p-4 bg-panel-hover mb-3">
+                  <p className="text-text leading-relaxed">{event.ai_explanation}</p>
+                  <div className="flex gap-2 mt-3">
+                    {event.ai_confidence && (
+                      <span className={`badge text-xs ${
+                        event.ai_confidence === 'high' ? 'badge-ok' : 
+                        event.ai_confidence === 'medium' ? 'badge-info' : 'badge-warn'
+                      }`}>
+                        Confidence: {event.ai_confidence}
+                      </span>
+                    )}
+                    {event.ai_threat_level && (
+                      <span className={`badge text-xs ${
+                        event.ai_threat_level === 'critical' ? 'badge-critical' : 
+                        event.ai_threat_level === 'high' ? 'badge-warn' : 
+                        event.ai_threat_level === 'medium' ? 'badge-info' : 'badge-ok'
+                      }`}>
+                        Threat: {event.ai_threat_level}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Important Factors */}
+                {event.ai_important_factors && event.ai_important_factors.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-sm text-text-dim mb-2 font-medium">🔍 Key Factors:</p>
+                    <ul className="space-y-2">
+                      {event.ai_important_factors.map((factor, idx) => (
+                        <li key={idx} className="panel p-3 text-sm text-text flex items-start gap-2">
+                          <span className="text-info font-bold">{idx + 1}.</span>
+                          <span>{factor}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Payload Evidence */}
+                {event.ai_payload_evidence && event.ai_payload_evidence.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-sm text-text-dim mb-2 font-medium">🔬 Payload Evidence:</p>
+                    <div className="panel p-3 bg-critical/5 border border-critical/20">
+                      <ul className="space-y-1">
+                        {event.ai_payload_evidence.map((evidence, idx) => (
+                          <li key={idx} className="text-sm text-critical font-mono">
+                            • {evidence}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Counterfactual Reasoning */}
+                {event.ai_counterfactual && (
+                  <div className="mb-3">
+                    <p className="text-sm text-text-dim mb-2 font-medium">💭 Would be Normal if:</p>
+                    <div className="panel p-3 bg-ok/5 border border-ok/20">
+                      <p className="text-sm text-text italic">{event.ai_counterfactual}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {event.ai_recommendations && event.ai_recommendations.length > 0 && (
+                  <div>
+                    <p className="text-sm text-text-dim mb-2 font-medium">✅ Recommended Actions:</p>
+                    <ol className="space-y-2">
+                      {event.ai_recommendations.map((rec, idx) => (
+                        <li key={idx} className="panel p-3 text-sm text-text flex items-start gap-2">
+                          <span className="text-ok font-bold">{idx + 1}.</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
               </section>
             )}
 

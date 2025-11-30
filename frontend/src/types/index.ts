@@ -380,6 +380,24 @@ export interface ProactiveSuggestion {
 export type ExpertiseLevel = 'novice' | 'intermediate' | 'expert';
 export type PreferredView = 'auto' | 'events' | 'topology' | 'stats';
 export type CognitiveStyle = 'wholist' | 'analyst' | 'unknown';
+export type UIComplexityMode = 'novice' | 'intermediate' | 'expert' | 'auto';
+
+// Adaptive UI Tracking
+export interface AdaptiveUIMetrics {
+  click_depth_samples: number[]; // Track click depths for avg calculation
+  time_on_details_ms: number[]; // Time spent on event/incident details
+  filter_complexity_scores: number[]; // 0-10 scale based on filter combinations
+  terminology_searches: string[]; // Track glossary/help searches
+  advanced_feature_usage: {
+    raw_data_views: number;
+    advanced_filters: number;
+    technical_details_expansions: number;
+    custom_alert_rules: number;
+    manual_incident_creation: number;
+  };
+  session_start: string;
+  last_evaluation: string;
+}
 
 export interface InteractionHistory {
   view_switches: string[];
@@ -410,10 +428,13 @@ export interface UserProfile {
     tooltips_dismissed: string[];
     tutorials_completed: string[];
   };
+  usability_metrics?: UsabilityMetrics;
+  // Adaptive UI Complexity
+  ui_complexity_mode: UIComplexityMode;
+  adaptive_ui_metrics: AdaptiveUIMetrics;
   created_at: string;
   last_interaction: string;
 }
-
 export const DEFAULT_USER_PROFILE: UserProfile = {
   expertise_level: 'novice',
   interaction_count: 0,
@@ -441,6 +462,28 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
     tooltips_dismissed: [],
     tutorials_completed: [],
   },
+  usability_metrics: {
+    task_timings: [],
+    error_log: [],
+    confusion_points: [],
+    sus_surveys: [],
+  },
+  ui_complexity_mode: 'auto',
+  adaptive_ui_metrics: {
+    click_depth_samples: [],
+    time_on_details_ms: [],
+    filter_complexity_scores: [],
+    terminology_searches: [],
+    advanced_feature_usage: {
+      raw_data_views: 0,
+      advanced_filters: 0,
+      technical_details_expansions: 0,
+      custom_alert_rules: 0,
+      manual_incident_creation: 0,
+    },
+    session_start: new Date().toISOString(),
+    last_evaluation: new Date().toISOString(),
+  },
   created_at: new Date().toISOString(),
   last_interaction: new Date().toISOString(),
 };
@@ -455,6 +498,49 @@ export interface EventFeedback {
   user_explanation?: string;
   timestamp: string;
   incorporated: boolean;
+}
+
+// SUS (System Usability Scale) Survey Types
+export interface SUSResponse {
+  q1: number; // 1-5 scale
+  q2: number;
+  q3: number;
+  q4: number;
+  q5: number;
+  q6: number;
+  q7: number;
+  q8: number;
+  q9: number;
+  q10: number;
+  score: number; // Calculated score (0-100)
+  timestamp: string;
+}
+
+export interface TaskTiming {
+  task_name: string;
+  duration_ms: number;
+  success: boolean;
+  timestamp: string;
+}
+
+export interface ErrorLogEntry {
+  error_type: string;
+  context: string;
+  timestamp: string;
+  resolved: boolean;
+}
+
+export interface ConfusionPoint {
+  feature: string;
+  description: string;
+  timestamp: string;
+}
+
+export interface UsabilityMetrics {
+  task_timings: TaskTiming[];
+  error_log: ErrorLogEntry[];
+  confusion_points: ConfusionPoint[];
+  sus_surveys: SUSResponse[];
 }
 
 // 5. Predictive Analytics Types

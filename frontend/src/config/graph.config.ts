@@ -28,7 +28,7 @@ export const GRAPH_CONFIG = {
    * 
    * Recommended: 5000-15000 (5-15 seconds)
    */
-  BUCKET_SIZE_MS: 10000,
+  BUCKET_SIZE_MS: 5000, // 5 seconds for faster updates
 
   /**
    * How long to retain data in memory (milliseconds).
