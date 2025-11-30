@@ -162,6 +162,7 @@ function App() {
       <MetricsBar 
         onShowHelp={() => setShowShortcutsHelp(true)}
         onToggleGlossary={() => setShowGlossary(!showGlossary)}
+        onOpenUserProfile={() => setShowUserProfile(true)}
       />
 
       <div className="flex-1 flex min-h-0">

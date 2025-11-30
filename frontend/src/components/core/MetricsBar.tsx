@@ -1,14 +1,15 @@
-import { Activity, Wifi, WifiOff, AlertTriangle, Bell, HelpCircle } from 'lucide-react';
+import { Activity, Wifi, WifiOff, AlertTriangle, Bell, HelpCircle, User } from 'lucide-react';
 import { useStore } from '../../context/store';
 import { Logo } from '../shared';
 
 interface MetricsBarProps {
   onShowHelp?: () => void;
   onToggleGlossary?: () => void;
+  onOpenUserProfile?: () => void;
 }
 
-const MetricsBar = ({ onShowHelp, onToggleGlossary }: MetricsBarProps) => {
-  const { status, connected } = useStore();
+const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: MetricsBarProps) => {
+  const { status, connected, userProfile } = useStore();
 
   const getStatusColor = (value: number, thresholds: { warn: number; critical: number }) => {
     if (value >= thresholds.critical) return 'text-critical';
@@ -110,6 +111,23 @@ const MetricsBar = ({ onShowHelp, onToggleGlossary }: MetricsBarProps) => {
           title="Notification settings"
         >
           <Bell className="w-4 h-4 text-text-dim hover:text-text" />
+        </button>
+
+        <div className="w-px h-6 bg-border" />
+        
+        <button
+          onClick={onOpenUserProfile}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-panel-hover transition-colors group"
+          aria-label="User profile"
+          title="User profile (Ctrl+P)"
+        >
+          <div className="p-1.5 rounded-full bg-info/10 border border-info/30 group-hover:bg-info/20 transition-colors">
+            <User className="w-4 h-4 text-info" />
+          </div>
+          <div className="text-left">
+            <div className="text-xs font-medium text-text">Profile</div>
+            <div className="text-[10px] text-text-dim capitalize">{userProfile.expertise_level}</div>
+          </div>
         </button>
       </div>
     </div>
