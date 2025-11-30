@@ -1,18 +1,22 @@
 import { useState, useMemo } from 'react';
-import { AlertTriangle, Info, Clock } from 'lucide-react';
+import { AlertTriangle, Info, MessageCircle } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useStore } from '../../context/store';
 import { EventDetailsModal } from '../modals/EventDetailsModal';
+import { CollapsedEventGroup } from './CollapsedEventGroup';
 import FilterBar from './FilterBar';
-import ExportMenu from './ExportMenu';
 import type { NetworkEvent } from '../../types';
+import { groupEvents } from '../../utils/EventGrouping';
+import type { EventGroup } from '../../utils/EventGrouping';
 
 dayjs.extend(relativeTime);
 
 const EventStream = () => {
   const { events, aiMessages, selectEvent, filters, alertConfig } = useStore();
   const [selectedEvent, setSelectedEvent] = useState<NetworkEvent | null>(null);
+  const [useGrouping, setUseGrouping] = useState(true);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Apply filters to events
   const filteredEvents = useMemo(() => {
@@ -35,9 +39,6 @@ const EventStream = () => {
         return srcBlacklisted || dstBlacklisted;
       });
     }
-
-    // Apply sensitivity threshold from alert config
-    filtered = filtered.filter(event => event.anomaly_score >= (alertConfig.sensitivity / 100));
 
     // Search query filter
     if (filters.searchQuery) {
@@ -133,6 +134,31 @@ const EventStream = () => {
     selectEvent(null);
   };
 
+  const handleAskAboutEvent = (event: NetworkEvent) => {
+    // Select the event - user can then ask about it in the chat panel
+    // The chat panel will be visible when they ask, and event context will be shown
+    selectEvent(event.id);
+  };
+
+  const toggleGroupExpansion = (groupId: string) => {
+    const newExpanded = new Set(expandedGroups);
+    if (newExpanded.has(groupId)) {
+      newExpanded.delete(groupId);
+    } else {
+      newExpanded.add(groupId);
+    }
+    setExpandedGroups(newExpanded);
+  };
+
+  // Get grouped events
+  const groupedEvents = useMemo(() => {
+    const groups = groupEvents(filteredEvents);
+    return groups.map(group => ({
+      ...group,
+      isExpanded: expandedGroups.has(group.id),
+    }));
+  }, [filteredEvents, expandedGroups]);
+
   // Find related events (same source or destination, within 5 minutes)
   const getRelatedEvents = (event: NetworkEvent): NetworkEvent[] => {
     if (!event) return [];
@@ -149,22 +175,14 @@ const EventStream = () => {
   return (
     <>
       <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-info" />
-              <h2 className="text-lg font-semibold text-text">Event Stream</h2>
-            </div>
-            <ExportMenu events={filteredEvents} filteredCount={filteredEvents.length} />
-          </div>
-          <p className="text-sm text-text-dim">
-            {filteredEvents.length} {filteredEvents.length === events.length ? '' : `of ${events.length}`} events
-          </p>
-        </div>
-
-        {/* Filter Bar */}
-        <FilterBar />
+        {/* Filters with integrated title and grouping */}
+        <FilterBar 
+          eventCount={filteredEvents.length} 
+          totalCount={events.length}
+          useGrouping={useGrouping}
+          groupCount={groupedEvents.length}
+          onToggleGrouping={() => setUseGrouping(!useGrouping)}
+        />
 
         {/* Event List */}
         <div className="flex-1 overflow-y-auto scrollbar">
@@ -180,7 +198,24 @@ const EventStream = () => {
                   : 'Try adjusting your search or filters'}
               </p>
             </div>
+          ) : useGrouping ? (
+            // Grouped View
+            <div className="p-4 space-y-3">
+              {groupedEvents.map((group) => (
+                <CollapsedEventGroup
+                  key={group.id}
+                  group={group}
+                  isExpanded={group.isExpanded}
+                  onToggle={toggleGroupExpansion}
+                  onSelectEvent={(eventId: string) => {
+                    const event = filteredEvents.find(e => e.id === eventId);
+                    if (event) handleEventClick(event);
+                  }}
+                />
+              ))}
+            </div>
           ) : (
+            // List View (original behavior)
             <div className="p-4 space-y-2">
               {filteredEvents.map((event) => {
                 const severity = getSeverityBadge(event.anomaly_score, event.severity);
@@ -240,16 +275,29 @@ const EventStream = () => {
                     </div>
 
                     {/* Metrics */}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-text-dim">
-                      <span>{event.flows} flows</span>
-                      {event.anomaly_score > 0 && (
-                        <span className={`font-semibold ${
-                          event.anomaly_score >= 0.8 ? 'text-critical' :
-                          event.anomaly_score >= 0.5 ? 'text-warn' : 'text-info'
-                        }`}>
-                          Score: {(event.anomaly_score * 100).toFixed(0)}%
-                        </span>
-                      )}
+                    <div className="flex items-center justify-between gap-4 mt-2">
+                      <div className="flex items-center gap-4 text-xs text-text-dim">
+                        <span>{event.flows} flows</span>
+                        {event.anomaly_score > 0 && (
+                          <span className={`font-semibold ${
+                            event.anomaly_score >= 0.8 ? 'text-critical' :
+                            event.anomaly_score >= 0.5 ? 'text-warn' : 'text-info'
+                          }`}>
+                            Score: {(event.anomaly_score * 100).toFixed(0)}%
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAskAboutEvent(event);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-info/10 text-info hover:bg-info/20 transition-colors flex-shrink-0"
+                        title="Ask AI about this event"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Ask
+                      </button>
                     </div>
                   </div>
                 );

@@ -1,9 +1,24 @@
 import { useState, useRef } from 'react';
-import { Search, Filter, X, Clock } from 'lucide-react';
+import { Search, Filter, X, Download, Layers } from 'lucide-react';
 import { useStore } from '../../context/store';
+import ExportMenu from './ExportMenu';
 import type { SeverityLevel } from '../../types';
 
-const FilterBar = () => {
+interface FilterBarProps {
+  eventCount?: number;
+  totalCount?: number;
+  useGrouping?: boolean;
+  groupCount?: number;
+  onToggleGrouping?: () => void;
+}
+
+const FilterBar = ({ 
+  eventCount = 0, 
+  totalCount = 0,
+  useGrouping = false,
+  groupCount = 0,
+  onToggleGrouping
+}: FilterBarProps) => {
   const { filters, setFilters, resetFilters } = useStore();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -55,73 +70,93 @@ const FilterBar = () => {
 
   return (
     <div className="border-b border-border bg-panel">
-      {/* Main Filter Bar */}
+      {/* Main Filter Bar - Compact & Cognitive */}
       <div className="p-3 flex items-center gap-3">
-        {/* Search Input */}
-        <div className="flex-1 relative">
+        {/* Search Input - Primary action */}
+        <div className="flex-1 relative max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-dim" />
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Search by IP, port, or keywords..."
+            placeholder="Search IP, port..."
             value={filters.searchQuery}
             onChange={(e) => setFilters({ searchQuery: e.target.value })}
-            className="input pl-10 pr-10 w-full"
+            className="input pl-10 pr-10 w-full text-sm"
           />
           {filters.searchQuery && (
             <button
               onClick={() => setFilters({ searchQuery: '' })}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-dim hover:text-text"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3" />
             </button>
           )}
         </div>
-
-        {/* Quick Filters */}
-        <button
-          onClick={() => setFilters({ onlyAnomalies: !filters.onlyAnomalies })}
-          className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-            filters.onlyAnomalies
-              ? 'bg-warn text-base'
-              : 'bg-panel-hover text-text hover:bg-border'
-          }`}
-        >
-          Anomalies Only
-        </button>
 
         {/* Time Range */}
         <select
           value={filters.timeRange}
           onChange={(e) => setFilters({ timeRange: e.target.value as any })}
-          className="px-3 py-2 bg-panel-hover border border-border rounded text-sm text-text"
+          className="px-2 py-1.5 bg-panel-hover border border-border rounded text-xs text-text"
         >
           {timeRangeOptions.map(option => (
             <option key={option.value} value={option.value}>
-              <Clock className="w-3 h-3 inline mr-1" />
               {option.label}
             </option>
           ))}
         </select>
 
+        {/* Anomalies Quick Toggle */}
+        <button
+          onClick={() => setFilters({ onlyAnomalies: !filters.onlyAnomalies })}
+          className={`px-2 py-1.5 rounded text-xs font-medium transition-colors whitespace-nowrap ${
+            filters.onlyAnomalies
+              ? 'bg-warn text-base'
+              : 'bg-panel-hover text-text-dim hover:text-text'
+          }`}
+          title="Show only anomalies"
+        >
+          🔴 Anomalies
+        </button>
+
         {/* Advanced Filters Toggle */}
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className={`p-2 rounded transition-colors ${
-            showAdvanced ? 'bg-info text-base' : 'bg-panel-hover text-text hover:bg-border'
+          className={`p-1.5 rounded transition-colors ${
+            showAdvanced || hasActiveFilters ? 'bg-info text-white' : 'bg-panel-hover text-text hover:bg-border'
           }`}
-          title="Advanced Filters"
+          title="Advanced filters"
         >
           <Filter className="w-4 h-4" />
         </button>
+
+        {/* Export */}
+        <ExportMenu events={[]} filteredCount={eventCount} />
+
+        {/* Grouping Toggle */}
+        {onToggleGrouping && (
+          <button
+            onClick={onToggleGrouping}
+            className={`flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium transition-colors ${
+              useGrouping
+                ? 'bg-info text-white'
+                : 'bg-panel-hover text-text-dim hover:text-text'
+            }`}
+            title="Toggle grouped/list view"
+          >
+            <Layers className="h-3 w-3" />
+            {useGrouping ? 'Grouped' : 'List'}
+          </button>
+        )}
 
         {/* Clear Filters */}
         {hasActiveFilters && (
           <button
             onClick={resetFilters}
-            className="px-3 py-2 rounded text-sm text-text-dim hover:text-text hover:bg-panel-hover transition-colors"
+            className="px-2 py-1.5 rounded text-xs text-text-dim hover:text-text hover:bg-panel-hover transition-colors"
+            title="Clear all filters"
           >
-            Clear All
+            Clear
           </button>
         )}
       </div>

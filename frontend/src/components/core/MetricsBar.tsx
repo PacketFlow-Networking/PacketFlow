@@ -1,8 +1,13 @@
-import { Activity, Wifi, WifiOff, AlertTriangle, Bell } from 'lucide-react';
+import { Activity, Wifi, WifiOff, AlertTriangle, Bell, HelpCircle } from 'lucide-react';
 import { useStore } from '../../context/store';
 import { Logo } from '../shared';
 
-const MetricsBar = () => {
+interface MetricsBarProps {
+  onShowHelp?: () => void;
+  onToggleGlossary?: () => void;
+}
+
+const MetricsBar = ({ onShowHelp, onToggleGlossary }: MetricsBarProps) => {
   const { status, connected } = useStore();
 
   const getStatusColor = (value: number, thresholds: { warn: number; critical: number }) => {
@@ -80,6 +85,24 @@ const MetricsBar = () => {
             Uptime: <span className="text-text">{formatUptime(status.uptime_seconds)}</span>
           </div>
         )}
+        
+        <button
+          onClick={onToggleGlossary}
+          className="p-2 rounded hover:bg-panel-hover transition-colors"
+          aria-label="Toggle glossary"
+          title="Toggle glossary (Ctrl+G)"
+        >
+          <HelpCircle className="w-4 h-4 text-text-dim hover:text-text" />
+        </button>
+
+        <button
+          onClick={onShowHelp}
+          className="p-2 rounded hover:bg-panel-hover transition-colors"
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
+        >
+          <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded text-text text-xs font-mono">?</kbd>
+        </button>
         
         <button
           className="p-2 rounded hover:bg-panel-hover transition-colors"
