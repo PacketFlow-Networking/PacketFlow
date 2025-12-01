@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { HelpCircle, X, Book, Search } from 'lucide-react';
 import { useStore } from '../../context/store';
+import { useAdaptiveUI } from '../../hooks/useAdaptiveUI';
 
 interface Term {
   name: string;
@@ -46,7 +47,8 @@ export default function GlossaryPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { markConceptSeen } = useStore();
+  const { markConceptSeen, trackTerminologySearch } = useStore();
+  const { trackTerminologySearch: trackSearch } = useAdaptiveUI();
 
   const filteredTerms = GLOSSARY.filter(term => {
     const matchesSearch = term.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -64,6 +66,14 @@ export default function GlossaryPanel() {
 
   const handleTermClick = (termName: string) => {
     markConceptSeen(termName);
+    trackSearch(termName);
+  };
+
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    if (value.length >= 3) {
+      trackSearch(value);
+    }
   };
 
   if (!isOpen) {
@@ -101,7 +111,7 @@ export default function GlossaryPanel() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search terms..."
             className="w-full pl-10 pr-3 py-2 bg-base border border-border rounded-lg text-sm text-text placeholder-muted focus:border-info focus:outline-none"
           />

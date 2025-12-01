@@ -1,15 +1,13 @@
-import { Activity, Wifi, WifiOff, AlertTriangle, Bell, HelpCircle, User } from 'lucide-react';
-import { useStore } from '../../context/store';
-import { Logo } from '../shared';
+import { useState } from 'react';
+import { Activity, Wifi, WifiOff, AlertTriangle, Bell, User as UserIcon } from 'lucide-react';
+import { useStore } from '../context/store';
+import { ToastSettings } from './Toast/ToastSettings';
+import UserProfileModal from './UserProfileModal'; // H3-01: Import User Profile modal
 
-interface MetricsBarProps {
-  onShowHelp?: () => void;
-  onToggleGlossary?: () => void;
-  onOpenUserProfile?: () => void;
-}
-
-const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: MetricsBarProps) => {
-  const { status, connected, userProfile } = useStore();
+const MetricsBar = () => {
+  const { status, connected, mockMode } = useStore();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false); // H3-01: Profile modal state
 
   const getStatusColor = (value: number, thresholds: { warn: number; critical: number }) => {
     if (value >= thresholds.critical) return 'text-critical';
@@ -27,7 +25,7 @@ const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: Metrics
     <div className="panel px-6 py-3 flex items-center justify-between border-b border-border">
       {/* Left: Title and Connection Status */}
       <div className="flex items-center gap-4">
-        <Logo variant="long" size="md" theme="dark" />
+        <h1 className="text-xl font-bold text-text">AINetUI</h1>
         <div className="flex items-center gap-2">
           {connected ? (
             <>
@@ -39,6 +37,9 @@ const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: Metrics
               <WifiOff className="w-4 h-4 text-critical" />
               <span className="text-sm text-critical">Disconnected</span>
             </>
+          )}
+          {mockMode && (
+            <span className="badge badge-warn ml-2">MOCK MODE</span>
           )}
         </div>
       </div>
@@ -87,49 +88,28 @@ const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: Metrics
           </div>
         )}
         
+        {/* H3-01: User Profile Button */}
         <button
-          onClick={onToggleGlossary}
+          onClick={() => setProfileOpen(true)}
           className="p-2 rounded hover:bg-panel-hover transition-colors"
-          aria-label="Toggle glossary"
-          title="Toggle glossary (Ctrl+G)"
+          aria-label="User profile"
+          title="User profile and settings"
         >
-          <HelpCircle className="w-4 h-4 text-text-dim hover:text-text" />
-        </button>
-
-        <button
-          onClick={onShowHelp}
-          className="p-2 rounded hover:bg-panel-hover transition-colors"
-          aria-label="Keyboard shortcuts"
-          title="Keyboard shortcuts (?)"
-        >
-          <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded text-text text-xs font-mono">?</kbd>
+          <UserIcon className="w-4 h-4 text-text-dim hover:text-text" />
         </button>
         
         <button
+          onClick={() => setSettingsOpen(true)}
           className="p-2 rounded hover:bg-panel-hover transition-colors"
           aria-label="Notification settings"
           title="Notification settings"
         >
           <Bell className="w-4 h-4 text-text-dim hover:text-text" />
         </button>
-
-        <div className="w-px h-6 bg-border" />
-        
-        <button
-          onClick={onOpenUserProfile}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-panel-hover transition-colors group"
-          aria-label="User profile"
-          title="User profile (Ctrl+P)"
-        >
-          <div className="p-1.5 rounded-full bg-info/10 border border-info/30 group-hover:bg-info/20 transition-colors">
-            <User className="w-4 h-4 text-info" />
-          </div>
-          <div className="text-left">
-            <div className="text-xs font-medium text-text">Profile</div>
-            <div className="text-[10px] text-text-dim capitalize">{userProfile.expertise_level}</div>
-          </div>
-        </button>
       </div>
+      
+      <ToastSettings isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <UserProfileModal isOpen={profileOpen} onClose={() => setProfileOpen(false)} /> {/* H3-01 */}
     </div>
   );
 };

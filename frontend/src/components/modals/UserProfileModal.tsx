@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { X, User, Settings, Brain, TrendingUp, Eye, Target, RotateCcw, List, Network as NetworkIcon, BarChart3 } from 'lucide-react';
+import { X, User, Settings, Brain, TrendingUp, Eye, Target, RotateCcw, List, Network as NetworkIcon, BarChart3, Zap } from 'lucide-react';
 import { useStore } from '../../context/store';
 import { useToast } from '../../context/ToastContext';
-import type { PreferredView, ExpertiseLevel } from '../../types';
+import type { PreferredView, ExpertiseLevel, UIComplexityMode } from '../../types';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
     userProfile, 
     updateUserProfile, 
     setPreferredDefaultView,
+    setUIComplexityMode,
   } = useStore();
   const { showSuccess } = useToast();
   
@@ -23,12 +24,16 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
   const [localExpertiseLevel, setLocalExpertiseLevel] = useState<ExpertiseLevel>(
     userProfile.expertise_level
   );
+  const [localComplexityMode, setLocalComplexityMode] = useState<UIComplexityMode>(
+    userProfile.ui_complexity_mode
+  );
 
   if (!isOpen) return null;
 
   const handleSave = () => {
     setPreferredDefaultView(localPreferredView);
     updateUserProfile({ expertise_level: localExpertiseLevel });
+    setUIComplexityMode(localComplexityMode);
     showSuccess('Profile Updated', 'Your preferences have been saved');
     onClose();
   };
@@ -53,13 +58,14 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
     }
   };
 
-  const topologyRatio = userProfile.interaction_history.view_switches.length > 0
-    ? (userProfile.interaction_history.topology_views / 
-       (userProfile.interaction_history.topology_views + userProfile.interaction_history.list_views)) * 100
+  // H6-02: Calculate cognitive style metrics (with safe fallbacks)
+  const topologyRatio = userProfile.interaction_history?.view_switches?.length > 0
+    ? ((userProfile.interaction_history.topology_views || 0) / 
+       ((userProfile.interaction_history.topology_views || 0) + (userProfile.interaction_history.list_views || 0) || 1)) * 100
     : 0;
   
-  const detailRatio = userProfile.interaction_history.event_clicks > 0
-    ? (userProfile.interaction_history.detail_expansions / userProfile.interaction_history.event_clicks) * 100
+  const detailRatio = (userProfile.interaction_history?.event_clicks || 0) > 0
+    ? ((userProfile.interaction_history.detail_expansions || 0) / (userProfile.interaction_history.event_clicks || 1)) * 100
     : 0;
 
   const getCognitiveStyleColor = (style: string) => {
@@ -207,6 +213,135 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
               </div>
             </section>
 
+            {/* Adaptive UI Complexity */}
+            <section className="panel p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <Zap className="w-5 h-5 text-purple-400" />
+                <h3 className="text-lg font-semibold text-text">Adaptive UI Complexity</h3>
+              </div>
+
+              {/* Current Status */}
+              <div className="bg-base rounded-lg p-4 mb-4">
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <div className="text-xs text-text-dim">UI Mode</div>
+                    <div className="text-lg font-semibold text-text capitalize">{userProfile.ui_complexity_mode}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-text-dim">Detected Level</div>
+                    <div className="text-lg font-semibold text-text capitalize">{userProfile.expertise_level}</div>
+                  </div>
+                </div>
+
+                {/* Usage Statistics - only show in auto mode */}
+                {userProfile.ui_complexity_mode === 'auto' && (
+                  <div className="pt-3 border-t border-border">
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <span className="text-text-dim">Avg Click Depth: </span>
+                        <span className="text-text font-medium">
+                          {userProfile.adaptive_ui_metrics.click_depth_samples.length > 0
+                            ? (userProfile.adaptive_ui_metrics.click_depth_samples.reduce((a, b) => a + b, 0) / 
+                               userProfile.adaptive_ui_metrics.click_depth_samples.length).toFixed(1)
+                            : 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-text-dim">Advanced Features: </span>
+                        <span className="text-text font-medium">
+                          {Object.values(userProfile.adaptive_ui_metrics.advanced_feature_usage).reduce((a, b) => a + b, 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mode Selection */}
+              <div className="space-y-2">
+                {/* Auto Mode */}
+                <button
+                  onClick={() => setLocalComplexityMode('auto')}
+                  className={`w-full text-left p-3 rounded-lg border transition-all ${
+                    localComplexityMode === 'auto'
+                      ? 'border-purple-500 bg-purple-500/10'
+                      : 'border-border hover:border-border/60'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium flex items-center gap-2 text-sm">
+                        <Brain className="w-4 h-4 text-purple-400" />
+                        Auto (Recommended)
+                      </div>
+                      <div className="text-xs text-text-dim mt-1">
+                        Automatically adjusts interface based on your usage patterns
+                      </div>
+                    </div>
+                    {localComplexityMode === 'auto' && (
+                      <div className="text-xs text-purple-400 font-medium">✓</div>
+                    )}
+                  </div>
+                </button>
+
+                {/* Manual Modes */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setLocalComplexityMode('novice')}
+                    className={`p-3 rounded-lg border transition-all ${
+                      localComplexityMode === 'novice'
+                        ? 'border-green-500 bg-green-500/10'
+                        : 'border-border hover:border-border/60'
+                    }`}
+                  >
+                    <div className="text-xs font-medium">Novice</div>
+                    <div className="text-xs text-text-dim mt-1">Simple</div>
+                  </button>
+                  <button
+                    onClick={() => setLocalComplexityMode('intermediate')}
+                    className={`p-3 rounded-lg border transition-all ${
+                      localComplexityMode === 'intermediate'
+                        ? 'border-blue-500 bg-blue-500/10'
+                        : 'border-border hover:border-border/60'
+                    }`}
+                  >
+                    <div className="text-xs font-medium">Intermediate</div>
+                    <div className="text-xs text-text-dim mt-1">Balanced</div>
+                  </button>
+                  <button
+                    onClick={() => setLocalComplexityMode('expert')}
+                    className={`p-3 rounded-lg border transition-all ${
+                      localComplexityMode === 'expert'
+                        ? 'border-red-500 bg-red-500/10'
+                        : 'border-border hover:border-border/60'
+                    }`}
+                  >
+                    <div className="text-xs font-medium">Expert</div>
+                    <div className="text-xs text-text-dim mt-1">Full</div>
+                  </button>
+                </div>
+
+                {/* Feature Comparison */}
+                <div className="bg-base rounded-lg p-3 mt-3">
+                  <div className="text-xs font-medium text-text mb-2">Features by Mode:</div>
+                  <div className="space-y-1 text-xs text-text-dim">
+                    <div className="flex justify-between">
+                      <span>Tooltips & Help:</span>
+                      <span>Novice ✓ | Inter. ○ | Expert ✗</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Advanced Filters:</span>
+                      <span>Novice ✗ | Inter. ✓ | Expert ✓</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Raw Data View:</span>
+                      <span>Novice ✗ | Inter. ✗ | Expert ✓</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Cognitive Style */}
             <section className="panel p-5">
               <div className="flex items-center gap-3 mb-4">
@@ -264,15 +399,15 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
 
                   <div className="grid grid-cols-3 gap-3 mt-4">
                     <div className="bg-base rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-info">{userProfile.interaction_count}</p>
+                      <p className="text-2xl font-bold text-info">{userProfile.interaction_count || 0}</p>
                       <p className="text-xs text-text-dim mt-1">Interactions</p>
                     </div>
                     <div className="bg-base rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-ok">{userProfile.interaction_history.event_clicks}</p>
+                      <p className="text-2xl font-bold text-ok">{userProfile.interaction_history?.event_clicks || 0}</p>
                       <p className="text-xs text-text-dim mt-1">Event Clicks</p>
                     </div>
                     <div className="bg-base rounded-lg p-3 text-center">
-                      <p className="text-2xl font-bold text-warn">{userProfile.interaction_history.filter_applications}</p>
+                      <p className="text-2xl font-bold text-warn">{userProfile.interaction_history?.filter_applications || 0}</p>
                       <p className="text-xs text-text-dim mt-1">Filters Used</p>
                     </div>
                   </div>
@@ -289,21 +424,21 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
             </section>
 
             {/* Alert Accuracy */}
-            {userProfile.alert_history.true_positives + userProfile.alert_history.false_positives > 0 && (
+            {((userProfile.alert_history?.true_positives || 0) + (userProfile.alert_history?.false_positives || 0)) > 0 && (
               <section className="panel p-5">
                 <h3 className="text-lg font-semibold text-text mb-4">Alert Feedback Accuracy</h3>
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <p className="text-3xl font-bold text-ok">{userProfile.alert_history.accuracy_rate.toFixed(1)}%</p>
+                    <p className="text-3xl font-bold text-ok">{(userProfile.alert_history?.accuracy_rate || 0).toFixed(1)}%</p>
                     <p className="text-sm text-text-dim mt-1">Detection Accuracy</p>
                   </div>
                   <div className="flex gap-4 text-sm">
                     <div>
-                      <p className="text-ok font-medium">{userProfile.alert_history.true_positives}</p>
+                      <p className="text-ok font-medium">{userProfile.alert_history?.true_positives || 0}</p>
                       <p className="text-text-dim">True Positives</p>
                     </div>
                     <div>
-                      <p className="text-critical font-medium">{userProfile.alert_history.false_positives}</p>
+                      <p className="text-critical font-medium">{userProfile.alert_history?.false_positives || 0}</p>
                       <p className="text-text-dim">False Positives</p>
                     </div>
                   </div>

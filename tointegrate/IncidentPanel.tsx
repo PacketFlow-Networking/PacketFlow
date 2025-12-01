@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { AlertTriangle, Plus, Search, Clock, User, MessageSquare } from 'lucide-react';
-import { useStore } from '../../context/store';
-import { CreateIncidentModal } from '../incidents/CreateIncidentModal';
-import { IncidentDetailsModal } from '../incidents/IncidentDetailsModal';
-import type { IncidentStatus } from '../../types';
+import { useStore } from '../context/store';
+import { CreateIncidentModal } from './incidents/CreateIncidentModal';
+import { IncidentDetailsModal } from './incidents/IncidentDetailsModal';
+import type { IncidentStatus } from '../types';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
@@ -93,76 +93,84 @@ const IncidentPanel = () => {
   return (
     <>
       <div className="h-full flex flex-col bg-base">
-        {/* Header - Responsive Layout */}
-        <div className="border-b border-border bg-panel space-y-3 p-3">
-          {/* Top Row: New Incident Button */}
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="btn btn-primary flex items-center gap-2 w-full justify-center"
-          >
-            <Plus className="w-4 h-4" />
-            New Incident
-          </button>
-
-          {/* Search Bar - Full Width */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-dim flex-shrink-0" />
-            <input
-              type="text"
-              placeholder="Search incidents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-10 w-full text-sm"
-            />
+        {/* Header */}
+        <div className="p-4 border-b border-border bg-panel">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-warn" />
+              <h2 className="text-lg font-semibold text-text">Incident Management</h2>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="btn btn-primary flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Incident
+            </button>
           </div>
 
-          {/* Status Filter - Scrollable horizontally on small widths */}
-          <div className="flex items-center gap-1 bg-panel-hover/50 rounded-lg p-1 overflow-x-auto scrollbar-thin">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-2 py-1.5 text-xs font-medium rounded whitespace-nowrap transition-colors flex-shrink-0 ${
-                statusFilter === 'all'
-                  ? 'bg-info text-white'
-                  : 'text-text-dim hover:text-text'
-              }`}
-            >
-              All ({statusCounts.all})
-            </button>
-            <button
-              onClick={() => setStatusFilter('open')}
-              className={`px-2 py-1.5 text-xs font-medium rounded whitespace-nowrap transition-colors flex-shrink-0 ${
-                statusFilter === 'open'
-                  ? 'bg-info text-white'
-                  : 'text-text-dim hover:text-text'
-              }`}
-            >
-              Open ({statusCounts.open})
-            </button>
-            <button
-              onClick={() => setStatusFilter('investigating')}
-              className={`px-2 py-1.5 text-xs font-medium rounded whitespace-nowrap transition-colors flex-shrink-0 ${
-                statusFilter === 'investigating'
-                  ? 'bg-info text-white'
-                  : 'text-text-dim hover:text-text'
-              }`}
-            >
-              Inv. ({statusCounts.investigating})
-            </button>
-            <button
-              onClick={() => setStatusFilter('resolved')}
-              className={`px-2 py-1.5 text-xs font-medium rounded whitespace-nowrap transition-colors flex-shrink-0 ${
-                statusFilter === 'resolved'
-                  ? 'bg-info text-white'
-                  : 'text-text-dim hover:text-text'
-              }`}
-            >
-              Done ({statusCounts.resolved})
-            </button>
+          {/* Search and Filters */}
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-dim" />
+              <input
+                type="text"
+                placeholder="Search incidents..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input pl-10 w-full"
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-2 bg-panel-hover rounded-lg p-1">
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  statusFilter === 'all'
+                    ? 'bg-panel text-text'
+                    : 'text-text-dim hover:text-text'
+                }`}
+              >
+                All ({statusCounts.all})
+              </button>
+              <button
+                onClick={() => setStatusFilter('open')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  statusFilter === 'open'
+                    ? 'bg-panel text-text'
+                    : 'text-text-dim hover:text-text'
+                }`}
+              >
+                Open ({statusCounts.open})
+              </button>
+              <button
+                onClick={() => setStatusFilter('investigating')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  statusFilter === 'investigating'
+                    ? 'bg-panel text-text'
+                    : 'text-text-dim hover:text-text'
+                }`}
+              >
+                Investigating ({statusCounts.investigating})
+              </button>
+              <button
+                onClick={() => setStatusFilter('resolved')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  statusFilter === 'resolved'
+                    ? 'bg-panel text-text'
+                    : 'text-text-dim hover:text-text'
+                }`}
+              >
+                Resolved ({statusCounts.resolved})
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Incident List */}
-        <div className="flex-1 overflow-y-auto scrollbar p-3">
+        <div className="flex-1 overflow-y-auto scrollbar p-4">
           {filteredIncidents.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <AlertTriangle className="w-12 h-12 text-text-dim mb-3" />
@@ -176,7 +184,7 @@ const IncidentPanel = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {filteredIncidents.map((incident) => (
                 <div
                   key={incident.id}

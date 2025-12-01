@@ -71,6 +71,13 @@ const ChatPanel = () => {
     };
 
     addUserMessage(userMessage);
+    
+    // Build query with event context if available
+    let query = input.trim();
+    if (selectedEvent) {
+      query = `[About this event - From: ${selectedEvent.src}, To: ${selectedEvent.dst}, Protocol: ${selectedEvent.proto}, Score: ${(selectedEvent.anomaly_score * 100).toFixed(0)}%] ${input.trim()}`;
+    }
+    
     setInput('');
     setIsSubmitting(true);
 
@@ -80,7 +87,7 @@ const ChatPanel = () => {
       // 1. Process query through AI agent with event context
       // 2. Broadcast response via WebSocket (handled by useWebSocket)
       // 3. Also return to us here
-      const response = await queryAI(input.trim());
+      const response = await queryAI(query);
       
       // Note: The WebSocket will receive the full structured response
       // with linked event_ids automatically. This fallback is only
@@ -302,13 +309,23 @@ const ChatPanel = () => {
       </div>
 
       <div className="p-4 border-t border-border">
+        {selectedEvent && (
+          <div className="mb-3 p-2 bg-info/10 rounded border border-info/30 text-xs">
+            <p className="text-info font-semibold mb-1">📌 Event Context Active</p>
+            <p className="text-text-dim">
+              {selectedEvent.src} → {selectedEvent.dst} ({selectedEvent.proto})
+              {selectedEvent.anomaly_score > 0 && ` • Score: ${(selectedEvent.anomaly_score * 100).toFixed(0)}%`}
+            </p>
+            <p className="text-text-dim text-xs mt-1">Your questions will reference this event.</p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about network activity..."
+            placeholder={selectedEvent ? "Ask about this event..." : "Ask about network activity..."}
             className="input flex-1"
             disabled={isSubmitting}
           />

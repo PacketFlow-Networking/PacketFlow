@@ -29,7 +29,7 @@ const ProactiveSuggestions = () => {
     }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
-  }, []); // Run once on mount - avoid recreation on every event change
+  }, [events, clearExpiredSuggestions, suggestions, dismissedSuggestions]);
 
   const generateSmartSuggestions = () => {
     const recentEvents = events.slice(0, 20);
