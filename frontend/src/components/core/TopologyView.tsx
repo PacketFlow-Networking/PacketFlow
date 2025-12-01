@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useStore } from '../../context/store';
+import { useAdaptiveDisplay } from '../../hooks/useAdaptiveUI';
 import * as d3 from 'd3';
 import { 
   ZoomIn, 
@@ -211,6 +212,7 @@ function detectPhysicalRooms(nodes: TopologyNode[]): PhysicalRoom[] {
 
 export default function TopologyView() {
   const { events } = useStore();
+  const adaptiveDisplay = useAdaptiveDisplay();
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const gRef = useRef<SVGGElement | null>(null);
@@ -590,8 +592,14 @@ export default function TopologyView() {
             .attr('class', 'node')
             .call(drag);
 
+          // Adaptive node sizing based on expertise level
+          const baseRadius = adaptiveDisplay.nodeSize === 'large' ? 12 : 
+                           adaptiveDisplay.nodeSize === 'medium' ? 8 : 5;
+          const scaleFactor = adaptiveDisplay.nodeSize === 'large' ? 3 : 
+                            adaptiveDisplay.nodeSize === 'medium' ? 2 : 1;
+          
           nodeGroup.append('circle')
-            .attr('r', (d: any) => 8 + Math.sqrt(d.eventCount) * 2)
+            .attr('r', (d: any) => baseRadius + Math.sqrt(d.eventCount) * scaleFactor)
             .attr('fill', (d: any) => {
               if (d.anomalyScore > 0.7) return '#ef4444';
               if (d.anomalyScore > 0.4) return '#f59e0b';
@@ -604,21 +612,29 @@ export default function TopologyView() {
               setSelectedNode(d);
             });
 
-          nodeGroup.append('text')
-            .text((d: any) => d.label)
-            .attr('x', 0)
-            .attr('y', -15)
-            .attr('text-anchor', 'middle')
-            .attr('fill', '#e2e8f0')
-            .attr('font-size', '9px')
-            .attr('font-family', 'monospace')
-            .attr('pointer-events', 'none');
+          // Conditionally show labels based on expertise level
+          if (adaptiveDisplay.showNodeLabels) {
+            nodeGroup.append('text')
+              .text((d: any) => d.label)
+              .attr('x', 0)
+              .attr('y', -15)
+              .attr('text-anchor', 'middle')
+              .attr('fill', '#e2e8f0')
+              .attr('font-size', adaptiveDisplay.nodeSize === 'large' ? '10px' : '9px')
+              .attr('font-family', 'monospace')
+              .attr('pointer-events', 'none');
+          }
 
           return nodeGroup;
         },
         update => {
+          const baseRadius = adaptiveDisplay.nodeSize === 'large' ? 12 : 
+                           adaptiveDisplay.nodeSize === 'medium' ? 8 : 5;
+          const scaleFactor = adaptiveDisplay.nodeSize === 'large' ? 3 : 
+                            adaptiveDisplay.nodeSize === 'medium' ? 2 : 1;
+          
           update.select('circle')
-            .attr('r', (d: any) => 8 + Math.sqrt(d.eventCount) * 2)
+            .attr('r', (d: any) => baseRadius + Math.sqrt(d.eventCount) * scaleFactor)
             .attr('fill', (d: any) => {
               if (d.anomalyScore > 0.7) return '#ef4444';
               if (d.anomalyScore > 0.4) return '#f59e0b';

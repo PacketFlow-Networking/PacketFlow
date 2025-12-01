@@ -7,7 +7,7 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 const STATUS_POLL_INTERVAL = 3000; // 3 seconds
 
 export const useAPI = () => {
-  const { updateStatus, setConnected } = useStore();
+  const { updateStatus, setConnected, connected } = useStore();
 
   const getStatus = useCallback(async (): Promise<SystemStatus | null> => {
     try {
@@ -30,7 +30,7 @@ export const useAPI = () => {
       
       return status;
     } catch (error) {
-      console.error('[API] Status fetch error:', error);
+      // Silently fail - don't spam console when backend is down
       // Failed to reach backend
       setConnected(false);
       return null;
@@ -104,8 +104,13 @@ export const useAPI = () => {
     }
   }, []);
 
-  // Poll status periodically
+  // Poll status periodically only when connected
   useEffect(() => {
+    // Don't poll if not connected
+    if (!connected) {
+      return;
+    }
+
     const pollStatus = async () => {
       const status = await getStatus();
       if (status) {
@@ -122,7 +127,7 @@ export const useAPI = () => {
     return () => {
       clearInterval(intervalId);
     };
-  }, [getStatus, updateStatus]);
+  }, [getStatus, updateStatus, connected]);
 
   return {
     getStatus,

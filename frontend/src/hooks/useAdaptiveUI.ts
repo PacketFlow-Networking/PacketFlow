@@ -177,6 +177,22 @@ export function useAdaptiveDisplay() {
     preferCompactView: complexityLevel === 'expert',
     preferDetailedView: complexityLevel === 'novice',
     autoExpandDetails: complexityLevel === 'novice',
+    
+    // Proactive suggestions limits
+    maxSuggestions: complexityLevel === 'novice' ? 8 : complexityLevel === 'intermediate' ? 5 : 2,
+    
+    // Notification timing (milliseconds)
+    toastDuration: complexityLevel === 'novice' ? 8000 : complexityLevel === 'intermediate' ? 4000 : 2000,
+    
+    // AI explanation verbosity
+    aiVerbosity: complexityLevel === 'novice' ? 'full' : complexityLevel === 'intermediate' ? 'summary' : 'brief',
+    
+    // Keyboard shortcuts visibility
+    showKeyboardHints: complexityLevel === 'expert',
+    
+    // Graph node sizing
+    nodeSize: complexityLevel === 'novice' ? 'large' : complexityLevel === 'intermediate' ? 'medium' : 'small',
+    showNodeLabels: complexityLevel !== 'expert',
   };
 }
 

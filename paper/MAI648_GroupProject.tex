@@ -1,0 +1,920 @@
+\documentclass[
+    11pt, 
+    a4paper, 
+    parskip=half, 
+    headsepline,       % Adds a line under the header
+    DIV=12             % Calculates a good type area automatically
+]{scrartcl} 
+
+% --- 1. PACKAGES & FONTS ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{microtype}      % Essential for professional spacing
+\usepackage{newpxtext}      % Palatino (Serif body)
+\usepackage{newpxmath}      % Matching math
+\usepackage[scale=0.95]{tgheros} % TeX Gyre Heros (Better Helvetica)
+\usepackage[varqu]{zi4}     % Inconsolata (Modern Monospace)
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}       % Professional table rules
+\usepackage{tabularx}       % Flexible tables
+\usepackage[table]{colortbl}% For colored table rows
+\usepackage{enumitem}       % Custom lists
+\usepackage[most]{tcolorbox}% For Personas
+\usepackage{scrlayer-scrpage} % For Headers/Footers
+\usepackage{setspace}       % Line spacing
+
+% --- 2. LAYOUT & GEOMETRY ---
+\geometry{left=2.5cm, right=2.5cm, top=3cm, bottom=3cm}
+\setstretch{1.15} % Palatino looks better with slightly more leading
+
+% --- 3. COLORS ---
+\definecolor{pfBlue}{RGB}{0, 60, 115}     % Main Brand
+\definecolor{pfCyan}{RGB}{0, 140, 160}    % Accent
+\definecolor{pfRed}{RGB}{180, 40, 40}     % Alert
+\definecolor{pfGray}{RGB}{245, 247, 250}  % Light background
+\definecolor{tblRow}{RGB}{240, 245, 250}  % Table Row Color
+
+% --- 4. HEADERS & FOOTERS ---
+\clearpairofpagestyles
+\ihead{\sffamily\bfseries\color{pfBlue} PacketFlow}
+\ohead{\sffamily\small MAI648 -- Group Project}
+\cfoot{\pagemark}
+\addtokomafont{pagehead}{\normalfont}
+
+% --- 5. TYPOGRAPHY STYLING ---
+\addtokomafont{section}{\color{pfBlue}\sffamily\LARGE\bfseries}
+\addtokomafont{subsection}{\color{pfBlue}\sffamily\Large\bfseries}
+\addtokomafont{subsubsection}{\color{pfCyan}\sffamily\large\bfseries}
+\addtokomafont{paragraph}{\color{pfBlue}\sffamily\bfseries}
+
+% Customize list spacing
+\setlist[itemize]{label=\textcolor{pfCyan}{$\bullet$}, nosep, leftmargin=1.5em}
+
+% --- 6. CUSTOM BOXES ---
+
+% Persona Box - Cleaner, flatter look
+\newtcolorbox{personabox}[2][]{
+    enhanced,
+    colback=white,
+    colframe=pfBlue,
+    coltitle=white,
+    fonttitle=\bfseries\sffamily\large,
+    title={#2},
+    sharp corners, 
+    rounded corners=northeast, arc=4mm, % Modern corner style
+    boxrule=0.5pt,
+    drop shadow={opacity=0.15, shadow xshift=2pt, shadow yshift=-2pt},
+    left=4mm, right=4mm, top=3mm, bottom=3mm,
+    #1
+}
+
+% Pain Point Macro - Aligned using a minipage for cleaner wrapping
+\newcommand{\painpoint}[2]{
+    \vspace{0.4em}
+    \noindent
+    \begin{minipage}[t]{0.05\linewidth}
+        \color{pfRed}\small\bfseries $\times$
+    \end{minipage}%
+    \begin{minipage}[t]{0.95\linewidth}
+        {\small\bfseries\color{pfRed} User Pain:} #1
+    \end{minipage}\par
+    \vspace{0.1em}
+    \noindent
+    \begin{minipage}[t]{0.05\linewidth}
+        \color{pfCyan}\small\bfseries $\checkmark$
+    \end{minipage}%
+    \begin{minipage}[t]{0.95\linewidth}
+        {\small\bfseries\color{pfCyan} Solution:} #2
+    \end{minipage}
+    \vspace{0.6em}
+}
+
+% --- 7. HYPERLINKS ---
+\usepackage[colorlinks=true, linkcolor=pfBlue, urlcolor=pfCyan, citecolor=pfRed, breaklinks=true]{hyperref}
+
+% --- 8. METADATA ---
+\title{\vspace{-1cm}\color{pfBlue}\sffamily\Huge\bfseries MAI648 -- Intelligent UI}
+\subtitle{\color{pfCyan}\sffamily\LARGE PacketFlow: Visualizing the Invisible}
+\author{\sffamily Michalis Chrysostomou \and \sffamily Konstantin Krasovitskiy \and \sffamily Emmanouil Oikonomou}
+\date{\sffamily\today}
+
+% ==========================================
+%             DOCUMENT START
+% ==========================================
+\begin{document}
+
+% --- Custom Title Block ---
+\begin{center}
+    \includegraphics[width=7cm]{figures/ucy-logo-withoutbg.png}\\[0.5em] % adjust size if needed
+    {\color{pfBlue}\sffamily\bfseries\Huge MAI648 -- HCI \& Intelligent User Interfaces}\\[0.5em]
+    {\color{pfCyan}\sffamily\LARGE PacketFlow: Visualizing the Invisible}\\[1.5em]
+    {\sffamily\large Michalis Chrysostomou \quad $\cdot$ \quad Konstantin Krasovitskiy \quad $\cdot$ \quad Emmanouil Oikonomou}\\[0.5em]
+    {\sffamily\small \today}
+\end{center}
+
+\vspace{1cm}
+
+% --- Abstract (Narrower width for professional look) ---
+\begin{center}
+    \includegraphics[width=7cm]{figures/packetflow-long-light.png}\\[0.5em] % adjust size if needed
+    \begin{minipage}{0.85\textwidth}
+        \small
+        \noindent\textbf{\sffamily\color{pfBlue} Abstract} --- This report details the conceptual design, architecture, and user-centered analysis of \textbf{PacketFlow}, an intelligent real-time network monitoring ecosystem. By bridging the gap between raw packet capture and human cognition, PacketFlow transforms high-speed telemetry into an interactive physics-based visualization, powered by local LLM reasoning and adaptive interfaces.
+    \end{minipage}
+\end{center}
+
+\vspace{0.5cm}
+\hrule
+\vspace{0.5cm}
+
+\tableofcontents
+\newpage
+
+\section{Idea and Conceptual Design: PacketFlow}
+
+\subsection{The Concept: What is PacketFlow?}
+PacketFlow is an intelligent, real-time network monitoring ecosystem designed to \textit{visualize the invisible}. It bridges the gap between raw packet capture and human cognition by transforming high-speed network telemetry into an interactive, visual, and conversational interface.
+
+Unlike traditional tools that present static lists or grouped abstractions, PacketFlow offers a granular, physics-based visualization of the network. It treats every IP address as a distinct node in a living ecosystem, allowing analysts to see exactly who is communicating with whom in real time, whether observing a live production network or simulating complex attack scenarios.
+
+PacketFlow integrates local LLM-powered explanations, conversational querying, and an adaptive interface that adjusts to the user's expertise level (novice, intermediate, expert). The system incorporates proactive suggestions, glossary support, and contextual tooltips to reduce cognitive load, making the interface usable by both beginners and experienced analysts. Users can investigate events conversationally, receive real-time recommendations, and gain insight into anomalies without needing deep packet-analysis knowledge.
+
+In addition to real-time monitoring, PacketFlow supports structured incident management, enabling users to group events, track status, and document investigations. These capabilities elevate the system beyond visualization and transform PacketFlow into an intelligent assistant for network defense.
+
+\subsection{The Architecture: A ``Pure Display'' Philosophy}
+PacketFlow follows a clean, separated architecture where the backend acts as the source of truth and the frontend serves as a pure visualization and interaction layer.
+
+\paragraph{The Eye (Backend)}
+A Python-based engine using TShark to capture real packets or generate complex mock scenarios. It handles:
+\begin{itemize}
+    \item Multi-method anomaly detection (Z-score, IQR, EWMA, rate-based, protocol heuristics, etc.).
+    \item Flow condensation and severity scoring.
+    \item Local LLM reasoning (Ollama) for natural-language explanations.
+    \item Event feedback processing (true/false positive signals).
+    \item PCAP replay and mock-mode traffic generation.
+    \item Structured event broadcasting via WebSocket.
+\end{itemize}
+
+\paragraph{The Lens (Frontend)}
+A React/TypeScript application that receives high-frequency updates. It focuses on rendering performance and user interaction by providing:
+\begin{itemize}
+    \item Smooth D3.js topology animations.
+    \item Real-time event stream.
+    \item AI chat interface for conversational investigation.
+    \item Incident management module.
+    \item Alert configuration panel.
+    \item Adaptive UI modes (novice/intermediate/expert).
+    \item Glossary and contextual help.
+    \item Proactive suggestions.
+    \item Keyboard shortcuts for rapid navigation.
+\end{itemize}
+
+This architectural separation ensures the interface remains responsive even under heavy load, while the backend manages intelligence and detection logic.
+
+\subsection{Addressing User Needs}
+PacketFlow addresses key operational pain points through its distinct features.
+
+\subsubsection*{A. The Need for Granular Visibility}
+\painpoint{Traditional maps group IPs into generic ``Internal'' vs.\ ``External'' clouds, hiding lateral movement or specific compromised hosts.}
+{Individual IP addresses are rendered as distinct nodes (e.g., \texttt{192.168.1.105} $\to$ \texttt{8.8.8.8}), enabling precise identification of suspicious activity.}
+
+\subsubsection*{B. The Need for Protocol Clarity}
+\painpoint{“TCP Traffic” is too vague; analysts need application-level detail.}
+{The Statistics Dashboard separates Transport and Application Layer traffic, highlighting DNS, HTTP, HTTPS, SSH, etc.}
+
+\subsubsection*{C. The Need for Safe Simulation \& Training}
+\painpoint{Training typically requires unsafe real-world attack traffic.}
+{Mock Mode generates realistic synthetic scenarios, and PCAP replay enables reproducible academic or training exercises.}
+
+\subsubsection*{D. The Need for Immediate Awareness}
+\painpoint{Critical anomalies get buried in scrolling logs.}
+{Toast Notifications surface severe events instantly.}
+
+\subsubsection*{E. The Need for Explainability and Guidance}
+\painpoint{Traditional tools do not explain alerts.}
+{
+    \vspace{-0.5em}
+    \begin{itemize}[leftmargin=1.2em, nosep]
+        \item Local LLM-generated explanations
+        \item Proactive suggestions
+        \item Glossary and tooltips for novice users
+    \end{itemize}
+}
+
+\subsubsection*{F. The Need for Structured Investigation}
+\painpoint{Analysts must juggle multiple systems to track incidents.}
+{Integrated incident management with notes, tags, event linking, and status tracking.}
+
+\subsection{Operational Modes}
+
+\subsubsection*{Mode 1: Production (Mock Mode OFF)}
+\begin{itemize}
+    \item \textbf{Data Source:} Real network traffic (TShark).
+    \item \textbf{Use Case:} Live SOC monitoring.
+    \item \textbf{Features:} Anomaly detection, topology graph, event stream, AI chat, incident management, suggestions, adaptive UI.
+    \item \textbf{Value:} Provides an accurate, real-time map of the environment.
+\end{itemize}
+
+\subsubsection*{Mode 2: Simulation (Mock Mode ON)}
+\begin{itemize}
+    \item \textbf{Data Source:} Backend simulation engine.
+    \item \textbf{Use Case:} Training, demos, research.
+    \item \textbf{Features:} PCAP replay, synthetic attack sequences, glossary support, novice mode.
+    \item \textbf{Value:} Safe, repeatable, controlled attack simulations.
+\end{itemize}
+
+\subsection{Visual Intelligence}
+The user interface is designed for immediate cognitive understanding:
+\begin{itemize}
+    \item \textbf{Topology Coding:} Node colors represent type and anomaly severity.
+    \item \textbf{Readability:} Monospace fonts highlight critical data (IP addresses, protocol names).
+    \item \textbf{Focus:} Filters allow isolation of suspicious flows or high-severity anomalies.
+    \item \textbf{Interactive Workflow:} Clicking nodes or edges enables filtering, AI explanations, and incident actions.
+    \item \textbf{Adaptive Elements:}
+        \begin{itemize}[label=\textcolor{pfCyan}{$\circ$}]
+            \item Novice mode provides more explanations.
+            \item Expert mode prioritizes information density.
+        \end{itemize}
+\end{itemize}
+
+\section{Target Groups}
+
+The primary target groups for the PacketFlow system were identified based on its capabilities, intended usage contexts, and the needs revealed during the analysis. These groups represent individuals who interact with network security tools across varying levels of expertise, operational demands, and educational or research environments.
+
+% --- Summary Table ---
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.3} % More breathing room
+    \rowcolors{2}{pfGray}{white}      % Zebra striping
+    \caption{Summary of Target User Groups and Key Needs}
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        \textbf{\color{pfBlue} User Group} & \textbf{\color{pfBlue} Key Need from PacketFlow} \\
+        \midrule
+        Students & Natural-language explanations \& Glossary \\
+        SOC Analysts & Real-time streaming \& Incident Management \\
+        Net Admins & Actionable insights \& Threshold configuration \\
+        Researchers & Privacy-preserving local AI \& Mock Mode \\
+        Educators & PCAP Replay \& Predictable learning environments \\
+        Power Users & Expert mode, shortcuts \& Granular configuration \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Cybersecurity Students and Trainees}
+These novice users engage with PacketFlow in academic labs, introductory cybersecurity courses, or training environments. Their goals include learning how network traffic behaves, understanding how anomalies are detected, and practicing incident investigation.
+
+PacketFlow supports these needs through:
+\begin{itemize}
+    \item natural-language explanations,
+    \item glossary integration,
+    \item PCAP replay mode,
+    \item proactive suggestions,
+    \item novice-friendly, low-cognitive-load interfaces.
+\end{itemize}
+
+Students benefit significantly from contextual help and guided workflows that scaffold their learning process.
+
+\subsection{SOC Analysts and Security Operators}
+These intermediate users require efficient real-time monitoring, triage, and incident tracking. PacketFlow provides:
+\begin{itemize}
+    \item real-time event streaming,
+    \item LLM-generated explanations,
+    \item incident management features,
+    \item robust filtering and search tools,
+    \item keyboard shortcuts for rapid navigation.
+\end{itemize}
+
+They depend on accuracy, clarity, and actionable insights to maintain situational awareness during continuous operations.
+
+\subsection{Network Administrators and IT Personnel}
+These users monitor the health and behavior of organizational infrastructure. They require tools that offer:
+\begin{itemize}
+    \item actionable network insights,
+    \item customizable alert thresholds,
+    \item IP allow/deny lists,
+    \item clear anomaly diagnostics.
+\end{itemize}
+
+PacketFlow helps them quickly identify performance anomalies, configuration issues, or suspicious host behavior through its topology graph and flow analysis tools.
+
+\subsection{Cybersecurity Researchers and Academics}
+These expert users utilize PacketFlow for experimentation, evaluating detection models, or conducting studies in human--AI interaction. They require:
+\begin{itemize}
+    \item privacy-preserving, local AI processing,
+    \item PCAP replay,
+    \item mock-mode simulation,
+    \item expert-level detail views,
+    \item configurable alert rules.
+\end{itemize}
+
+The system's transparency and configurability support research on anomaly detection, adaptive interfaces, and user modeling.
+
+\subsection{Educators and Instructors}
+Educators use PacketFlow to support teaching activities, demonstrations, and structured exercises in network forensics or cybersecurity fundamentals. Features such as:
+\begin{itemize}
+    \item PCAP replay,
+    \item mock mode,
+    \item guided explanations,
+    \item adaptive UI modes,
+\end{itemize}
+enable instructors to design predictable learning environments and help students transition from novice to intermediate skill levels.
+
+\subsection{Advanced or Power Users}
+These experienced users---typically senior analysts or technically proficient researchers---benefit from:
+\begin{itemize}
+    \item expert mode,
+    \item high-velocity navigation using keyboard shortcuts,
+    \item granular configuration of thresholds and rules.
+\end{itemize}
+
+They require minimal interface friction and the ability to rapidly explore flow metrics or experiment with rule-based alert conditions.
+
+
+\section{Needs and Verification Analysis}
+
+The contemporary digital landscape is defined by a paradox of visibility: while network telemetry data is generated at unprecedented volumes, the ability of human operators to synthesize this data into actionable intelligence is rapidly diminishing. This “Visibility Gap” represents a critical vulnerability in modern Security Operations Centers (SOCs), where the velocity of high-speed network traffic often outpaces human cognitive processing capabilities.
+
+The proposed PacketFlow system addresses this disconnect by pioneering a “Pure Display” philosophy. It bridges raw machine telemetry and human cognition through physics-based, granular visualization. This analysis evaluates the theoretical foundations of PacketFlow, drawing from Information Visualization (InfoVis), Human-Computer Interaction (HCI), and Cognitive Psychology.
+
+\subsection{The Cognitive Science of Network Visualization}
+
+\subsubsection{The Crisis of Abstraction and the ``Hairball'' Phenomenon}
+Visualizing network data is inherently challenging due to its complexity and high dimensionality. Traditional textual representations sever spatial and temporal relationships, forcing analysts into cognitively taxing mental reconstruction tasks.
+
+Node-link diagrams, while intuitive, often suffer from the ``hairball'' phenomenon when edge density becomes high. Research shows that performance degrades significantly in graphs with more than 50--100 nodes unless advanced layout algorithms are applied \cite{ref2}. Adjacency matrices avoid clutter but perform poorly for path-finding tasks necessary in cyber defense \cite{ref3}.
+
+PacketFlow employs physics-based, force-directed layouts (e.g., Fruchterman-Reingold) to mitigate these challenges. Nodes repel each other, edges act as springs, and clusters form organically. This offloads grouping tasks to the visual cortex, enabling rapid recognition of communication patterns \cite{ref5}.
+
+\subsubsection{Granularity vs.\ Aggregation: The Node-Link-Group Debate}
+PacketFlow emphasizes granular representation of individual IP nodes. Research on node-link-group (NLG) diagrams shows that grouping aids high-level tasks but can obscure anomalies occurring on individual nodes \cite{ref6}. Cybersecurity requires detecting low-frequency, high-impact outlier behavior.
+
+Users also report higher engagement with NLG-style visuals \cite{ref7}, which is relevant given SOC fatigue risks. PacketFlow strikes a balance by letting clustering emerge organically from physics simulation rather than artificial grouping.
+
+\subsubsection{The Role of Animation and Temporal Dynamics}
+Cyber attacks unfold temporally. Static snapshots contribute to change blindness \cite{ref9}. PacketFlow adopts animated transitions that preserve the analyst’s mental map. Smooth motion prevents disorientation when nodes shift positions \cite{ref10}.
+
+\subsubsection{Preattentive Processing Through Motion}
+Motion is processed preattentively by the visual system. PacketFlow’s animated particle flows along edges capitalize on this mechanism. Research shows particle motion improves accuracy in identifying flow direction and anomalies \cite{ref12}. Excessive motion, however, can create noise, making filtering essential \cite{ref14}.
+
+\subsubsection{Cognitive Load and the Context-Switching Tax}
+SOC analysts suffer heavy cognitive load due to fragmented toolchains. The NASA-TLX instrument consistently shows high mental and temporal demand across traditional workflows \cite{ref15}. PacketFlow reduces context switching by converting raw traffic into a unified visual representation, enabling perceptual ``chunking'' of patterns \cite{ref18}.
+
+\subsubsection{Dimensionality: The 2D vs.\ 3D Debate}
+While 3D and mixed reality (MR) visualizations can enhance spatial memory and team communication \cite{ref21}, they introduce occlusion and navigation friction for standard desktop use. PacketFlow uses optimized 2D force-directed layouts while leaving room for future ``2.5D'' enhancements (parallax cues, depth shadows) \cite{ref23}.
+
+\subsection{Operational Necessity: Visualizing the Kill Chain}
+
+\subsubsection{The Challenge of Lateral Movement Detection}
+Lateral movement is a graph-theoretic path problem. Attackers traverse nodes via legitimate protocols, making log-based detection difficult. In a node-link graph, lateral movement appears as visual chains or starburst scans. Research shows that graph visualization improves detection of anomalous cross-cluster communication \cite{ref28}.
+
+\subsubsection{Protocol Clarity: Visualizing the OSI Stack}
+Distinguishing OSI layers visually is essential. Layer 4 traffic may reflect volumetric behavior, while Layer 7 reveals the semantic meaning (DNS tunneling, C2 beaconing). PacketFlow supports protocol filtering aligned with the InfoVis principle: ``Overview first, zoom and filter, then details on demand'' \cite{ref36}.
+
+\subsubsection{The ``Toast'' Dilemma: Designing Effective Notifications}
+Toast notifications must balance salience against interruption. Research recommends:
+\begin{itemize}
+    \item contextual placement near affected nodes,
+    \item consistent severity color coding,
+    \item optimal display duration of 3–5 seconds with pinning options.
+\end{itemize}
+
+\subsubsection{Automation Bias and Human-on-the-Loop}
+Automation bias leads analysts to trust system outputs blindly. PacketFlow counters this by showing raw traffic visually alongside alerts, keeping humans ``on the loop'' and capable of validating anomalies perceptually.
+
+\subsection{Simulation and Synthetic Environments}
+
+\subsubsection{The Training Gap}
+Traditional training uses static logs, failing to teach temporal detection skills. PacketFlow’s Simulation Mode creates a high-fidelity cyber range environment \cite{ref43}, enabling realistic practice under time pressure.
+
+\subsubsection{Synthetic Traffic Generation}
+High-quality background noise is essential for credible training. PacketFlow can integrate GAN-based traffic generation as the field advances \cite{ref50}.
+
+\subsubsection{Developing Intuition Through Visual Repetition}
+Repeated exposure to visual attack signatures fosters instinctive recognition, consistent with perceptual learning literature \cite{ref53}.
+
+\subsection{Comparative Technology Review and Architecture}
+
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.4} % Increased for readability
+    \rowcolors{2}{pfGray}{white}      % Zebra striping
+    \caption{Comparison of Network Analysis and Visualization Tools}
+    \small % Slightly smaller font to fit the width comfortably
+    \begin{tabularx}{\linewidth}{@{} lXXXX @{}}
+        \toprule
+        \textbf{\color{pfBlue} Feature} & \textbf{\color{pfBlue} Wireshark} & \textbf{\color{pfBlue} EtherApe} & \textbf{\color{pfBlue} Gephi} & \textbf{\color{pfBlue} PacketFlow} \\
+        \midrule
+        Philosophy & DPI & Monitoring & Graph Analytics & \textbf{Physics-Based} \\
+        Representation & Text / Hex & Radial Graphs & Static Graph & \textbf{Living Topology} \\
+        Real-Time & Yes & Yes & No & \textbf{Yes (WebSockets)} \\
+        Granularity & Packet-Level & Protocol-Level & Metric-Level & \textbf{Node + Flow} \\
+        Target User & Forensic Analyst & Net Admin & Data Scientist & \textbf{SOC Analyst} \\
+        Architecture & Desktop App & Desktop App & Desktop App & \textbf{Web App} \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\subsection{Architectural Advantages}
+PacketFlow's ``Eye'' (backend) and ``Lens'' (frontend) architecture provides:
+\begin{itemize}
+    \item performance separation,
+    \item browser accessibility,
+    \item scalability across distributed sensors.
+\end{itemize}
+
+\subsection{Verification Analysis Framework}
+
+\subsubsection{User-Centered Design Methodology}
+PacketFlow adheres to User-Centered Design (UCD) principles \cite{ref59}. Verification uses:
+\begin{itemize}
+    \item System Usability Scale (SUS) \cite{ref60}
+    \item NASA-TLX workload measurements \cite{ref61}
+\end{itemize}
+
+\subsubsection{Stakeholder Questionnaire}
+The following survey was distributed to target user groups to validate requirements and gather qualitative data on current pain points.
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+    
+    % Q1
+    \item \textbf{What best describes your current role or status?}
+    \begin{itemize}[label=$\circ$, nosep]
+        \item Undergraduate / Graduate student
+        \item Academic / Researcher
+        \item Security Analyst / SOC practitioner
+        \item Network / Systems Engineer
+        \item IT Support / Administrator
+        \item Software Developer
+        \item Cybersecurity trainee
+        \item Other
+    \end{itemize}
+
+    % Q2
+    \item \textbf{How often do you use network monitoring, security, or incident response tools (e.g., Wireshark, SIEM, IDS/IPS)?}
+    \begin{itemize}[label=$\circ$, nosep]
+        \item Daily
+        \item Several times per week
+        \item Several times per month
+        \item A few times per year
+        \item Never
+    \end{itemize}
+
+    % Q3
+    \item \textbf{In what context do you mainly use (or expect to use) such tools?}
+    \begin{itemize}[label=$\circ$, nosep]
+        \item Academic coursework, labs, or research projects
+        \item Professional SOC / security operations
+        \item Network administration / IT operations
+        \item Personal / home lab
+        \item I do not currently use such tools but may in the future
+    \end{itemize}
+
+    % Q4
+    \item \textbf{Which tools or platforms do you currently use or are familiar with?}
+    \begin{itemize}[label=$\circ$, nosep]
+        \item Wireshark / tshark
+        \item SIEM platforms (e.g., Splunk, ELK, QRadar)
+        \item Intrusion Detection / Prevention Systems (IDS/IPS)
+        \item Firewalls and security gateways
+        \item Cloud security dashboards (e.g., AWS, Azure, GCP)
+        \item No specific tools
+    \end{itemize}
+
+    % Q5 (Open text)
+    \item \textbf{From your recent experience, what are the most important problems, limitations, or frustrations you have faced?}
+    \newline \textit{(Open-ended response)}
+
+    % Q6
+    \item \textbf{How familiar are you with AI-assisted or intelligent security tools?}
+    \begin{itemize}[label=$\circ$, nosep]
+        \item Very familiar
+        \item Moderately familiar
+        \item Slightly familiar
+        \item Not familiar at all
+    \end{itemize}
+
+    % Q7
+    \item \textbf{Which capabilities would you consider most useful in an intelligent interface like PacketFlow?}
+    \begin{itemize}[label=$\circ$, nosep]
+        \item Real-time anomaly detection and severity scoring
+        \item Natural language explanations of anomalies
+        \item Conversational querying (chat-like interface)
+        \item Adaptive interface (novice/intermediate/expert)
+        \item Proactive suggestions for investigation
+        \item Integrated incident management
+        \item Network topology visualization
+        \item Glossary and contextual help
+        \item Strictly local processing (privacy-first)
+    \end{itemize}
+
+    % Q8 (Updated based on image)
+    \item \textbf{Please rate how important each of the following characteristics is for an intelligent network security interface.}
+    \newline \textit{(Rated on a Likert Scale from ``Not important'' to ``Extremely important'')}
+    \begin{itemize}[label=$\circ$, nosep]
+        \item Ease of learning and use
+        \item Transparency and explainability of AI outputs
+        \item Trust in anomaly detections and recommendations
+        \item Real-time performance and responsiveness
+        \item Ability to control or override AI suggestions
+        \item Data privacy and local processing (no cloud)
+        \item Support for incident management and collaboration
+        \item Educational value (helping me learn security concepts)
+    \end{itemize}
+
+    % Q9
+    \item \textbf{Which types of support or guidance would you find most helpful?}
+    \begin{itemize}[label=$\circ$, nosep]
+        \item Step-by-step investigation suggestions
+        \item Example queries for the AI component
+        \item Contextual tooltips and definitions (glossary)
+        \item Visual summaries and dashboards
+        \item Keyboard shortcuts and efficiency features
+        \item Tutorials or guided walkthroughs
+    \end{itemize}
+
+    % Q10 & Q11 (Open text)
+    \item \textbf{What would be your main goals and expectations for a privacy-first interface like PacketFlow?}
+    \newline \textit{(Open-ended response)}
+
+    \item \textbf{Is there any functionality or AI assistance essential for such a system not mentioned so far?}
+    \newline \textit{(Open-ended response)}
+
+\end{enumerate}
+
+\subsection{Survey Results and Analysis}
+A preliminary survey was conducted with a diverse group of participants ($N=8$), ranging from Cybersecurity Trainees and Students to IT Managers and Security Researchers. The responses provided critical validation for PacketFlow's core design philosophy.
+
+\subsubsection{Key Findings}
+
+\begin{itemize}
+    \item \textbf{Validation of the ``Visibility Gap'':}
+    Respondents cited significant frustrations with current tools, specifically noting that ``tools overwhelm students'' and complaining of ``random alerts and limited visibility.'' One respondent explicitly highlighted the need for ``more clear and meaningful insights,'' confirming the necessity of PacketFlow's AI-driven explanation layer.
+
+    \item \textbf{Support for Adaptive Interfaces:}
+    The demographic spread—from daily users of network tools to those who use them ``a few times per year''—validates the MoSCoW requirement for an \textbf{Adaptive Interface}. A "one-size-fits-all" dashboard would overwhelm the novices identified in the survey while frustrating the experts.
+
+    \item \textbf{The Importance of Trust and Privacy:}
+    When rating system characteristics, \textit{Data Privacy} and \textit{Trust in Anomaly Detections} received the highest volume of ``Extremely Important'' ratings. This strongly supports the architectural decision to use \textbf{Local LLMs (Ollama)} rather than cloud-based APIs, ensuring telemetry data never leaves the premises.
+
+    \item \textbf{Demand for Explainability:}
+    Participants ranked ``Natural language explanations of anomalies'' and ``Real-time anomaly detection'' as the most useful capabilities. This mirrors the frustration with legacy tools (e.g., Wireshark) where raw data is abundant but context is scarce.
+\end{itemize}
+
+\subsubsection{Implications for Design}
+The survey results confirm that while raw telemetry is essential for experts, the primary barrier to entry is cognitive load. Consequently, the design priority of PacketFlow remains the \textbf{reduction of complexity} through visual abstraction and conversational assistance, rather than simply displaying more data rows.
+
+
+% --- CONCLUSION ---
+
+\section{Conclusion and Future Outlook}
+
+PacketFlow stands as a necessary evolution in security visualization. Its physics-based ``Pure Display'' architecture bridges human perceptual strengths and machine telemetry. As node counts scale in IoT and edge networks, PacketFlow’s granular, dynamic approach becomes essential.
+
+Crucially, our stakeholder analysis validates this direction. The survey results highlighted a critical need for \textbf{data privacy} and \textbf{reduced cognitive load}, confirming that the "Visibility Gap" is a human problem as much as a technical one. By integrating local, privacy-preserving AI reasoning with an adaptive interface, PacketFlow successfully meets the diverse needs of students, analysts, and researchers alike.
+
+Future iterations will focus on further enhancing these capabilities, integrating ``2.5D'' visual cues for deeper topological analysis and expanding the generative adversarial network (GAN) capabilities for even more realistic simulation training.
+
+
+\section{Personas and Scenarios}
+
+\subsection{Persona 1 --- ``Elena Costa'' (Novice Cybersecurity Student)}
+
+% --- Profile Box ---
+\begin{personabox}{Profile Overview}
+    \begin{tabularx}{\linewidth}{@{}lX@{}}
+        \textbf{Age:} & 21 \\
+        \textbf{Background:} & Undergraduate cybersecurity student \\
+        \textbf{Technical Expertise:} & Beginner; basic Wireshark and Linux experience
+    \end{tabularx}
+\end{personabox}
+
+\subsubsection*{Goals}
+\begin{itemize}
+    \item Understand network traffic fundamentals.
+    \item Learn how anomalies and attacks are detected.
+    \item Build confidence analyzing security events.
+    \item Develop familiarity with real-world investigation workflows.
+\end{itemize}
+
+\subsubsection*{Frustrations}
+\begin{itemize}
+    \item Traditional tools display overwhelming packet-level detail.
+    \item Difficult to interpret alerts without explanations.
+    \item Uncertain where to begin when identifying suspicious traffic.
+\end{itemize}
+
+\subsubsection*{Motivations}
+\begin{itemize}
+    \item Prefers learning through natural-language explanations.
+    \item Values interfaces that guide next steps.
+    \item Appreciates visual aids and contextual help.
+\end{itemize}
+
+\subsection*{Scenario 1 --- Learning and Exploration}
+Elena opens PacketFlow during a university lab session and loads a PCAP file using replay mode. The system immediately condenses traffic into flows and detects several DNS-related anomalies. Each anomaly appears in the event stream accompanied by a plain-language explanation generated by the LLM, helping her understand why a behavior is considered suspicious.
+
+Curious about specific terms, she clicks highlighted glossary icons to access definitions such as ``anomaly score'' and ``suspicious domain pattern.'' The topology graph provides a simplified visualization of communication patterns, allowing her to clearly see which hosts are interacting.
+
+When she opens one event, proactive suggestions appear---recommending that she filter traffic by the suspicious IP or compare the flow with historical behavior. She follows these suggestions to explore the investigation workflow.
+
+The adaptive interface keeps explanations simple because she is in novice mode, showing essential details while allowing deeper insights on demand.
+
+By completing the scenario, Elena gains confidence in identifying anomalies without feeling overwhelmed.
+
+\vspace{1cm} % Visual separation between personas
+
+\subsection{Persona 2 --- ``Ahmed Rahman'' (Intermediate SOC Analyst)}
+
+% --- Profile Box ---
+\begin{personabox}{Profile Overview}
+    \begin{tabularx}{\linewidth}{@{}lX@{}}
+        \textbf{Age:} & 32 \\
+        \textbf{Background:} & Works in a university SOC; handles alert triage \\
+        \textbf{Technical Expertise:} & Moderate; familiar with SIEMs, firewalls, and packet analysis
+    \end{tabularx}
+\end{personabox}
+
+\subsubsection*{Goals}
+\begin{itemize}
+    \item Quickly assess whether an anomaly represents a real threat.
+    \item Efficiently correlate related alerts.
+    \item Maintain situational awareness across the network.
+\end{itemize}
+
+\subsubsection*{Frustrations}
+\begin{itemize}
+    \item High false-positive rates in legacy tools.
+    \item Constant switching between dashboards slows investigations.
+    \item Alerts often lack context or explanatory details.
+\end{itemize}
+
+\subsubsection*{Motivations}
+\begin{itemize}
+    \item Wants accurate, contextualized anomaly information.
+    \item Values fast navigation, such as keyboard shortcuts.
+    \item Prefers a unified interface for triage and incident tracking.
+\end{itemize}
+
+\subsection*{Scenario 2 --- Real-Time Anomaly Investigation}
+During his SOC shift, Ahmed monitors PacketFlow’s real-time event stream, where several HIGH and CRITICAL anomalies appear. He selects a CRITICAL alert and immediately receives an LLM-generated explanation summarizing why the traffic is dangerous and suggesting potential next steps.
+
+To organize his findings, Ahmed creates an incident in the incident management module, linking relevant anomaly events. The system transitions to the incident workspace while preserving his UI state. He adds notes, assigns tags, and marks the incident status as ``investigating.''
+
+As repetitive anomalies arise from a particular source, Ahmed receives proactive suggestions advising him to apply filters. Using keyboard shortcuts, he rapidly switches between the topology, event stream, and incident panels.
+
+Finally, he marks one anomaly as a false positive, contributing feedback to improve detection reliability. The combined presence of explanations, visual context, and workflow tooling allows him to escalate the real threat more confidently and efficiently.
+
+\vspace{1cm} % Visual separation between personas
+
+\subsection{Persona 3 --- ``Dr.\ Maria Nikolaou'' (Network Security Researcher)}
+
+% --- Profile Box ---
+\begin{personabox}{Profile Overview}
+    \begin{tabularx}{\linewidth}{@{}lX@{}}
+        \textbf{Age:} & 45 \\
+        \textbf{Background:} & Academic researcher focused on anomaly detection and privacy-preserving analytics \\
+        \textbf{Technical Expertise:} & Expert in machine learning and network security
+    \end{tabularx}
+\end{personabox}
+
+\subsubsection*{Goals}
+\begin{itemize}
+    \item Experiment with detection models and traffic behavior.
+    \item Evaluate AI-generated explanations and adaptive intelligent UI features.
+    \item Conduct research using privacy-safe, locally processed data.
+\end{itemize}
+
+\subsubsection*{Frustrations}
+\begin{itemize}
+    \item Cloud-based tools conflict with privacy and compliance requirements.
+    \item Many anomaly detection interfaces lack transparency and flexibility.
+    \item Existing platforms rarely support experimentation or teaching workflows.
+\end{itemize}
+
+\subsubsection*{Motivations}
+\begin{itemize}
+    \item Prefers open-source, configurable tools.
+    \item Values local LLM processing for sensitive data.
+    \item Wants insights into both data and adaptive UI behavior.
+\end{itemize}
+
+\subsection*{Scenario 3 --- Research and Model Experimentation}
+Maria uses PacketFlow in mock mode to simulate network scenarios for her research group. She alternates between synthetic streams and PCAP replay mode to compare how the system behaves on different datasets.
+
+The event stream displays anomalies detected via eight statistical and heuristic methods, and she evaluates how each contributes to the severity score. Switching to the chat panel, she queries the LLM about observed patterns and receives detailed explanations referencing flows and protocols, providing a readable layer on top of the detection model metrics.
+
+Maria tests the expert mode, revealing additional details such as per-method detection contributions, confidence indicators, and deeper technical terminology. She experiments with alert configuration options, adjusting thresholds, sensitivity, and IP allow/deny lists to observe how they affect anomaly detection.
+
+Real-time visualization, local AI reasoning, and adaptive interface behavior enable her to conduct privacy-preserving research without external dependencies.
+
+\subsection*{Summary: How Personas Inform Design}
+The specific needs of these three personas directly dictated the functional requirements and interface design of PacketFlow. The table below maps each user profile to their corresponding system features.
+
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.4}
+    \rowcolors{2}{pfGray}{white}
+    \caption{Mapping Personas to Design Features}
+    % The error was in the header line below. I added the backslash before &
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        \textbf{\color{pfBlue} Persona} & \textbf{\color{pfBlue} Design Features \& Requirements} \\
+        \midrule
+        
+        \textbf{Elena} & 
+        \vspace{-0.8em} % Tweak to align list with the name
+        \begin{itemize}[leftmargin=1em, nosep]
+            \item Educational explanations
+            \item Guided suggestions
+            \item Simplified UI mode
+            \item Glossary and contextual help
+            \item Low cognitive load
+            \item PCAP replay support for learning
+        \end{itemize} 
+        \vspace{0.3em}
+        \\
+        
+        \textbf{Ahmed} & 
+        \vspace{-0.8em}
+        \begin{itemize}[leftmargin=1em, nosep]
+            \item Real-time triage capabilities
+            \item Accurate and contextual anomaly explanations
+            \item Fast navigation (keyboard shortcuts)
+            \item Incident management workflow
+            \item Proactive recommendations
+            \item Feedback labeling to improve detection accuracy
+        \end{itemize}
+        \vspace{0.3em}
+        \\
+        
+        \textbf{Maria} & 
+        \vspace{-0.8em}
+        \begin{itemize}[leftmargin=1em, nosep]
+            \item Privacy-first local AI processing
+            \item Configurable alert thresholds and rule sets
+            \item PCAP replay and mock mode for experimentation
+            \item Detailed anomaly metrics in expert mode
+            \item Transparency in detection and explanation logic
+            \item Flexible topology and event views
+        \end{itemize}
+        \vspace{0.3em}
+        \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Main Tasks}
+
+\subsection{Task 1: Investigate a Detected Network Anomaly}
+
+\subsubsection*{Short Description}
+The user selects an anomaly from the real-time event stream and reviews its AI-generated natural-language explanation to understand why it was flagged. The user inspects related flows, explores the network topology graph, applies filters or suggestions recommended by the system, and determines whether the behavior represents malicious activity. The user may also consult the glossary and contextual help, request deeper analysis through the conversational AI chat, and optionally label the event as a true or false positive to improve system accuracy.
+
+\subsubsection*{Target User Group \& Frequency}
+This task is primarily performed by SOC analysts and network administrators, who conduct anomaly investigations multiple times per day during continuous monitoring. Cybersecurity students perform this task during training labs or PCAP replay sessions, typically on a weekly basis. Researchers may perform extended analysis sessions during experimentation using mock mode or historical datasets.
+
+\subsection{Task 2: Create and Manage a Security Incident}
+
+\subsubsection*{Short Description}
+After identifying suspicious or correlated events, the user creates a new incident in the incident management module. The user links relevant events, adds notes or tags, assigns the incident to themselves or team members, and updates the status through the lifecycle stages (open~$\rightarrow$~investigating~$\rightarrow$~resolved/false positive). Users may attach additional flows, consult AI explanations for context, and leverage proactive suggestions that indicate possible incident grouping or follow-up actions. Status changes and updates persist across the interface through the system’s real-time state management.
+
+\subsubsection*{Target User Group \& Frequency}
+This task is mainly performed by SOC analysts and security researchers, who update and track multiple incidents daily. It is also relevant for advanced cybersecurity students who conduct structured investigations in academic environments, where incident management may be performed several times per semester or during simulation exercises. Researchers performing model evaluation may use incidents to categorize findings across datasets.
+
+\subsection{Task 3: Configure Detection Sensitivity and Custom Alert Rules}
+
+\subsubsection*{Short Description}
+The user adjusts the global anomaly sensitivity slider, modifies thresholds for metrics such as anomaly score or flow rate, manages IP whitelists and blacklists, and creates simple rule-based conditions that trigger actions (e.g., notifications or incident creation). Users may switch between novice and expert interface modes, enabling more detailed configuration options for advanced users. Configuration changes influence the detection pipeline in real time, allowing rapid experimentation during PCAP replay or mock mode sessions.
+
+\subsubsection*{Target User Group \& Frequency}
+This task is typically performed by network engineers, researchers, and advanced SOC analysts, who tune the system according to operational needs, dataset characteristics, or research objectives. Configuration is often performed initially during deployment and refined periodically (weekly or monthly) as network behavior evolves. Novice students may perform this task only during guided exercises, especially when exploring how thresholds affect anomaly detection outcomes.
+
+\section{Requirements (MoSCoW Analysis)}
+
+\subsection{Must Have (The Core)}
+
+\subsubsection*{Real-Time Anomaly Detection and Flow Processing}
+\noindent\textbf{Justification:}
+Fundamental to PacketFlow’s purpose as an intelligent network security monitoring system. SOC analysts, students, and researchers rely on real-time visibility and responsive anomaly identification for situational awareness.
+
+\subsubsection*{Local, Privacy-Preserving AI Reasoning (Ollama / On-Device LLM)}
+\noindent\textbf{Justification:}
+Required to meet privacy, compliance, and research constraints. Personas such as Maria and Ahmed emphasize the need for full local processing to avoid exposing sensitive telemetry to external services.
+
+\subsubsection*{Transparent AI Explanations of Alerts and Anomalies}
+\noindent\textbf{Justification:}
+Critical for trust formation, understanding system decisions, and reducing cognitive load, especially for novices. Explanations enable analysts to validate alerts rather than blindly trusting automated detection.
+
+\subsubsection*{Incident Management Workflow (open $\rightarrow$ investigating $\rightarrow$ resolved/false positive)}
+\noindent\textbf{Justification:}
+Central to professional security operations and essential for structured investigations. Supports documentation, collaboration, and lifecycle tracking.
+
+\subsubsection*{Core Visualizations: Real-Time Event Stream, Topology Graph, Flow and Packet Context}
+\noindent\textbf{Justification:}
+Users must quickly understand host interactions and behavior patterns. Visual situational awareness is crucial for novices and experts alike, supporting both learning and operational triage.
+
+\subsubsection*{Conversational AI Query Interface}
+\noindent\textbf{Justification:}
+Enables natural language interaction with network data and explanations. Essential for novice usability and for expert users seeking quick reasoning, summaries, or clarifications.
+
+\subsection{Should Have (Important)}
+
+\subsubsection*{Adaptive Interface Based on User Expertise (novice/intermediate/expert)}
+\noindent\textbf{Justification:}
+Improves usability and supports varied skill levels. Novices benefit from simplified views, while experts gain access to richer detail and faster workflows.
+
+\subsubsection*{Proactive Suggestions for Actions and Investigations}
+\noindent\textbf{Justification:}
+Helps users navigate complex data by surfacing relevant investigative actions, filters, or insights. Improves efficiency and reduces manual effort.
+
+\subsubsection*{Feedback Labeling System (true/false positives)}
+\noindent\textbf{Justification:}
+Provides user-driven refinement of anomaly detection quality, creating a feedback loop for improving future accuracy and supporting user engagement.
+
+\subsubsection*{Search and Filter Capabilities for Events and Incidents}
+\noindent\textbf{Justification:}
+Necessary for operation at scale, enabling users to focus on relevant subsets of data. Especially important during high-volume monitoring and historical investigations.
+
+\subsubsection*{PCAP Replay and Mock Mode for Testing and Training}
+\noindent\textbf{Justification:}
+Supports controlled experimentation, research evaluation, and educational use. Allows testing without requiring a live network capture environment.
+
+\subsection{Could Have (Desirable)}
+
+\subsubsection*{Keyboard Shortcuts for Power Users}
+\noindent\textbf{Justification:}
+Improves workflow efficiency for experienced users. Not required for core functionality and can be introduced incrementally.
+
+\subsubsection*{Glossary and Contextual Learning Module}
+\noindent\textbf{Justification:}
+Provides educational value for students and less experienced analysts. The system remains functional without it, but usability and learning outcomes are improved significantly.
+
+\subsubsection*{Custom Rule Builder (if-condition $\rightarrow$ action)}
+\noindent\textbf{Justification:}
+Adds flexibility for advanced users who want automation or custom monitoring behavior. Not essential for baseline detection.
+
+\subsubsection*{Fine-Grained Threshold Controls (anomaly score, packet rate, byte rate)}
+\noindent\textbf{Justification:}
+Useful for environments requiring tailored detection sensitivity. Experts benefit most, while novices may not require granular control.
+
+\subsubsection*{Advanced Visual Enhancements (e.g., extended graph options, layout customization)}
+\noindent\textbf{Justification:}
+Enhances user experience but does not affect the core functionality of anomaly detection or incident management.
+
+\subsection{Won't Have (Out of Scope)}
+
+\subsubsection*{Cloud-Based Data Processing or External API Dependence}
+\noindent\textbf{Justification:}
+Contradicts the system’s privacy-first design and violates security expectations from researchers and SOC analysts. All processing must remain fully local.
+
+\subsubsection*{Automated Blocking, Firewall Manipulation, or Network Reconfiguration}
+\noindent\textbf{Justification:}
+Introduces high operational risk and exceeds the intended scope of an academic intelligent interface prototype. Could result in unintended disruptions.
+
+\subsubsection*{Unrelated Functionalities (e.g., email alerting, generic chatbots, unrelated analytics)}
+\noindent\textbf{Justification:}
+Adds unnecessary complexity without contributing to the core focus of intelligent network monitoring or user-centered intelligence.
+
+% --- Bibliography ---
+\newpage
+\bibliographystyle{plain}
+\bibliography{references}
+
+
+% IDEAA
+
+% \section{Requirements (MoSCoW Analysis)}
+
+% \subsection{Must Have (The Core)}
+% \begin{itemize}
+%     \item \textbf{Real-Time Anomaly Detection:} Fundamental to situational awareness.
+%     \item \textbf{Local, Privacy-Preserving AI (Ollama):} Essential for privacy compliance.
+%     \item \textbf{Incident Management:} To support structured investigation workflows.
+%     \item \textbf{Core Visualizations:} Topology Graph, Event Stream, and Flow context.
+% \end{itemize}
+
+% \subsection{Should Have (Important)}
+% \begin{itemize}
+%     \item \textbf{Adaptive Interface:} Toggling between Novice, Intermediate, and Expert modes.
+%     \item \textbf{Proactive Suggestions:} System-driven recommendations for filtering/investigation.
+%     \item \textbf{Feedback Loop:} Labeling alerts as True/False positives.
+% \end{itemize}
+
+% \subsection{Could Have (Desirable)}
+% \begin{itemize}
+%     \item \textbf{Keyboard Shortcuts:} For power users (Ahmed).
+%     \item \textbf{Glossary Module:} High value for students (Elena).
+%     \item \textbf{Custom Rule Builder:} For advanced configuration.
+% \end{itemize}
+
+% \subsection{Won't Have (Out of Scope)}
+% \begin{itemize}
+%     \item \textbf{Cloud Processing:} Violates privacy constraints.
+%     \item \textbf{Active Blocking/Firewalling:} Too high risk for this prototype.
+% \end{itemize}
+
+\end{document}

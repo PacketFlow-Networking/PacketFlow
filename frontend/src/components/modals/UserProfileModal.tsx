@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, User, Settings, Brain, TrendingUp, Eye, Target, RotateCcw, List, Network as NetworkIcon, BarChart3, Zap } from 'lucide-react';
 import { useStore } from '../../context/store';
 import { useToast } from '../../context/ToastContext';
@@ -19,14 +19,23 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
   const { showSuccess } = useToast();
   
   const [localPreferredView, setLocalPreferredView] = useState<PreferredView>(
-    userProfile.preferred_default_view
+    userProfile.preferred_default_view || 'auto'
   );
   const [localExpertiseLevel, setLocalExpertiseLevel] = useState<ExpertiseLevel>(
-    userProfile.expertise_level
+    userProfile.expertise_level || 'intermediate'
   );
   const [localComplexityMode, setLocalComplexityMode] = useState<UIComplexityMode>(
-    userProfile.ui_complexity_mode
+    userProfile.ui_complexity_mode || 'auto'
   );
+
+  // Sync local state with store when modal opens or userProfile changes
+  useEffect(() => {
+    if (isOpen) {
+      setLocalPreferredView(userProfile.preferred_default_view || 'auto');
+      setLocalExpertiseLevel(userProfile.expertise_level || 'intermediate');
+      setLocalComplexityMode(userProfile.ui_complexity_mode || 'auto');
+    }
+  }, [isOpen, userProfile.preferred_default_view, userProfile.expertise_level, userProfile.ui_complexity_mode]);
 
   if (!isOpen) return null;
 
@@ -34,7 +43,17 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
     setPreferredDefaultView(localPreferredView);
     updateUserProfile({ expertise_level: localExpertiseLevel });
     setUIComplexityMode(localComplexityMode);
-    showSuccess('Profile Updated', 'Your preferences have been saved');
+    
+    // Show appropriate message based on mode
+    if (localComplexityMode === 'auto') {
+      showSuccess('Profile Updated', 'UI will auto-adapt to your usage patterns');
+    } else if (localComplexityMode) {
+      // Capitalize first letter for display
+      const modeDisplay = localComplexityMode.charAt(0).toUpperCase() + localComplexityMode.slice(1);
+      showSuccess('Profile Updated', `UI complexity mode changed to ${modeDisplay}`);
+    } else {
+      showSuccess('Profile Updated', 'Settings saved successfully');
+    }
     onClose();
   };
 
@@ -189,27 +208,6 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                     </button>
                   </div>
                 </div>
-
-                <div>
-                  <label className="text-sm font-medium text-text mb-2 block">
-                    Expertise Level
-                  </label>
-                  <div className="flex gap-2">
-                    {(['novice', 'intermediate', 'expert'] as ExpertiseLevel[]).map((level) => (
-                      <button
-                        key={level}
-                        onClick={() => setLocalExpertiseLevel(level)}
-                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          localExpertiseLevel === level
-                            ? 'bg-info text-white'
-                            : 'bg-panel-hover text-text-dim hover:text-text'
-                        }`}
-                      >
-                        {level.charAt(0).toUpperCase() + level.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             </section>
 
@@ -234,13 +232,13 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                 </div>
 
                 {/* Usage Statistics - only show in auto mode */}
-                {userProfile.ui_complexity_mode === 'auto' && (
+                {userProfile.ui_complexity_mode === 'auto' && userProfile.adaptive_ui_metrics && (
                   <div className="pt-3 border-t border-border">
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div>
                         <span className="text-text-dim">Avg Click Depth: </span>
                         <span className="text-text font-medium">
-                          {userProfile.adaptive_ui_metrics.click_depth_samples.length > 0
+                          {userProfile.adaptive_ui_metrics.click_depth_samples?.length > 0
                             ? (userProfile.adaptive_ui_metrics.click_depth_samples.reduce((a, b) => a + b, 0) / 
                                userProfile.adaptive_ui_metrics.click_depth_samples.length).toFixed(1)
                             : 'N/A'}
@@ -249,7 +247,9 @@ const UserProfileModal = ({ isOpen, onClose }: UserProfileModalProps) => {
                       <div>
                         <span className="text-text-dim">Advanced Features: </span>
                         <span className="text-text font-medium">
-                          {Object.values(userProfile.adaptive_ui_metrics.advanced_feature_usage).reduce((a, b) => a + b, 0)}
+                          {userProfile.adaptive_ui_metrics.advanced_feature_usage 
+                            ? Object.values(userProfile.adaptive_ui_metrics.advanced_feature_usage).reduce((a, b) => a + b, 0)
+                            : 0}
                         </span>
                       </div>
                     </div>

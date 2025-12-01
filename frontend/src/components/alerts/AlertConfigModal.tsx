@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { X, Shield, Sliders, List, Bell } from 'lucide-react';
+import { X, Shield, Sliders, List, Bell, BookOpen } from 'lucide-react';
 import { useStore } from '../../context/store';
 import SensitivityPanel from './SensitivityPanel';
 import ThresholdsPanel from './ThresholdsPanel';
 import IPListPanel from './IPListPanel';
 import RulesPanel from './RulesPanel';
 import NotificationsPanel from './NotificationsPanel';
+import GlossaryPanel from '../panels/GlossaryPanel';
 
 interface AlertConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type TabType = 'sensitivity' | 'thresholds' | 'iplists' | 'rules' | 'notifications';
+type TabType = 'sensitivity' | 'thresholds' | 'iplists' | 'rules' | 'notifications' | 'glossary';
 
 const AlertConfigModal = ({ isOpen, onClose }: AlertConfigModalProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('sensitivity');
@@ -26,6 +27,7 @@ const AlertConfigModal = ({ isOpen, onClose }: AlertConfigModalProps) => {
     { id: 'iplists' as const, label: 'IP Lists', icon: List },
     { id: 'rules' as const, label: 'Rules', icon: Bell },
     { id: 'notifications' as const, label: 'Notifications', icon: Bell },
+    { id: 'glossary' as const, label: 'Glossary', icon: BookOpen },
   ];
 
   const handleReset = () => {
@@ -80,6 +82,7 @@ const AlertConfigModal = ({ isOpen, onClose }: AlertConfigModalProps) => {
           {activeTab === 'iplists' && <IPListPanel />}
           {activeTab === 'rules' && <RulesPanel />}
           {activeTab === 'notifications' && <NotificationsPanel />}
+          {activeTab === 'glossary' && <GlossaryPanel />}
         </div>
 
         {/* Footer */}

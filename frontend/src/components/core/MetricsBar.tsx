@@ -1,14 +1,15 @@
-import { Activity, Wifi, WifiOff, AlertTriangle, Bell, HelpCircle, User } from 'lucide-react';
+import { Activity, Wifi, WifiOff, AlertTriangle, Bell, User, RefreshCw, Settings } from 'lucide-react';
 import { useStore } from '../../context/store';
-import { Logo } from '../shared';
+import { Logo, ComplexityModeIndicator } from '../shared';
 
 interface MetricsBarProps {
   onShowHelp?: () => void;
-  onToggleGlossary?: () => void;
   onOpenUserProfile?: () => void;
+  onReconnect?: () => void;
+  onOpenAlertConfig?: () => void;
 }
 
-const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: MetricsBarProps) => {
+const MetricsBar = ({ onShowHelp, onOpenUserProfile, onReconnect, onOpenAlertConfig }: MetricsBarProps) => {
   const { status, connected, userProfile } = useStore();
 
   const getStatusColor = (value: number, thresholds: { warn: number; critical: number }) => {
@@ -38,6 +39,16 @@ const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: Metrics
             <>
               <WifiOff className="w-4 h-4 text-critical" />
               <span className="text-sm text-critical">Disconnected</span>
+              {onReconnect && (
+                <button
+                  onClick={onReconnect}
+                  className="ml-2 px-3 py-1 bg-info hover:bg-info/80 text-white text-xs rounded-lg flex items-center gap-1.5 transition-colors"
+                  title="Reconnect to backend"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Reconnect
+                </button>
+              )}
             </>
           )}
         </div>
@@ -88,15 +99,6 @@ const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: Metrics
         )}
         
         <button
-          onClick={onToggleGlossary}
-          className="p-2 rounded hover:bg-panel-hover transition-colors"
-          aria-label="Toggle glossary"
-          title="Toggle glossary (Ctrl+G)"
-        >
-          <HelpCircle className="w-4 h-4 text-text-dim hover:text-text" />
-        </button>
-
-        <button
           onClick={onShowHelp}
           className="p-2 rounded hover:bg-panel-hover transition-colors"
           aria-label="Keyboard shortcuts"
@@ -106,13 +108,14 @@ const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: Metrics
         </button>
         
         <button
+          onClick={onOpenAlertConfig}
           className="p-2 rounded hover:bg-panel-hover transition-colors"
-          aria-label="Notification settings"
-          title="Notification settings"
+          aria-label="Alert configuration"
+          title="Alert configuration (Ctrl+,)"
         >
-          <Bell className="w-4 h-4 text-text-dim hover:text-text" />
+          <Settings className="w-4 h-4 text-text-dim hover:text-text" />
         </button>
-
+        
         <div className="w-px h-6 bg-border" />
         
         <button
@@ -129,6 +132,9 @@ const MetricsBar = ({ onShowHelp, onToggleGlossary, onOpenUserProfile }: Metrics
             <div className="text-[10px] text-text-dim capitalize">{userProfile.expertise_level}</div>
           </div>
         </button>
+        
+        {/* UI Complexity Mode Indicator - Below user button */}
+        <ComplexityModeIndicator compact />
       </div>
     </div>
   );

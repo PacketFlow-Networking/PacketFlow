@@ -316,11 +316,16 @@ const StatsDashboard = () => {
         <div className="grid grid-cols-3 gap-6">
           {/* Transport Layer Protocol Distribution */}
           <div className="panel p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="w-4 h-4 text-warn" />
-              <h3 className="font-semibold text-text">Transport Protocols</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-warn" />
+                <h3 className="font-semibold text-text">Transport Protocols</h3>
+              </div>
+              <span className="px-2 py-0.5 bg-warn/10 text-warn text-xs font-medium rounded border border-warn/30">
+                Layer 4
+              </span>
             </div>
-            <div className="text-xs text-text-dim mb-3">TCP, UDP, ICMP</div>
+            <div className="text-xs text-text-dim mb-3">TCP, UDP, ICMP (OSI Transport Layer)</div>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
@@ -350,11 +355,16 @@ const StatsDashboard = () => {
 
           {/* Application Layer Protocol Distribution */}
           <div className="panel p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Network className="w-4 h-4 text-info" />
-              <h3 className="font-semibold text-text">Application Protocols</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Network className="w-4 h-4 text-info" />
+                <h3 className="font-semibold text-text">Application Protocols</h3>
+              </div>
+              <span className="px-2 py-0.5 bg-info/10 text-info text-xs font-medium rounded border border-info/30">
+                Layer 7
+              </span>
             </div>
-            <div className="text-xs text-text-dim mb-3">DNS, HTTP, IMAP, etc.</div>
+            <div className="text-xs text-text-dim mb-3">DNS, HTTP, HTTPS, SSH, etc. (OSI Application Layer)</div>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
