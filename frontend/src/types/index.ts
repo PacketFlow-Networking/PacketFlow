@@ -436,7 +436,7 @@ export interface UserProfile {
   last_interaction: string;
 }
 export const DEFAULT_USER_PROFILE: UserProfile = {
-  expertise_level: 'novice',
+  expertise_level: 'intermediate',
   interaction_count: 0,
   preferred_views: ['events'],
   preferred_default_view: 'auto',

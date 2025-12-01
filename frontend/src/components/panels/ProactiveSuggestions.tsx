@@ -9,6 +9,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useStore } from '../../context/store';
+import { useAdaptiveDisplay } from '../../hooks/useAdaptiveUI';
 import type { SuggestionType } from '../../types';
 
 const ProactiveSuggestions = () => {
@@ -20,6 +21,7 @@ const ProactiveSuggestions = () => {
     addSuggestion,
     dismissedSuggestions
   } = useStore();
+  const adaptiveDisplay = useAdaptiveDisplay();
 
   // Auto-generate suggestions based on events
   useEffect(() => {
@@ -155,13 +157,16 @@ const ProactiveSuggestions = () => {
     }
   };
 
-  if (suggestions.length === 0) {
+  // Limit suggestions based on expertise level
+  const displayedSuggestions = suggestions.slice(0, adaptiveDisplay.maxSuggestions);
+  
+  if (displayedSuggestions.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-2">
-      {suggestions.map((suggestion) => (
+      {displayedSuggestions.map((suggestion) => (
         <div
           key={suggestion.id}
           className={`border rounded-lg p-3 transition-all ${getPriorityColor(suggestion.priority)}`}

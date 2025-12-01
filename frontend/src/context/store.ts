@@ -22,6 +22,7 @@ import type {
   ExpertiseLevel
 } from '../types';
 import { DEFAULT_FILTERS as FILTERS, DEFAULT_ALERT_CONFIG, DEFAULT_USER_PROFILE } from '../types';
+import { evaluateRules, getActionsFromRules, getHighestSeverity } from '../utils/ruleEvaluator';
 
 interface UIState {
   // Data
@@ -140,9 +141,45 @@ export const useStore = create<UIState>()(
   dismissedSuggestions: [],
   
   // Actions
-  addEvent: (event) => set((state) => ({
-    events: [event, ...state.events].slice(0, 200) // Keep last 200 events
-  })),
+  addEvent: (event) => set((state) => {
+    // Evaluate alert rules against the event
+    const matchedRules = evaluateRules(state.alertConfig.rules, event);
+    const actions = getActionsFromRules(matchedRules);
+    const severity = getHighestSeverity(matchedRules);
+
+    // Execute actions if rules matched
+    if (matchedRules.length > 0) {
+      console.log(`[Alert Rules] ${matchedRules.length} rule(s) matched for event ${event.id}`);
+      
+      // Handle create_incident action
+      if (actions.includes('create_incident')) {
+        const incident: Incident = {
+          id: crypto.randomUUID(),
+          title: `Alert: ${matchedRules[0].name}`,
+          description: `Auto-generated from rule: ${matchedRules.map(r => r.name).join(', ')}\n\nEvent: ${event.src} → ${event.dst} (${event.proto})\nAnomaly Score: ${event.anomaly_score}`,
+          severity: severity || 'medium',
+          status: 'open',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          event_ids: [event.id],
+          tags: matchedRules.map(r => r.name),
+          notes: []
+        };
+        
+        // Add incident to state
+        state.incidents.push(incident);
+        state.selectedIncidentId = incident.id;
+      }
+      
+      // Note: 'notify', 'log', and 'sound' actions are handled by the UI components
+      // that listen to the alertConfig.rules and check matched rules
+    }
+
+    return {
+      events: [event, ...state.events].slice(0, 200), // Keep last 200 events
+      incidents: state.incidents // Updated if incident was created
+    };
+  }),
   
   addAIMessage: (message) => set((state) => ({
     aiMessages: [...state.aiMessages, message].slice(0, 500) // Keep last 500 messages

@@ -19,7 +19,7 @@ import SUSurveyModal from './components/modals/SUSurveyModal';
 import { Settings, BarChart3, List, MessageSquare, AlertTriangle, Network, Box } from 'lucide-react';
 
 function App() {
-  useWebSocket();
+  const { reconnect } = useWebSocket();
   useApi();
   
   const { clearOldEvents, filters, setFilters, resetFilters, userProfile } = useStore();
@@ -180,8 +180,9 @@ function App() {
     <div className="h-screen flex flex-col bg-base">
       <MetricsBar 
         onShowHelp={() => setShowShortcutsHelp(true)}
-        onToggleGlossary={() => setShowGlossary(!showGlossary)}
         onOpenUserProfile={() => setShowUserProfile(true)}
+        onReconnect={reconnect}
+        onOpenAlertConfig={() => setShowAlertConfig(true)}
       />
 
       <div className="flex-1 flex min-h-0">
