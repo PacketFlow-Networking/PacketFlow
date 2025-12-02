@@ -7,75 +7,68 @@ The PacketFlow backend has been successfully reorganized from a flat structure i
 
 ```
 backend/
-├── config/                 # Configuration management (7-layer tier: Config)
-│   ├── __init__.py
-│   └── settings.py        # Environment-based configuration classes
-│
-├── core/                   # Core processing logic (7-layer tier: Core)
-│   ├── __init__.py
-│   ├── capture/           # Packet capture module
-│   │   ├── __init__.py
-│   │   └── capture.py     # Live, PCAP, and mock packet sources
-│   ├── condense/          # Flow aggregation & anomaly detection
-│   │   ├── __init__.py
-│   │   └── condenser.py   # Multi-method anomaly detection (8 methods)
-│   └── ai/                # AI reasoning engine
-│       ├── __init__.py
-│       └── ai_agent.py    # Local Ollama + remote UCY support
-│
-├── api/                    # REST/WebSocket API (7-layer tier: API)
-│   ├── __init__.py
-│   ├── websocket_server.py # FastAPI app + WebSocket + REST endpoints
-│   ├── routes/            # REST routes (placeholder for expansion)
-│   │   └── __init__.py
-│   └── middleware/        # Auth, CORS, rate limiting, error handling
-│       └── __init__.py
-│
-├── persistence/           # Database layer (7-layer tier: Persistence)
-│   ├── __init__.py
-│   ├── db.py             # SQLite async operations
-│   ├── repositories/      # Data access objects (DAO pattern)
-│   │   └── __init__.py
-│   └── migrations/        # Database schema versioning
-│       └── __init__.py
-│
-├── observability/         # Metrics & monitoring (7-layer tier: Observability)
-│   ├── __init__.py
-│   ├── metrics/          # Prometheus metrics definitions
-│   │   ├── __init__.py
-│   │   └── metrics.py    # Metric collectors + export functions
-│   └── logging/          # Structured logging (placeholder)
-│       └── __init__.py
-│
-├── infrastructure/        # Background tasks & cleanup (7-layer tier: Infrastructure)
-│   ├── __init__.py
-│   ├── tasks/            # Task management
-│   │   ├── __init__.py
-│   │   └── manager.py    # Restart logic + exponential backoff
-│   ├── cleanup/          # Resource cleanup (placeholder)
-│   │   └── __init__.py
-│   └── signals/          # Signal handling (placeholder)
-│       └── __init__.py
-│
-├── tests/                 # Comprehensive test suite (7-layer tier: Tests)
-│   ├── __init__.py
-│   ├── unit/             # Component unit tests
-│   │   └── __init__.py
-│   ├── integration/       # Component interaction tests
-│   │   └── __init__.py
-│   └── e2e/              # Full pipeline tests
-│       └── __init__.py
-│
-├── main.py               # Application entry point
-├── config.py             # (deprecated - kept for reference)
-├── capture.py            # (deprecated - kept for reference)
-├── condense_enhanced.py   # (deprecated - kept for reference)
-├── ai_agent.py           # (deprecated - kept for reference)
-├── websocket_server.py    # (deprecated - kept for reference)
-├── database.py           # (deprecated - kept for reference)
-├── task_manager.py       # (deprecated - kept for reference)
-├── metrics.py            # (deprecated - kept for reference)
-└── [other files]
+ config/                 # Configuration management (7-layer tier: Config)
+    __init__.py
+    settings.py        # Environment-based configuration classes
+ core/                   # Core processing logic (7-layer tier: Core)
+    __init__.py
+    capture/           # Packet capture module
+       __init__.py
+       capture.py     # Live, PCAP, and mock packet sources
+    condense/          # Flow aggregation & anomaly detection
+       __init__.py
+       condenser.py   # Multi-method anomaly detection (8 methods)
+    ai/                # AI reasoning engine
+        __init__.py
+        ai_agent.py    # Local Ollama + remote UCY support
+ api/                    # REST/WebSocket API (7-layer tier: API)
+    __init__.py
+    websocket_server.py # FastAPI app + WebSocket + REST endpoints
+    routes/            # REST routes (placeholder for expansion)
+       __init__.py
+    middleware/        # Auth, CORS, rate limiting, error handling
+        __init__.py
+ persistence/           # Database layer (7-layer tier: Persistence)
+    __init__.py
+    db.py             # SQLite async operations
+    repositories/      # Data access objects (DAO pattern)
+       __init__.py
+    migrations/        # Database schema versioning
+        __init__.py
+ observability/         # Metrics & monitoring (7-layer tier: Observability)
+    __init__.py
+    metrics/          # Prometheus metrics definitions
+       __init__.py
+       metrics.py    # Metric collectors + export functions
+    logging/          # Structured logging (placeholder)
+        __init__.py
+ infrastructure/        # Background tasks & cleanup (7-layer tier: Infrastructure)
+    __init__.py
+    tasks/            # Task management
+       __init__.py
+       manager.py    # Restart logic + exponential backoff
+    cleanup/          # Resource cleanup (placeholder)
+       __init__.py
+    signals/          # Signal handling (placeholder)
+        __init__.py
+ tests/                 # Comprehensive test suite (7-layer tier: Tests)
+    __init__.py
+    unit/             # Component unit tests
+       __init__.py
+    integration/       # Component interaction tests
+       __init__.py
+    e2e/              # Full pipeline tests
+        __init__.py
+ main.py               # Application entry point
+ config.py             # (deprecated - kept for reference)
+ capture.py            # (deprecated - kept for reference)
+ condense_enhanced.py   # (deprecated - kept for reference)
+ ai_agent.py           # (deprecated - kept for reference)
+ websocket_server.py    # (deprecated - kept for reference)
+ database.py           # (deprecated - kept for reference)
+ task_manager.py       # (deprecated - kept for reference)
+ metrics.py            # (deprecated - kept for reference)
+ [other files]
 ```
 
 ## 7-Tier Functional Architecture
@@ -165,26 +158,26 @@ from infrastructure import run_with_restart, task_monitor     # Infrastructure t
 ## Migration Completed
 
 ### Files Moved & Reorganized
-1. ✓ `config.py` → `config/settings.py`
-2. ✓ `capture.py` → `core/capture/capture.py`
-3. ✓ `condense_enhanced.py` → `core/condense/condenser.py`
-4. ✓ `ai_agent.py` → `core/ai/ai_agent.py`
-5. ✓ `websocket_server.py` → `api/websocket_server.py`
-6. ✓ `database.py` → `persistence/db.py`
-7. ✓ `task_manager.py` → `infrastructure/tasks/manager.py`
-8. ✓ `metrics.py` → `observability/metrics/metrics.py`
+1.  `config.py`  `config/settings.py`
+2.  `capture.py`  `core/capture/capture.py`
+3.  `condense_enhanced.py`  `core/condense/condenser.py`
+4.  `ai_agent.py`  `core/ai/ai_agent.py`
+5.  `websocket_server.py`  `api/websocket_server.py`
+6.  `database.py`  `persistence/db.py`
+7.  `task_manager.py`  `infrastructure/tasks/manager.py`
+8.  `metrics.py`  `observability/metrics/metrics.py`
 
 ### Updated Imports
-- ✓ `main.py` - Updated all imports to new module paths
-- ✓ `api/websocket_server.py` - Updated observability imports
-- ✓ `infrastructure/tasks/manager.py` - Updated observability imports
-- ✓ All `__init__.py` files - Proper exports configured
+-  `main.py` - Updated all imports to new module paths
+-  `api/websocket_server.py` - Updated observability imports
+-  `infrastructure/tasks/manager.py` - Updated observability imports
+-  All `__init__.py` files - Proper exports configured
 
 ### Verified Imports
-- ✓ Core modules load successfully
-- ✓ API layer imports work
-- ✓ All files compile without syntax errors
-- ✓ Main application entry point works
+-  Core modules load successfully
+-  API layer imports work
+-  All files compile without syntax errors
+-  Main application entry point works
 
 ## Backwards Compatibility
 

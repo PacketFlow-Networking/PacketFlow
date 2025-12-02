@@ -16,9 +16,13 @@ import type {
   ProactiveSuggestion,
   EventFeedback,
   Prediction,
-  ContextualTip
+  ContextualTip,
+  PreferredView,
+  UIComplexityMode,
+  ExpertiseLevel
 } from '../types';
 import { DEFAULT_FILTERS as FILTERS, DEFAULT_ALERT_CONFIG, DEFAULT_USER_PROFILE } from '../types';
+import { evaluateRules, getActionsFromRules, getHighestSeverity } from '../utils/ruleEvaluator';
 
 interface UIState {
   // Data
@@ -30,7 +34,6 @@ interface UIState {
   
   // UI State
   connected: boolean;
-  mockMode: boolean;
   selectedEventId: string | null;
   selectedIncidentId: string | null;
   focusedMessageId: string | null;
@@ -53,7 +56,6 @@ interface UIState {
   addUserMessage: (message: UserMessage) => void;
   updateStatus: (status: SystemStatus) => void;
   setConnected: (connected: boolean) => void;
-  toggleMockMode: () => void;
   selectEvent: (eventId: string | null) => void;
   selectIncident: (incidentId: string | null) => void;
   focusMessage: (messageId: string | null) => void;
@@ -96,6 +98,20 @@ interface UIState {
   markConceptSeen: (concept: string) => void;
   dismissTooltip: (tooltipId: string) => void;
   clearChat: () => void; // Clear chat messages (privacy)
+  
+  // Adaptive UI Complexity Actions
+  setUIComplexityMode: (mode: UIComplexityMode) => void;
+  trackClickDepth: (depth: number) => void;
+  trackDetailViewTime: (durationMs: number) => void;
+  trackFilterComplexity: (score: number) => void;
+  trackTerminologySearch: (term: string) => void;
+  trackAdvancedFeatureUse: (feature: keyof UserProfile['adaptive_ui_metrics']['advanced_feature_usage']) => void;
+  evaluateAndAdaptComplexity: () => void;
+  getEffectiveComplexityLevel: () => ExpertiseLevel;
+  
+  // Onboarding
+  completeOnboarding: () => void;
+  setPreferredDefaultView: (view: PreferredView) => void;
 }
 
 export const useStore = create<UIState>()(
@@ -108,7 +124,6 @@ export const useStore = create<UIState>()(
   status: null,
   incidents: [],
   connected: false,
-  mockMode: false,
   selectedEventId: null,
   selectedIncidentId: null,
   focusedMessageId: null,
@@ -126,9 +141,45 @@ export const useStore = create<UIState>()(
   dismissedSuggestions: [],
   
   // Actions
-  addEvent: (event) => set((state) => ({
-    events: [event, ...state.events].slice(0, 200) // Keep last 200 events
-  })),
+  addEvent: (event) => set((state) => {
+    // Evaluate alert rules against the event
+    const matchedRules = evaluateRules(state.alertConfig.rules, event);
+    const actions = getActionsFromRules(matchedRules);
+    const severity = getHighestSeverity(matchedRules);
+
+    // Execute actions if rules matched
+    if (matchedRules.length > 0) {
+      console.log(`[Alert Rules] ${matchedRules.length} rule(s) matched for event ${event.id}`);
+      
+      // Handle create_incident action
+      if (actions.includes('create_incident')) {
+        const incident: Incident = {
+          id: crypto.randomUUID(),
+          title: `Alert: ${matchedRules[0].name}`,
+          description: `Auto-generated from rule: ${matchedRules.map(r => r.name).join(', ')}\n\nEvent: ${event.src} → ${event.dst} (${event.proto})\nAnomaly Score: ${event.anomaly_score}`,
+          severity: severity || 'medium',
+          status: 'open',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          event_ids: [event.id],
+          tags: matchedRules.map(r => r.name),
+          notes: []
+        };
+        
+        // Add incident to state
+        state.incidents.push(incident);
+        state.selectedIncidentId = incident.id;
+      }
+      
+      // Note: 'notify', 'log', and 'sound' actions are handled by the UI components
+      // that listen to the alertConfig.rules and check matched rules
+    }
+
+    return {
+      events: [event, ...state.events].slice(0, 200), // Keep last 200 events
+      incidents: state.incidents // Updated if incident was created
+    };
+  }),
   
   addAIMessage: (message) => set((state) => ({
     aiMessages: [...state.aiMessages, message].slice(0, 500) // Keep last 500 messages
@@ -141,8 +192,6 @@ export const useStore = create<UIState>()(
   updateStatus: (status) => set({ status }),
   
   setConnected: (connected) => set({ connected }),
-  
-  toggleMockMode: () => set((state) => ({ mockMode: !state.mockMode })),
   
   selectEvent: (eventId) => set({ selectedEventId: eventId }),
   
@@ -332,13 +381,25 @@ export const useStore = create<UIState>()(
     }
   })),
   
-  trackInteraction: (_interactionType: string) => set((state) => ({
-    userProfile: {
-      ...state.userProfile,
-      interaction_count: state.userProfile.interaction_count + 1,
-      last_interaction: new Date().toISOString()
+  trackInteraction: (_interactionType: string) => set((state) => {
+    const newCount = state.userProfile.interaction_count + 1;
+    
+    // Trigger adaptive UI evaluation every 30 interactions
+    if (newCount % 30 === 0 && state.userProfile.ui_complexity_mode === 'auto') {
+      // Use setTimeout to avoid blocking
+      setTimeout(() => {
+        useStore.getState().evaluateAndAdaptComplexity();
+      }, 0);
     }
-  })),
+    
+    return {
+      userProfile: {
+        ...state.userProfile,
+        interaction_count: newCount,
+        last_interaction: new Date().toISOString()
+      }
+    };
+  }),
   
   addSuggestion: (suggestion) => set((state) => ({
     suggestions: [suggestion, ...state.suggestions].slice(0, 10) // Keep last 10
@@ -415,13 +476,231 @@ export const useStore = create<UIState>()(
   clearChat: () => set({
     aiMessages: [],
     userMessages: []
-  })
+  }),
+
+  completeOnboarding: () => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      onboarding_completed: true
+    }
+  })),
+
+  setPreferredDefaultView: (view: PreferredView) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      preferred_default_view: view
+    }
+  })),
+
+  // Adaptive UI Complexity Actions Implementation
+  setUIComplexityMode: (mode: UIComplexityMode) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      ui_complexity_mode: mode,
+      // If manually set, update expertise level to match (unless auto)
+      expertise_level: mode === 'auto' 
+        ? state.userProfile.expertise_level 
+        : mode as ExpertiseLevel
+    }
+  })),
+
+  trackClickDepth: (depth: number) => set((state) => {
+    const metrics = state.userProfile.adaptive_ui_metrics || {
+      click_depth_samples: [],
+      time_on_details_ms: [],
+      filter_complexity_scores: [],
+      terminology_searches: [],
+      advanced_feature_usage: {
+        raw_data_views: 0,
+        advanced_filters: 0,
+        technical_details_expansions: 0,
+        custom_alert_rules: 0,
+        manual_incident_creation: 0,
+      },
+      session_start: new Date().toISOString(),
+      last_evaluation: new Date().toISOString(),
+    };
+    
+    const samples = [...(metrics.click_depth_samples || []), depth];
+    // Keep last 100 samples
+    const trimmed = samples.slice(-100);
+    
+    return {
+      userProfile: {
+        ...state.userProfile,
+        adaptive_ui_metrics: {
+          ...metrics,
+          click_depth_samples: trimmed
+        }
+      }
+    };
+  }),
+
+  trackDetailViewTime: (durationMs: number) => set((state) => {
+    const metrics = state.userProfile.adaptive_ui_metrics || {};
+    const samples = [...(metrics.time_on_details_ms || []), durationMs];
+    // Keep last 100 samples
+    const trimmed = samples.slice(-100);
+    
+    return {
+      userProfile: {
+        ...state.userProfile,
+        adaptive_ui_metrics: {
+          ...metrics,
+          time_on_details_ms: trimmed
+        }
+      }
+    };
+  }),
+
+  trackFilterComplexity: (score: number) => set((state) => {
+    const metrics = state.userProfile.adaptive_ui_metrics || {};
+    const scores = [...(metrics.filter_complexity_scores || []), score];
+    // Keep last 50 filter applications
+    const trimmed = scores.slice(-50);
+    
+    return {
+      userProfile: {
+        ...state.userProfile,
+        adaptive_ui_metrics: {
+          ...metrics,
+          filter_complexity_scores: trimmed
+        }
+      }
+    };
+  }),
+
+  trackTerminologySearch: (term: string) => set((state) => {
+    const metrics = state.userProfile.adaptive_ui_metrics || {};
+    const searches = [...(metrics.terminology_searches || []), term];
+    // Keep last 50 searches
+    const trimmed = searches.slice(-50);
+    
+    return {
+      userProfile: {
+        ...state.userProfile,
+        adaptive_ui_metrics: {
+          ...metrics,
+          terminology_searches: trimmed
+        }
+      }
+    };
+  }),
+
+  trackAdvancedFeatureUse: (feature) => set((state) => ({
+    userProfile: {
+      ...state.userProfile,
+      adaptive_ui_metrics: {
+        ...state.userProfile.adaptive_ui_metrics,
+        advanced_feature_usage: {
+          ...state.userProfile.adaptive_ui_metrics.advanced_feature_usage,
+          [feature]: state.userProfile.adaptive_ui_metrics.advanced_feature_usage[feature] + 1
+        }
+      }
+    }
+  })),
+
+  evaluateAndAdaptComplexity: () => set((state) => {
+    // Only evaluate if in auto mode
+    if (state.userProfile.ui_complexity_mode !== 'auto') {
+      return state;
+    }
+
+    const metrics = state.userProfile.adaptive_ui_metrics;
+    const profile = state.userProfile;
+    
+    // Calculate complexity score (0-100)
+    let complexityScore = 0;
+    let factorCount = 0;
+
+    // 1. Average Click Depth (0-20 points)
+    // Novice: 1-2 clicks, Intermediate: 2-4, Expert: 4+
+    if (metrics.click_depth_samples.length > 5) {
+      const avgDepth = metrics.click_depth_samples.reduce((a, b) => a + b, 0) / metrics.click_depth_samples.length;
+      complexityScore += Math.min(20, avgDepth * 4);
+      factorCount++;
+    }
+
+    // 2. Time on Details (0-20 points)
+    // Novice: <30s, Intermediate: 30-120s, Expert: 120s+
+    if (metrics.time_on_details_ms.length > 3) {
+      const avgTime = metrics.time_on_details_ms.reduce((a, b) => a + b, 0) / metrics.time_on_details_ms.length;
+      const avgTimeSeconds = avgTime / 1000;
+      complexityScore += Math.min(20, (avgTimeSeconds / 120) * 20);
+      factorCount++;
+    }
+
+    // 3. Filter Complexity (0-20 points)
+    // Scale: 0-10, where 10 is most complex
+    if (metrics.filter_complexity_scores.length > 0) {
+      const avgComplexity = metrics.filter_complexity_scores.reduce((a, b) => a + b, 0) / metrics.filter_complexity_scores.length;
+      complexityScore += (avgComplexity / 10) * 20;
+      factorCount++;
+    }
+
+    // 4. Terminology Searches (0-20 points, inverse)
+    // More searches = novice, fewer = expert
+    const searchCount = metrics.terminology_searches.length;
+    const searchScore = Math.max(0, 20 - (searchCount * 0.5));
+    complexityScore += searchScore;
+    factorCount++;
+
+    // 5. Advanced Feature Usage (0-20 points)
+    const advancedUsage = Object.values(metrics.advanced_feature_usage).reduce((a, b) => a + b, 0);
+    complexityScore += Math.min(20, advancedUsage * 2);
+    factorCount++;
+
+    // Normalize to 0-100
+    const normalizedScore = factorCount > 0 ? complexityScore / factorCount * 5 : 0;
+
+    // Determine expertise level
+    let newLevel: ExpertiseLevel;
+    if (normalizedScore < 35) {
+      newLevel = 'novice';
+    } else if (normalizedScore < 70) {
+      newLevel = 'intermediate';
+    } else {
+      newLevel = 'expert';
+    }
+
+    // Only update if changed and we have enough data
+    const hasEnoughData = (
+      metrics.click_depth_samples.length >= 10 ||
+      profile.interaction_count >= 20 ||
+      advancedUsage >= 5
+    );
+
+    if (hasEnoughData && newLevel !== profile.expertise_level) {
+      return {
+        userProfile: {
+          ...profile,
+          expertise_level: newLevel,
+          adaptive_ui_metrics: {
+            ...metrics,
+            last_evaluation: new Date().toISOString()
+          }
+        }
+      };
+    }
+
+    return state;
+  }),
+
+  getEffectiveComplexityLevel: () => {
+    const state = useStore.getState();
+    const mode = state.userProfile.ui_complexity_mode;
+    
+    if (mode === 'auto') {
+      return state.userProfile.expertise_level;
+    }
+    
+    return mode as ExpertiseLevel;
+  }
     }),
     {
       name: 'packetflow-store',
       partialize: (state) => ({ 
         alertConfig: state.alertConfig,
-        mockMode: state.mockMode,
         userProfile: state.userProfile,
         dismissedSuggestions: state.dismissedSuggestions,
         eventFeedback: state.eventFeedback,

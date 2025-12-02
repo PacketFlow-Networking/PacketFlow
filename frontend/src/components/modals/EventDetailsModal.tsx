@@ -1,12 +1,14 @@
-import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target } from 'lucide-react';
-import { useEffect } from 'react';
-import { NetworkEvent } from '../../types';
+import { X, Clock, Activity, AlertTriangle, Network, TrendingUp, Hash, Target, Shield, Zap, CheckCircle, BookOpen } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { NetworkEvent, AIMessage } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import { useStore } from '../../context/store';
 import AIExplanationPanel from '../panels/AIExplanationPanel';
 import ExpandableText from '../shared/ExpandableText';
 import FeedbackPanel from '../panels/FeedbackPanel';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { useAdaptiveDisplay, useAdaptiveLabels, useDetailViewTracking } from '../../hooks/useAdaptiveUI';
 
 dayjs.extend(relativeTime);
 
@@ -19,6 +21,18 @@ interface EventDetailsModalProps {
 
 export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }: EventDetailsModalProps) => {
   const { showSuccess, showError } = useToast();
+  const { aiMessages } = useStore();
+  const [activeTab, setActiveTab] = useState<'overview' | 'analysis'>('overview');
+  
+  // Adaptive UI
+  const adaptiveDisplay = useAdaptiveDisplay();
+  const adaptiveLabels = useAdaptiveLabels();
+  useDetailViewTracking(isOpen);
+  
+  // Find AI analysis for this event
+  const aiAnalysis = aiMessages.find(msg => 
+    msg.event_ids?.includes(event?.id || '') && msg.structured_analysis
+  ) as AIMessage | undefined;
   
   // Handle escape key to close modal
   useEffect(() => {
@@ -43,6 +57,24 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
     return 'text-ok border-ok/30 bg-ok/10';
   };
 
+  const getThreatLevelColor = (level: string) => {
+    const colors: Record<string, string> = {
+      critical: 'text-critical bg-critical/10 border-critical/30',
+      high: 'text-warn bg-warn/10 border-warn/30',
+      medium: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30',
+      low: 'text-ok bg-ok/10 border-ok/30',
+      info: 'text-info bg-info/10 border-info/30'
+    };
+    return colors[level] || colors.info;
+  };
+
+  const getCVSSColor = (score: number) => {
+    if (score >= 9.0) return 'text-critical bg-critical/10';
+    if (score >= 7.0) return 'text-warn bg-warn/10';
+    if (score >= 4.0) return 'text-yellow-500 bg-yellow-500/10';
+    return 'text-ok bg-ok/10';
+  };
+
   const formatBytes = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
@@ -53,16 +85,34 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
     return `${rate.toLocaleString()} ${unit}`;
   };
 
+  const formatTimeframe = (tf?: string) => {
+    if (!tf) return 'ASAP';
+    const map: Record<string, string> = {
+      immediate: '< 15 min',
+      '1_hour': '1 hour',
+      '4_hours': '4 hours',
+      '24_hours': '24 hours',
+      asap: 'ASAP'
+    };
+    return map[tf] || tf;
+  };
+
   return (
     <>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in"
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
       />
 
       {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-4xl max-h-[90vh] overflow-hidden animate-scale-in">
+      <div 
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-4xl max-h-[90vh] overflow-hidden animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="panel shadow-2xl flex flex-col max-h-[90vh]">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
@@ -78,7 +128,10 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               className="p-2 rounded-lg hover:bg-panel-hover transition-colors"
               aria-label="Close details"
             >
@@ -141,12 +194,14 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <Target className="w-4 h-4 text-info" />
-                <h3 className="font-semibold text-text">Anomaly Analysis</h3>
+                <h3 className="font-semibold text-text">
+                  {adaptiveDisplay.showSimplifiedView ? 'Threat Assessment' : 'Anomaly Analysis'}
+                </h3>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="panel p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-text-dim">Anomaly Score</p>
+                    <p className="text-xs text-text-dim">{adaptiveLabels.anomalyScore}</p>
                     <span className={`badge ${getSeverityColor(event.anomaly_score)}`}>
                       {(event.anomaly_score * 100).toFixed(1)}%
                     </span>
@@ -163,9 +218,18 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
                       style={{ width: `${event.anomaly_score * 100}%` }}
                     />
                   </div>
+                  {adaptiveDisplay.showTooltips && (
+                    <p className="text-xs text-text-dim mt-2">
+                      {event.anomaly_score >= 0.8 
+                        ? 'High risk - immediate attention needed' 
+                        : event.anomaly_score >= 0.5 
+                        ? 'Medium risk - should be investigated'
+                        : 'Low risk - monitor activity'}
+                    </p>
+                  )}
                 </div>
 
-                {event.z_score !== undefined && (
+                {adaptiveDisplay.showZScores && event.z_score !== undefined && (
                   <div className="panel p-4">
                     <p className="text-xs text-text-dim mb-1">Z-Score</p>
                     <p className="text-2xl font-bold text-text">{event.z_score.toFixed(2)}</p>
@@ -175,7 +239,7 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
                   </div>
                 )}
 
-                {event.iqr_multiplier !== undefined && (
+                {adaptiveDisplay.showStatisticalData && event.iqr_multiplier !== undefined && (
                   <div className="panel p-4">
                     <p className="text-xs text-text-dim mb-1">IQR Multiplier</p>
                     <p className="text-2xl font-bold text-text">{event.iqr_multiplier.toFixed(2)}</p>
@@ -187,12 +251,18 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
               </div>
 
               {/* Detection Methods */}
-              {event.detection_methods && event.detection_methods.length > 0 && (
+              {adaptiveDisplay.showDetectionMethods && event.detection_methods && event.detection_methods.length > 0 && (
                 <div className="mt-4 panel p-4">
-                  <p className="text-xs text-text-dim mb-2">Detection Methods</p>
+                  <p className="text-xs text-text-dim mb-2">
+                    {adaptiveDisplay.showSimplifiedView ? 'How This Was Detected' : adaptiveLabels.detectionMethods}
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {event.detection_methods.map((method, idx) => (
-                      <span key={idx} className="badge badge-info text-xs">
+                      <span 
+                        key={idx} 
+                        className="badge badge-info text-xs"
+                        title={adaptiveDisplay.showTooltips ? `Detection method: ${method}` : undefined}
+                      >
                         {method}
                       </span>
                     ))}

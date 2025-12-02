@@ -2,11 +2,11 @@
 
 **Privacy-First Network Intelligence with Local LLM Reasoning**
 
-AINetUI is a real-time network security monitoring interface that combines live packet capture with local AI analysis. Think: "Wireshark meets ChatGPT, but entirely offline." The system captures network packets, detects anomalies using 8 statistical methods, and generates human-readable security insights—all locally with zero cloud dependencies.
+AINetUI is a real-time network security monitoring interface that combines live packet capture with local AI analysis. Think: "Wireshark meets ChatGPT, but entirely offline." The system captures network packets, detects anomalies using 8 statistical methods, and generates human-readable security insightsall locally with zero cloud dependencies.
 
 ---
 
-## 🎯 System Concept
+##  System Concept
 
 ### The Problem
 Traditional network monitoring tools generate overwhelming amounts of raw data. Security analysts struggle to:
@@ -26,20 +26,10 @@ AINetUI bridges the gap between raw network data and actionable intelligence by:
 
 ---
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 ```
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│   TShark    │─────▶│  Condenser  │─────▶│  AI Agent   │─────▶│  WebSocket  │
-│ (Capture)   │      │  (Analysis) │      │  (Ollama)   │      │  (FastAPI)  │
-└─────────────┘      └─────────────┘      └─────────────┘      └─────────────┘
-                                                                        │
-                                                                        ▼
-                                                              ┌─────────────────┐
-                                                              │   React UI      │
-                                                              │   (Zustand)     │
-                                                              └─────────────────┘
-```
+                     TShark      Condenser    AI Agent     WebSocket   (Capture)           (Analysis)         (Ollama)           (FastAPI)                                                                                                                                                                                                                                                                                                   React UI                                                                       (Zustand)                                                                   ```
 
 ### Backend Pipeline (Python)
 - **Packet Capture**: Mock/PCAP/Live using TShark
@@ -56,7 +46,7 @@ AINetUI bridges the gap between raw network data and actionable intelligence by:
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - **Python 3.11+** (backend)
@@ -104,7 +94,7 @@ PCAP_FILE=
 
 ---
 
-## 🎨 Features
+##  Features
 
 ### Core Security Monitoring
 - **8-Method Anomaly Detection**: Z-Score, IQR, EWMA, Rate-Based, Behavioral, Port Scan, Protocol-Specific, Payload Analysis
@@ -127,7 +117,7 @@ PCAP_FILE=
 
 ### Incident Management
 - **Create & Track Incidents**: Convert events into trackable security incidents
-- **Status Management**: open → investigating → resolved/false_positive
+- **Status Management**: open  investigating  resolved/false_positive
 - **Notes & Collaboration**: Add comments and assign to analysts
 - **Event Linking**: Associate multiple events with a single incident
 - **Search & Filter**: Find incidents by title, tags, status, severity
@@ -141,7 +131,7 @@ PCAP_FILE=
 
 ---
 
-## 🧠 Intelligent User Interface (IUI) Project Requirements
+##  Intelligent User Interface (IUI) Project Requirements
 
 ### Objective
 Enhance traditional security monitoring with intelligent features that:
@@ -205,10 +195,10 @@ Enhance traditional security monitoring with intelligent features that:
 
 ---
 
-## 📊 Anomaly Detection Methods
+##  Anomaly Detection Methods
 
 ### Statistical Methods
-1. **Z-Score**: Detects sudden spikes (3σ threshold)
+1. **Z-Score**: Detects sudden spikes (3 threshold)
 2. **IQR (Interquartile Range)**: Robust median-based outlier detection
 3. **EWMA (Exponential Weighted Moving Average)**: Trend change detection
 4. **Rate-Based**: Packets/second and bytes/second thresholds
@@ -226,14 +216,10 @@ Enhance traditional security monitoring with intelligent features that:
 10. **Threat Signatures**: Regex patterns for SQL injection, XSS, command injection, directory traversal
 
 **Severity Scoring**:
-- 0.9+ → CRITICAL 🔴
-- 0.7-0.9 → HIGH 🟠
-- 0.5-0.7 → MEDIUM 🟡
-- 0.3-0.5 → LOW 🟢
-
+- 0.9+  CRITICAL - 0.7-0.9  HIGH - 0.5-0.7  MEDIUM - 0.3-0.5  LOW 
 ---
 
-## 🔧 Technology Stack
+##  Technology Stack
 
 ### Backend
 - **Python 3.11+**: Core language
@@ -259,52 +245,50 @@ Enhance traditional security monitoring with intelligent features that:
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 AINetUI/
-├── backend/
-│   ├── capture.py              # Packet capture (mock/PCAP/live)
-│   ├── condense_enhanced.py    # Flow aggregation + anomaly detection
-│   ├── ai_agent.py             # LLM reasoning and explanations
-│   ├── websocket_server.py     # FastAPI WebSocket server
-│   ├── config.py               # Configuration management
-│   ├── task_manager.py         # Async task lifecycle
-│   ├── metrics.py              # Prometheus metrics (optional)
-│   └── requirements.txt        # Python dependencies
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/         # React components
-│   │   │   ├── alerts/         # Alert configuration system
-│   │   │   ├── incidents/      # Incident management
-│   │   │   ├── topology/       # Network graph visualization
-│   │   │   ├── EventStream.tsx
-│   │   │   ├── ChatPanel.tsx
-│   │   │   ├── StatsDashboard.tsx
-│   │   │   └── ...
-│   │   ├── context/
-│   │   │   ├── store.ts        # Zustand state management
-│   │   │   └── ToastContext.tsx
-│   │   ├── hooks/
-│   │   │   ├── useWebSocket.ts # Auto-reconnecting WebSocket
-│   │   │   └── useApi.ts
-│   │   ├── types/
-│   │   │   └── index.ts        # TypeScript type definitions
-│   │   └── App.tsx             # Main application component
-│   ├── package.json
-│   └── vite.config.ts
-│
-├── .github/
-│   └── copilot-instructions.md # Developer guidelines
-├── docker-compose.yml          # Container orchestration
-├── dns-remoteshell.pcap        # Demo PCAP file (DNS tunneling)
-└── README.MD                   # This file
+ backend/
+    capture.py              # Packet capture (mock/PCAP/live)
+    condense_enhanced.py    # Flow aggregation + anomaly detection
+    ai_agent.py             # LLM reasoning and explanations
+    websocket_server.py     # FastAPI WebSocket server
+    config.py               # Configuration management
+    task_manager.py         # Async task lifecycle
+    metrics.py              # Prometheus metrics (optional)
+    requirements.txt        # Python dependencies
+ frontend/
+    src/
+       components/         # React components
+          alerts/         # Alert configuration system
+          incidents/      # Incident management
+          topology/       # Network graph visualization
+          EventStream.tsx
+          ChatPanel.tsx
+          StatsDashboard.tsx
+          ...
+       context/
+          store.ts        # Zustand state management
+          ToastContext.tsx
+       hooks/
+          useWebSocket.ts # Auto-reconnecting WebSocket
+          useApi.ts
+       types/
+          index.ts        # TypeScript type definitions
+       App.tsx             # Main application component
+    package.json
+    vite.config.ts
+ .github/
+    copilot-instructions.md # Developer guidelines
+ docker-compose.yml          # Container orchestration
+ dns-remoteshell.pcap        # Demo PCAP file (DNS tunneling)
+ README.MD                   # This file
 ```
 
 ---
 
-## 🎓 Use Cases
+##  Use Cases
 
 ### Security Operations Center (SOC)
 - **Real-time monitoring**: Live threat detection on network perimeter
@@ -332,7 +316,7 @@ AINetUI/
 
 ---
 
-## 🛣️ Roadmap
+##  Roadmap
 
 ### Phase 2 - In Progress
 - [ ] Enhanced topology with subnet grouping
@@ -350,7 +334,7 @@ AINetUI/
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 This project is part of a research initiative on Intelligent User Interfaces for cybersecurity. Contributions welcome!
 
@@ -363,13 +347,13 @@ This project is part of a research initiative on Intelligent User Interfaces for
 
 ---
 
-## 📄 License
+##  License
 
 [Specify your license here - MIT, Apache 2.0, GPL, etc.]
 
 ---
 
-## 📧 Contact
+##  Contact
 
 **Project**: AINetUI (PacketFlow)  
 **Repository**: [github.com/kkraso01/PacketFlow](https://github.com/kkraso01/PacketFlow)  
@@ -377,7 +361,7 @@ This project is part of a research initiative on Intelligent User Interfaces for
 
 ---
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **Ollama Team**: Local LLM inference engine
 - **FastAPI**: Modern Python web framework
@@ -387,4 +371,4 @@ This project is part of a research initiative on Intelligent User Interfaces for
 
 ---
 
-**Built with ❤️ for privacy-conscious security professionals**
+**Built with  for privacy-conscious security professionals**

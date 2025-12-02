@@ -1,7 +1,7 @@
 # PacketFlow - Copilot Instructions
 
 ## Project Overview
-PacketFlow is an **AI-powered real-time network security monitoring interface** that combines live packet capture with local LLM reasoning. Think: "Wireshark meets ChatGPT, but privacy-first." The system captures network packets, condenses them into meaningful flow events, detects anomalies, and generates human-readable security insights—all locally with no cloud dependencies.
+PacketFlow is an **AI-powered real-time network security monitoring interface** that combines live packet capture with local LLM reasoning. Think: "Wireshark meets ChatGPT, but privacy-first." The system captures network packets, condenses them into meaningful flow events, detects anomalies, and generates human-readable security insightsall locally with no cloud dependencies.
 
 **Architecture Pattern**: Classic async pipeline with queue-based decoupling:
 ```

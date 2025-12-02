@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
 import { ToastContainer, ToastData } from '../components/Toast/ToastContainer';
+import { useAdaptiveDisplay } from '../hooks/useAdaptiveUI';
 
 interface ToastContextValue {
   showToast: (options: Omit<ToastData, 'id'>) => void;
@@ -17,6 +18,7 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<ToastData[]>([]);
   const timeoutsRef = useRef<Map<string, number>>(new Map());
+  const adaptiveDisplay = useAdaptiveDisplay();
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -30,9 +32,11 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 
   const showToast = useCallback((options: Omit<ToastData, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
+    // Use adaptive duration if not explicitly set
+    const duration = options.duration ?? adaptiveDisplay.toastDuration;
     const newToast: ToastData = {
       id,
-      duration: 5000,
+      duration,
       dismissible: true,
       playSound: false,
       ...options,
@@ -72,12 +76,14 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   }, [showToast]);
 
   const showError = useCallback((title: string, message?: string, playSound?: boolean) => {
-    showToast({ type: 'error', title, message, playSound, duration: 7000 });
-  }, [showToast]);
+    // Errors get 1.5x longer duration
+    showToast({ type: 'error', title, message, playSound, duration: Math.floor(adaptiveDisplay.toastDuration * 1.5) });
+  }, [showToast, adaptiveDisplay.toastDuration]);
 
   const showWarning = useCallback((title: string, message?: string, playSound?: boolean) => {
-    showToast({ type: 'warning', title, message, playSound, duration: 6000 });
-  }, [showToast]);
+    // Warnings get 1.2x longer duration
+    showToast({ type: 'warning', title, message, playSound, duration: Math.floor(adaptiveDisplay.toastDuration * 1.2) });
+  }, [showToast, adaptiveDisplay.toastDuration]);
 
   const showInfo = useCallback((title: string, message?: string, playSound?: boolean) => {
     showToast({ type: 'info', title, message, playSound });

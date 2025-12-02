@@ -91,21 +91,43 @@ class QueryEventRequest(BaseModel):
         return v
 
 
-# API Key Security
-API_KEY = os.getenv("API_KEY")
-if not API_KEY:
-    raise ValueError(
-        "FATAL: API_KEY environment variable must be set in production. "
-        "Set it before starting the backend:\n"
-        "  export API_KEY='your-secure-api-key'\n"
-        "Or set it in .env file"
-    )
-
+# API Key Security (initialized after .env is loaded)
+API_KEY = None
+DEBUG_MODE = False
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
+def _init_api_security():
+    """Initialize API security settings (called after .env is loaded)"""
+    global API_KEY, DEBUG_MODE
+    
+    API_KEY = os.getenv("API_KEY")
+    DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
+    
+    # Debug logging
+    print(f"[API Security] API_KEY from env: {API_KEY}")
+    print(f"[API Security] DEBUG from env: {os.getenv('DEBUG', 'NOT SET')}")
+    print(f"[API Security] DEBUG_MODE: {DEBUG_MODE}")
+    
+    # Only require API_KEY in production (when DEBUG=false)
+    if not API_KEY and not DEBUG_MODE:
+        raise ValueError(
+            "FATAL: API_KEY environment variable must be set in production. "
+            "Set it before starting the backend:\n"
+            "  export API_KEY='your-secure-api-key'\n"
+            "Or set it in .env file"
+        )
+    
+    if DEBUG_MODE and not API_KEY:
+        logger.warning("  Running in DEBUG mode without API_KEY - API security is DISABLED")
+        API_KEY = "debug-mode-no-auth"  # Placeholder for debug mode
+
+
 async def verify_api_key(api_key: str = Security(api_key_header)):
-    """Verify API key for protected endpoints"""
+    """Verify API key for protected endpoints (disabled in DEBUG mode)"""
+    if DEBUG_MODE:
+        return "debug-mode"  # Skip verification in debug mode
+    
     if not api_key:
         raise HTTPException(status_code=403, detail="API key required")
     if api_key != API_KEY:
@@ -118,6 +140,9 @@ class WebSocketServer:
     
     def __init__(self):
         """Initialize FastAPI application."""
+        # Initialize API security (after .env is loaded by config module)
+        _init_api_security()
+        
         self.app = FastAPI(
             title="PacketFlow Backend",
             description="AI-Augmented Network Analysis Interface",
@@ -179,6 +204,9 @@ class WebSocketServer:
         
         # Setup routes
         self._setup_routes()
+        
+        # Include AI routes (structured outputs with Instructor)
+        self._include_ai_routes()
     
     def _setup_routes(self):
         """Setup FastAPI routes with security and monitoring."""
@@ -383,7 +411,7 @@ class WebSocketServer:
                 # Use AI agent's unified chat query processor
                 result = await self.ai_agent.process_chat_query(
                     query=query,
-                    include_events=True  # ← Include event context
+                    include_events=True  #  Include event context
                 )
                 
                 # Broadcast to all WebSocket clients
@@ -661,6 +689,29 @@ class WebSocketServer:
                 
             except Exception as e:
                 logger.error(f"Error in queue monitor: {e}")
+    
+    def _include_ai_routes(self):
+        """Include structured AI routes (Instructor-based)."""
+        try:
+            from api.routes.ai_routes import router as ai_router
+            self.app.include_router(ai_router)
+            logger.info("[OK] Structured AI routes enabled (Instructor)")
+            
+            # Verify Instructor client can be initialized
+            from config import config
+            if config.ai.mode == "remote":
+                from core.ai.instructor_client import InstructorClient
+                test_client = InstructorClient(
+                    base_url=config.ai.remote_url,
+                    model=config.ai.remote_model,
+                    timeout=config.ai.timeout
+                )
+                logger.info(f"[OK] Instructor client verified: {test_client.base_url}")
+            
+        except ImportError as e:
+            logger.warning(f"Structured AI routes not available: {e}")
+        except Exception as e:
+            logger.error(f"Failed to include AI routes: {e}")
     
     def get_app(self) -> FastAPI:
         """Get FastAPI application instance."""

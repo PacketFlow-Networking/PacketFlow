@@ -548,7 +548,7 @@ selectedIncidentId:
 ```typescript
 if (filters.severities.length > 0) {
   filtered = filtered.filter(event =>
-    event.severity && filters.severities.includes(event.severity as any)  // ← "as any"
+    event.severity && filters.severities.includes(event.severity as any)  //  "as any"
   );
 }
 ```

@@ -6,11 +6,11 @@
 
 **Privacy-First Network Intelligence with Local LLM Reasoning**
 
-PacketFlow is a real-time network security monitoring interface that combines live packet capture with local AI analysis. Think: "Wireshark meets ChatGPT, but entirely offline." The system captures network packets, detects anomalies using 8 statistical methods, and generates human-readable security insights—all locally with zero cloud dependencies.
+PacketFlow is a real-time network security monitoring interface that combines live packet capture with local AI analysis. Think: "Wireshark meets ChatGPT, but entirely offline." The system captures network packets, detects anomalies using 8 statistical methods, and generates human-readable security insightsall locally with zero cloud dependencies.
 
 ---
 
-## 🎯 System Concept
+##  System Concept
 
 ### The Problem
 Traditional network monitoring tools generate overwhelming amounts of raw data. Security analysts struggle to:
@@ -31,21 +31,11 @@ PacketFlow bridges the gap between raw network data and actionable intelligence 
 
 ---
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 ### Data Flow Pipeline
 ```
-┌─────────────┐      ┌──────────────┐      ┌─────────────┐      ┌──────────────┐
-│   TShark    │─────▶│  Condenser   │─────▶│  AI Agent   │─────▶│  WebSocket   │
-│ (Capture)   │      │  (Analysis)  │      │  (Ollama)   │      │  (FastAPI)   │
-└─────────────┘      └──────────────┘      └─────────────┘      └──────────────┘
-                                                                         │
-                                                                         ▼
-                                                                 ┌─────────────────┐
-                                                                 │   React UI      │
-                                                                 │   (Zustand)     │
-                                                                 └─────────────────┘
-```
+                     TShark      Condenser     AI Agent     WebSocket    (Capture)           (Analysis)          (Ollama)           (FastAPI)                                                                                                                                                                                                                                                                                                            React UI                                                                          (Zustand)                                                                      ```
 
 ### Backend (Python 3.11+)
 - **Packet Capture**: Mock/PCAP/Live using TShark with flexible configuration
@@ -65,11 +55,11 @@ PacketFlow bridges the gap between raw network data and actionable intelligence 
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
 ### Security Monitoring
 - **8 Anomaly Detection Methods**: Multi-layered statistical and behavioral analysis
-- **Severity Scoring**: CRITICAL (0.9+) → HIGH → MEDIUM → LOW (0.3-0.5)
+- **Severity Scoring**: CRITICAL (0.9+)  HIGH  MEDIUM  LOW (0.3-0.5)
 - **Real-Time Events**: Live packet stream condensed into meaningful flow events
 - **Threat Indicators**: DNS tunneling, port scanning, protocol anomalies, payload threats
 - **Network Topology**: Interactive graph showing host communication patterns
@@ -92,7 +82,7 @@ PacketFlow bridges the gap between raw network data and actionable intelligence 
 5. **Keyboard Shortcuts**: Efficient navigation with globally accessible commands
 
 ### Incident Management
-- **Lifecycle Tracking**: open → investigating → resolved/false_positive
+- **Lifecycle Tracking**: open  investigating  resolved/false_positive
 - **Event Linking**: Associate multiple anomalies with single incident
 - **Collaboration**: Notes, assignments, tags, severity levels
 - **State Management**: Immediate UI updates, persistent storage
@@ -102,23 +92,23 @@ PacketFlow bridges the gap between raw network data and actionable intelligence 
 - **Sensitivity Slider**: Global anomaly threshold (0-100)
 - **Custom Thresholds**: anomaly_score, flow_rate, packet_rate, byte_rate
 - **IP Lists**: Whitelist/blacklist with comments
-- **Custom Rules**: Field-based conditions → actions (notify, create_incident, log, sound)
+- **Custom Rules**: Field-based conditions  actions (notify, create_incident, log, sound)
 - **Notifications**: Toggle sound, toast messages, auto-incident creation
 
 ---
 
-## 🎯 Backend Architecture Overview
+##  Backend Architecture Overview
 
 The backend follows a **7-tier functional architecture** designed for scalability, testability, and maintainability:
 
 ```
-Tier 1: CONFIG          → Centralized environment-based configuration
-Tier 2: API             → REST/WebSocket endpoints (FastAPI)
-Tier 3: CORE            → Business logic (capture, condense, AI)
-Tier 4: PERSISTENCE     → SQLite database operations & schema
-Tier 5: OBSERVABILITY   → Prometheus metrics & structured logging
-Tier 6: INFRASTRUCTURE  → Task management, signal handling, cleanup
-Tier 7: TESTS           → Unit, integration, end-to-end testing
+Tier 1: CONFIG           Centralized environment-based configuration
+Tier 2: API              REST/WebSocket endpoints (FastAPI)
+Tier 3: CORE             Business logic (capture, condense, AI)
+Tier 4: PERSISTENCE      SQLite database operations & schema
+Tier 5: OBSERVABILITY    Prometheus metrics & structured logging
+Tier 6: INFRASTRUCTURE   Task management, signal handling, cleanup
+Tier 7: TESTS            Unit, integration, end-to-end testing
 ```
 
 ### Key Components
@@ -149,7 +139,7 @@ Task restart manager with exponential backoff, signal handling for graceful shut
 
 ---
 
-## 🎯 Frontend Component Organization
+##  Frontend Component Organization
 
 The frontend components are organized into **6 logical categories** for maintainability and scalability:
 
@@ -194,13 +184,13 @@ The frontend components are organized into **6 logical categories** for maintain
 - **topology/** - Network visualization implementation (1 file)
 
 ### Component Organization Benefits
-✅ **Clear separation of concerns** - Easy to find related components  
-✅ **Scalability** - Room to grow within each category  
-✅ **Code reusability** - Shared components centralized  
-✅ **Maintainability** - Logical grouping reduces cognitive load  
-✅ **Developer onboarding** - Clear structure for new team members  
+ **Clear separation of concerns** - Easy to find related components  
+ **Scalability** - Room to grow within each category  
+ **Code reusability** - Shared components centralized  
+ **Maintainability** - Logical grouping reduces cognitive load  
+ **Developer onboarding** - Clear structure for new team members  
 
-**For detailed component documentation**: See `frontend/README.md` → "Component Organization" section
+**For detailed component documentation**: See `frontend/README.md`  "Component Organization" section
 
 ---
 
@@ -268,7 +258,7 @@ DB_RETENTION_DAYS=7
 
 ---
 
-## 📊 Data Sources
+##  Data Sources
 
 ### Mock Mode (Default)
 - Generates realistic DNS, HTTP, HTTPS traffic
@@ -290,7 +280,7 @@ DB_RETENTION_DAYS=7
 
 ---
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 ### Backend
 - **Framework**: FastAPI (async REST/WebSocket)
@@ -310,71 +300,68 @@ DB_RETENTION_DAYS=7
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 PacketFlow/
-├── backend/                          # Python 3.11+ async pipeline (7-tier architecture)
-│   ├── core/                         # Tier 3: Business logic & data processing
-│   │   ├── capture/                  # Packet acquisition (TShark, PCAP, mock modes)
-│   │   ├── condense/                 # Flow aggregation & 8-method anomaly detection
-│   │   └── ai/                       # LLM reasoning, incident correlation, Ollama integration
-│   ├── api/                          # Tier 2: FastAPI REST/WebSocket endpoints
-│   ├── persistence/                  # Tier 4: Async SQLite operations, database schema
-│   ├── config/                       # Tier 1: Centralized configuration from .env
-│   ├── observability/                # Tier 5: Prometheus metrics, structured logging
-│   ├── infrastructure/               # Tier 6: Task management, signal handling, cleanup
-│   ├── tests/                        # Tier 7: Unit, integration, end-to-end tests
-│   ├── docs/                         # Architecture and operational documentation
-│   ├── utils/                        # Development utilities (diagnostics, PCAP tools)
-│   ├── main.py                       # Entry point (Tier 7 orchestrator)
-│   ├── requirements.txt              # Python dependencies
-│   ├── pyproject.toml                # Python project metadata
-│   ├── Dockerfile                    # Container configuration
-│   ├── README.md                     # Backend architecture deep dive
-│   └── .env                          # Configuration via environment variables
-│
-├── frontend/                         # React 18 + TypeScript UI (6-category component organization)
-│   ├── docs/                         # Documentation index & feature guides (19 files)
-│   ├── src/                          # TypeScript source code
-│   │   ├── components/               # React components (39 files, 6 categories)
-│   │   │   ├── core/                 # Main views: ChatPanel, MetricsBar, StatsDashboard, TopologyView
-│   │   │   ├── events/               # Event views: EventStream, FilterBar, GraphView, ExportMenu
-│   │   │   ├── modals/               # Dialogs: AIDetailsModal, EventDetailsModal, TooltipModal
-│   │   │   ├── panels/               # Analysis: AIExplanation, Feedback, Glossary, Incident, Suggestions
-│   │   │   ├── shared/               # Utilities: ExpandableText, KeyboardShortcuts, ShortcutHint
-│   │   │   ├── alerts/               # Feature: Alert configuration & sensitivity tuning
-│   │   │   ├── incidents/            # Feature: Incident management UI
-│   │   │   ├── Toast/                # Feature: Toast notification system
-│   │   │   └── topology/             # Feature: Network visualization
-│   │   ├── context/                  # State management: Zustand store with persistence
-│   │   ├── hooks/                    # Custom hooks: useWebSocket, useApi
-│   │   ├── types/                    # TypeScript interfaces for network events, UI state
-│   │   ├── utils/                    # Helper functions: export, formatting
-│   │   ├── styles/                   # Tailwind CSS: globals, color palette, theme
-│   │   ├── config/                   # Application configuration: graph layout, constants
-│   │   ├── main.tsx                  # React entry point
-│   │   └── App.tsx                   # Root component with main views
-│   ├── index.html                    # HTML template
-│   ├── package.json                  # Node dependencies, scripts
-│   ├── vite.config.ts                # Build configuration
-│   ├── tsconfig.json                 # TypeScript configuration (strict mode)
-│   ├── tailwind.config.js            # Tailwind CSS setup
-│   ├── postcss.config.js             # PostCSS configuration
-│   ├── README.md                     # Frontend dev guide with component organization
-│   └── Dockerfile                    # Container configuration
-│
-├── .github/
-│   └── copilot-instructions.md       # Developer guidelines & patterns
-│
-├── docker-compose.yml                # Multi-container deployment
-├── nginx.conf                        # Reverse proxy config
-└── README.md                         # This file
+ backend/                          # Python 3.11+ async pipeline (7-tier architecture)
+    core/                         # Tier 3: Business logic & data processing
+       capture/                  # Packet acquisition (TShark, PCAP, mock modes)
+       condense/                 # Flow aggregation & 8-method anomaly detection
+       ai/                       # LLM reasoning, incident correlation, Ollama integration
+    api/                          # Tier 2: FastAPI REST/WebSocket endpoints
+    persistence/                  # Tier 4: Async SQLite operations, database schema
+    config/                       # Tier 1: Centralized configuration from .env
+    observability/                # Tier 5: Prometheus metrics, structured logging
+    infrastructure/               # Tier 6: Task management, signal handling, cleanup
+    tests/                        # Tier 7: Unit, integration, end-to-end tests
+    docs/                         # Architecture and operational documentation
+    utils/                        # Development utilities (diagnostics, PCAP tools)
+    main.py                       # Entry point (Tier 7 orchestrator)
+    requirements.txt              # Python dependencies
+    pyproject.toml                # Python project metadata
+    Dockerfile                    # Container configuration
+    README.md                     # Backend architecture deep dive
+    .env                          # Configuration via environment variables
+ frontend/                         # React 18 + TypeScript UI (6-category component organization)
+    docs/                         # Documentation index & feature guides (19 files)
+    src/                          # TypeScript source code
+       components/               # React components (39 files, 6 categories)
+          core/                 # Main views: ChatPanel, MetricsBar, StatsDashboard, TopologyView
+          events/               # Event views: EventStream, FilterBar, GraphView, ExportMenu
+          modals/               # Dialogs: AIDetailsModal, EventDetailsModal, TooltipModal
+          panels/               # Analysis: AIExplanation, Feedback, Glossary, Incident, Suggestions
+          shared/               # Utilities: ExpandableText, KeyboardShortcuts, ShortcutHint
+          alerts/               # Feature: Alert configuration & sensitivity tuning
+          incidents/            # Feature: Incident management UI
+          Toast/                # Feature: Toast notification system
+          topology/             # Feature: Network visualization
+       context/                  # State management: Zustand store with persistence
+       hooks/                    # Custom hooks: useWebSocket, useApi
+       types/                    # TypeScript interfaces for network events, UI state
+       utils/                    # Helper functions: export, formatting
+       styles/                   # Tailwind CSS: globals, color palette, theme
+       config/                   # Application configuration: graph layout, constants
+       main.tsx                  # React entry point
+       App.tsx                   # Root component with main views
+    index.html                    # HTML template
+    package.json                  # Node dependencies, scripts
+    vite.config.ts                # Build configuration
+    tsconfig.json                 # TypeScript configuration (strict mode)
+    tailwind.config.js            # Tailwind CSS setup
+    postcss.config.js             # PostCSS configuration
+    README.md                     # Frontend dev guide with component organization
+    Dockerfile                    # Container configuration
+ .github/
+    copilot-instructions.md       # Developer guidelines & patterns
+ docker-compose.yml                # Multi-container deployment
+ nginx.conf                        # Reverse proxy config
+ README.md                         # This file
 ```
 
 ---
 
-## 🔧 Development
+##  Development
 
 ### Backend Development
 ```bash
@@ -413,12 +400,12 @@ npm run preview
 - File: `backend/core/condense/condenser.py`
 - Method: Add to `_detect_anomalies()`
 - Also: Update `ThreatIndicator` enum
-- Documentation: `backend/README.md` → Condenser section
+- Documentation: `backend/README.md`  Condenser section
 
 #### Backend: Change AI Behavior
-- System Prompt: `backend/.env` → `AI_SYSTEM_PROMPT`
-- Logic: `backend/core/ai/ai_agent.py` → `_build_context()`
-- Config: `backend/config/settings.py` → `AIConfig` class
+- System Prompt: `backend/.env`  `AI_SYSTEM_PROMPT`
+- Logic: `backend/core/ai/ai_agent.py`  `_build_context()`
+- Config: `backend/config/settings.py`  `AIConfig` class
 
 #### Backend: Add REST Endpoint
 - File: `backend/api/websocket_server.py`
@@ -440,7 +427,7 @@ npm run preview
 
 ---
 
-## 📈 Performance Characteristics
+##  Performance Characteristics
 
 ### Latency
 - **Packet to Event**: <1 second (5s window default)
@@ -460,23 +447,23 @@ npm run preview
 
 ---
 
-## 🔒 Security Considerations
+##  Security Considerations
 
 ### Privacy
-- ✅ All processing local (no cloud APIs by default)
-- ✅ Database encrypted at rest (can add SQLCipher)
-- ✅ CORS validation for WebSocket connections
-- ✅ API key validation for protected endpoints
+-  All processing local (no cloud APIs by default)
+-  Database encrypted at rest (can add SQLCipher)
+-  CORS validation for WebSocket connections
+-  API key validation for protected endpoints
 
 ### Production Deployment
-- 🔧 Change `API_KEY` in `.env`
-- 🔧 Use HTTPS for frontend (nginx with Let's Encrypt)
-- 🔧 Run backend on internal network only
-- 🔧 Consider firewall rules for TShark interface
+-  Change `API_KEY` in `.env`
+-  Use HTTPS for frontend (nginx with Let's Encrypt)
+-  Run backend on internal network only
+-  Consider firewall rules for TShark interface
 
 ---
 
-## 🐛 Known Issues & Limitations
+##  Known Issues & Limitations
 
 ### Current Limitations
 1. **Single-machine only**: No distributed deployment yet
@@ -489,7 +476,7 @@ See `backend/BACKEND_BUG_REPORT.md` for detailed bug tracking and fixes applied.
 
 ---
 
-## 📚 Documentation
+##  Documentation
 
 ### Architecture & Design
 - **Root README** - This file (high-level overview)
@@ -514,7 +501,7 @@ See `backend/BACKEND_BUG_REPORT.md` for detailed bug tracking and fixes applied.
 
 ---
 
-## 🎓 Use Cases
+##  Use Cases
 
 ### Security Operations Center (SOC)
 - Real-time monitoring of network traffic
@@ -538,7 +525,7 @@ See `backend/BACKEND_BUG_REPORT.md` for detailed bug tracking and fixes applied.
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 1. Read `.github/copilot-instructions.md` for patterns and conventions
 2. Follow the 7-tier backend architecture
@@ -548,7 +535,7 @@ See `backend/BACKEND_BUG_REPORT.md` for detailed bug tracking and fixes applied.
 
 ---
 
-## 📊 Metrics & Monitoring
+##  Metrics & Monitoring
 
 ### Available Metrics
 - Packets processed per second
@@ -564,7 +551,7 @@ GET http://localhost:8000/metrics
 
 ---
 
-## 🚀 Roadmap
+##  Roadmap
 
 ### Phase 2 (Planned)
 - Multi-user support with role-based access
@@ -580,7 +567,7 @@ GET http://localhost:8000/metrics
 
 ---
 
-## 📞 Support & Resources
+##  Support & Resources
 
 - **Repository**: [github.com/kkraso01/PacketFlow](https://github.com/kkraso01/PacketFlow)
 - **Issues**: Use GitHub Issues for bug reports
@@ -589,7 +576,7 @@ GET http://localhost:8000/metrics
 
 ---
 
-## 📄 License
+##  License
 
 See LICENSE file in repository root.
 

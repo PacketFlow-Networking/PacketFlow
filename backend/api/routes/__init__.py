@@ -1,3 +1,5 @@
 """API routes for REST endpoints."""
 
-__all__ = []
+from .ai_routes import router as ai_router
+
+__all__ = ["ai_router"]
