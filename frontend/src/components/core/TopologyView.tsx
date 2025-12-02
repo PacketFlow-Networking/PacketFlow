@@ -154,7 +154,7 @@ function detectClusters(nodes: TopologyNode[], links: TopologyLink[]): Cluster[]
   return clusters;
 }
 
-function detectPhysicalRooms(nodes: TopologyNode[]): PhysicalRoom[] {
+function detectPhysicalRooms(nodes: TopologyNode[], width: number, height: number): PhysicalRoom[] {
   const roomMap = new Map<string, TopologyNode[]>();
   
   const getSubnet = (ip: string): string => {
@@ -165,6 +165,7 @@ function detectPhysicalRooms(nodes: TopologyNode[]): PhysicalRoom[] {
     return 'Unknown';
   };
   
+  // Group nodes by subnet
   nodes.filter(n => n.type === 'internal').forEach(node => {
     const subnet = node.physical_room || getSubnet(node.id);
     node.physical_room = subnet;
@@ -180,31 +181,56 @@ function detectPhysicalRooms(nodes: TopologyNode[]): PhysicalRoom[] {
   ];
   
   const rooms: PhysicalRoom[] = [];
-  let colorIndex = 0;
+  const roomArray = Array.from(roomMap.entries());
   
-  roomMap.forEach((roomNodes, roomName) => {
+  // Calculate fixed grid layout for rooms
+  const roomsPerRow = Math.ceil(Math.sqrt(roomArray.length));
+  const roomWidth = 300;
+  const roomHeight = 250;
+  const padding = 80;
+  const margin = 50;
+  
+  roomArray.forEach(([roomName, roomNodes], index) => {
     if (roomNodes.length === 0) return;
     
-    const centerX = roomNodes.reduce((sum, n) => sum + (n.x || 0), 0) / roomNodes.length;
-    const centerY = roomNodes.reduce((sum, n) => sum + (n.y || 0), 0) / roomNodes.length;
+    // Calculate grid position
+    const row = Math.floor(index / roomsPerRow);
+    const col = index % roomsPerRow;
     
-    const padding = 60;
+    // Fixed room bounds based on grid
     const bounds = {
-      minX: Math.min(...roomNodes.map(n => n.x || 0)) - padding,
-      maxX: Math.max(...roomNodes.map(n => n.x || 0)) + padding,
-      minY: Math.min(...roomNodes.map(n => n.y || 0)) - padding,
-      maxY: Math.max(...roomNodes.map(n => n.y || 0)) + padding,
+      minX: margin + col * (roomWidth + padding),
+      maxX: margin + col * (roomWidth + padding) + roomWidth,
+      minY: margin + row * (roomHeight + padding),
+      maxY: margin + row * (roomHeight + padding) + roomHeight,
     };
+    
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+    
+    // FORCE initialize node positions within room bounds
+    roomNodes.forEach((node, nodeIndex) => {
+      // Arrange nodes in a grid within the room
+      const nodesPerRow = Math.ceil(Math.sqrt(roomNodes.length));
+      const nodeRow = Math.floor(nodeIndex / nodesPerRow);
+      const nodeCol = nodeIndex % nodesPerRow;
+      const nodeSpacingX = (bounds.maxX - bounds.minX - 60) / (nodesPerRow + 1);
+      const nodeSpacingY = (bounds.maxY - bounds.minY - 60) / (nodesPerRow + 1);
+      
+      node.x = bounds.minX + 30 + nodeSpacingX * (nodeCol + 1);
+      node.y = bounds.minY + 30 + nodeSpacingY * (nodeRow + 1);
+      // Lock initial position
+      node.fx = node.x;
+      node.fy = node.y;
+    });
     
     rooms.push({
       name: roomName,
       nodes: roomNodes,
       center: { x: centerX, y: centerY },
-      color: roomColors[colorIndex % roomColors.length],
+      color: roomColors[index % roomColors.length],
       bounds
     });
-    
-    colorIndex++;
   });
   
   return rooms;
@@ -337,8 +363,13 @@ export default function TopologyView() {
     const detectedClusters = detectClusters(graphData.nodes, graphData.links);
     setClusters(detectedClusters);
     
-    const detectedRooms = detectPhysicalRooms(graphData.nodes);
-    setPhysicalRooms(detectedRooms);
+    // Only recalculate rooms if they don't exist or node count changed significantly
+    if (physicalRooms.length === 0 || containerRef.current) {
+      const width = containerRef.current?.clientWidth || 1200;
+      const height = containerRef.current?.clientHeight || 800;
+      const detectedRooms = detectPhysicalRooms(graphData.nodes, width, height);
+      setPhysicalRooms(detectedRooms);
+    }
   }, [graphData]);
 
   useEffect(() => {
@@ -384,68 +415,80 @@ export default function TopologyView() {
       defs.append('marker')
         .attr('id', 'arrow')
         .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 20)
+        .attr('refX', 15)
         .attr('refY', 0)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
+        .attr('markerWidth', 8)
+        .attr('markerHeight', 8)
         .attr('orient', 'auto')
         .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', '#64748b');
+        .attr('d', 'M0,-4L8,0L0,4')
+        .attr('fill', '#64748b')
+        .attr('fill-opacity', 0.6);
 
       defs.append('marker')
         .attr('id', 'arrow-anomaly')
         .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 20)
+        .attr('refX', 15)
         .attr('refY', 0)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
+        .attr('markerWidth', 9)
+        .attr('markerHeight', 9)
         .attr('orient', 'auto')
         .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', '#ef4444');
+        .attr('d', 'M0,-4L8,0L0,4')
+        .attr('fill', '#ef4444')
+        .attr('fill-opacity', 0.8);
     }
 
     const g = d3.select(gRef.current!);
 
     if (!simulationRef.current) {
+      // Build room constraint map before simulation
+      const roomBoundsMap = new Map<string, { minX: number, maxX: number, minY: number, maxY: number, centerX: number, centerY: number }>();
+      physicalRooms.forEach(room => {
+        room.nodes.forEach(node => {
+          roomBoundsMap.set(node.id, {
+            minX: room.bounds.minX + 20,
+            maxX: room.bounds.maxX - 20,
+            minY: room.bounds.minY + 30,
+            maxY: room.bounds.maxY - 20,
+            centerX: (room.bounds.minX + room.bounds.maxX) / 2,
+            centerY: (room.bounds.minY + room.bounds.maxY) / 2
+          });
+        });
+      });
+      
       simulationRef.current = d3.forceSimulation(graphData.nodes as any)
         .force('link', d3.forceLink(graphData.links)
           .id((d: any) => d.id)
-          .distance(50))
-        .force('charge', d3.forceManyBody().strength(-150))
-        .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
-        .force('collision', d3.forceCollide().radius(20))
-        .force('x', d3.forceX(width / 2).strength(0.02))
-        .force('y', d3.forceY(height / 2).strength(0.02))
-        .alphaDecay(0.02)
+          .distance(60)
+          .strength(0.3))
+        .force('charge', d3.forceManyBody().strength(-100))
+        .force('collision', d3.forceCollide().radius(12))
+        .force('x', d3.forceX((d: any) => {
+          const bounds = roomBoundsMap.get(d.id);
+          return bounds ? bounds.centerX : width / 2;
+        }).strength(0.15))
+        .force('y', d3.forceY((d: any) => {
+          const bounds = roomBoundsMap.get(d.id);
+          return bounds ? bounds.centerY : height / 2;
+        }).strength(0.15))
+        .alphaDecay(0.03)
         .alphaMin(0.001)
-        .velocityDecay(0.6);
+        .velocityDecay(0.4);
 
-      // Lock nodes when simulation converges and constrain to rooms
+      // Constrain nodes to room boundaries on every tick
       simulationRef.current.on('tick', () => {
-        // Constrain nodes to their physical room boundaries
-        const roomMap = new Map<string, { minX: number, maxX: number, minY: number, maxY: number }>();
-        physicalRooms.forEach(room => {
-          room.nodes.forEach(node => {
-            roomMap.set(node.id, {
-              minX: room.bounds.minX + 15,
-              maxX: room.bounds.maxX - 15,
-              minY: room.bounds.minY + 15,
-              maxY: room.bounds.maxY - 15
-            });
-          });
-        });
-        
         graphData.nodes.forEach(node => {
-          const bounds = roomMap.get(node.id);
+          const bounds = roomBoundsMap.get(node.id);
           if (bounds && node.x && node.y) {
+            // Hard constraint - clamp to room bounds
             node.x = Math.max(bounds.minX, Math.min(bounds.maxX, node.x));
             node.y = Math.max(bounds.minY, Math.min(bounds.maxY, node.y));
           }
         });
         
-        if (simulationRef.current!.alpha() < 0.01) {
+        // Auto-lock nodes when simulation settles
+        if (simulationRef.current!.alpha() < 0.005) {
           graphData.nodes.forEach(node => {
             node.fx = node.x;
             node.fy = node.y;
@@ -469,6 +512,19 @@ export default function TopologyView() {
 
     const simulation = simulationRef.current;
 
+    // Build room bounds map for drag constraint
+    const roomBoundsMap = new Map<string, { minX: number, maxX: number, minY: number, maxY: number }>();
+    physicalRooms.forEach(room => {
+      room.nodes.forEach(node => {
+        roomBoundsMap.set(node.id, {
+          minX: room.bounds.minX + 20,
+          maxX: room.bounds.maxX - 20,
+          minY: room.bounds.minY + 30,
+          maxY: room.bounds.maxY - 20
+        });
+      });
+    });
+    
     const drag = d3.drag<SVGGElement, any>()
       .on('start', (event) => {
         if (!event.active) simulation.alphaTarget(0.05).restart();
@@ -476,15 +532,29 @@ export default function TopologyView() {
         event.subject.fy = event.subject.y;
       })
       .on('drag', (event) => {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-        nodePositionsRef.current.set(event.subject.id, { x: event.x, y: event.y });
+        // Constrain drag to room bounds
+        const bounds = roomBoundsMap.get(event.subject.id);
+        if (bounds) {
+          event.subject.fx = Math.max(bounds.minX, Math.min(bounds.maxX, event.x));
+          event.subject.fy = Math.max(bounds.minY, Math.min(bounds.maxY, event.y));
+        } else {
+          event.subject.fx = event.x;
+          event.subject.fy = event.y;
+        }
+        nodePositionsRef.current.set(event.subject.id, { x: event.subject.fx, y: event.subject.fy });
       })
       .on('end', (event) => {
         if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-        nodePositionsRef.current.set(event.subject.id, { x: event.x, y: event.y });
+        // Keep node fixed at constrained position
+        const bounds = roomBoundsMap.get(event.subject.id);
+        if (bounds) {
+          event.subject.fx = Math.max(bounds.minX, Math.min(bounds.maxX, event.x));
+          event.subject.fy = Math.max(bounds.minY, Math.min(bounds.maxY, event.y));
+        } else {
+          event.subject.fx = event.x;
+          event.subject.fy = event.y;
+        }
+        nodePositionsRef.current.set(event.subject.id, { x: event.subject.fx, y: event.subject.fy });
       });
 
     if (showClusters && (viewMode === 'semantic' || viewMode === 'hybrid')) {
@@ -539,8 +609,19 @@ export default function TopologyView() {
     }
 
     if (showClusters && (viewMode === 'physical' || viewMode === 'hybrid')) {
+      // Recalculate room bounds based on actual current node positions
+      const updatedRooms = physicalRooms.map(room => {
+        const actualBounds = {
+          minX: Math.min(...room.nodes.map(n => (n.x || 0))) - 40,
+          maxX: Math.max(...room.nodes.map(n => (n.x || 0))) + 40,
+          minY: Math.min(...room.nodes.map(n => (n.y || 0))) - 50,
+          maxY: Math.max(...room.nodes.map(n => (n.y || 0))) + 40,
+        };
+        return { ...room, bounds: actualBounds };
+      });
+      
       g.selectAll<SVGRectElement, PhysicalRoom>('rect.room')
-        .data(physicalRooms, (d: PhysicalRoom) => `room-${d.name}`)
+        .data(updatedRooms, (d: PhysicalRoom) => `room-${d.name}`)
         .join(
           enter => enter.append('rect')
             .attr('class', 'room')
@@ -557,8 +638,6 @@ export default function TopologyView() {
             .attr('ry', 10)
             .attr('pointer-events', 'none'),
           update => update
-            .transition()
-            .duration(300)
             .attr('x', (d: PhysicalRoom) => d.bounds.minX)
             .attr('y', (d: PhysicalRoom) => d.bounds.minY)
             .attr('width', (d: PhysicalRoom) => d.bounds.maxX - d.bounds.minX)
@@ -568,7 +647,7 @@ export default function TopologyView() {
         );
 
       g.selectAll<SVGTextElement, PhysicalRoom>('text.room-label')
-        .data(physicalRooms, (d: PhysicalRoom) => `label-${d.name}`)
+        .data(updatedRooms, (d: PhysicalRoom) => `label-${d.name}`)
         .join(
           enter => enter.append('text')
             .attr('class', 'room-label')
@@ -582,8 +661,6 @@ export default function TopologyView() {
             .attr('pointer-events', 'none')
             .text((d: PhysicalRoom) => `Subnet: ${d.name} (${d.nodes.length})`),
           update => update
-            .transition()
-            .duration(300)
             .attr('x', (d: PhysicalRoom) => d.bounds.minX + 10)
             .attr('y', (d: PhysicalRoom) => d.bounds.minY + 20)
             .text((d: PhysicalRoom) => `Subnet: ${d.name} (${d.nodes.length})`)
@@ -598,12 +675,13 @@ export default function TopologyView() {
       .join(
         enter => enter.append('line')
           .attr('stroke', (d: any) => d.anomalies > 0 ? '#ef4444' : '#64748b')
-          .attr('stroke-width', (d: any) => Math.min(Math.sqrt(d.value) / 2, 5))
-          .attr('stroke-opacity', 0.6)
+          .attr('stroke-width', (d: any) => d.anomalies > 0 ? 1.5 : Math.min(Math.sqrt(d.value) / 4, 1.2))
+          .attr('stroke-opacity', (d: any) => d.anomalies > 0 ? 0.5 : 0.25)
           .attr('marker-end', (d: any) => d.anomalies > 0 ? 'url(#arrow-anomaly)' : 'url(#arrow)'),
         update => update
           .attr('stroke', (d: any) => d.anomalies > 0 ? '#ef4444' : '#64748b')
-          .attr('stroke-width', (d: any) => Math.min(Math.sqrt(d.value) / 2, 5))
+          .attr('stroke-width', (d: any) => d.anomalies > 0 ? 1.5 : Math.min(Math.sqrt(d.value) / 4, 1.2))
+          .attr('stroke-opacity', (d: any) => d.anomalies > 0 ? 0.5 : 0.25)
           .attr('marker-end', (d: any) => d.anomalies > 0 ? 'url(#arrow-anomaly)' : 'url(#arrow)')
       );
 
@@ -615,11 +693,11 @@ export default function TopologyView() {
             .attr('class', 'node')
             .call(drag);
 
-          // Adaptive node sizing based on expertise level
-          const baseRadius = adaptiveDisplay.nodeSize === 'large' ? 12 : 
-                           adaptiveDisplay.nodeSize === 'medium' ? 8 : 5;
-          const scaleFactor = adaptiveDisplay.nodeSize === 'large' ? 3 : 
-                            adaptiveDisplay.nodeSize === 'medium' ? 2 : 1;
+          // Adaptive node sizing based on expertise level - MUCH SMALLER
+          const baseRadius = adaptiveDisplay.nodeSize === 'large' ? 6 : 
+                           adaptiveDisplay.nodeSize === 'medium' ? 4 : 3;
+          const scaleFactor = adaptiveDisplay.nodeSize === 'large' ? 1.5 : 
+                            adaptiveDisplay.nodeSize === 'medium' ? 1 : 0.5;
           
           nodeGroup.append('circle')
             .attr('r', (d: any) => baseRadius + Math.sqrt(d.eventCount) * scaleFactor)
@@ -651,10 +729,10 @@ export default function TopologyView() {
           return nodeGroup;
         },
         update => {
-          const baseRadius = adaptiveDisplay.nodeSize === 'large' ? 12 : 
-                           adaptiveDisplay.nodeSize === 'medium' ? 8 : 5;
-          const scaleFactor = adaptiveDisplay.nodeSize === 'large' ? 3 : 
-                            adaptiveDisplay.nodeSize === 'medium' ? 2 : 1;
+          const baseRadius = adaptiveDisplay.nodeSize === 'large' ? 6 : 
+                           adaptiveDisplay.nodeSize === 'medium' ? 4 : 3;
+          const scaleFactor = adaptiveDisplay.nodeSize === 'large' ? 1.5 : 
+                            adaptiveDisplay.nodeSize === 'medium' ? 1 : 0.5;
           
           update.select('circle')
             .attr('r', (d: any) => baseRadius + Math.sqrt(d.eventCount) * scaleFactor)
@@ -671,9 +749,9 @@ export default function TopologyView() {
     node.filter((d: any) => d.anomalyScore > 0.5)
       .append('circle')
       .attr('class', 'anomaly-indicator')
-      .attr('r', 4)
-      .attr('cx', 10)
-      .attr('cy', -10)
+      .attr('r', 3)
+      .attr('cx', 6)
+      .attr('cy', -6)
       .attr('fill', '#ef4444')
       .attr('stroke', '#fff')
       .attr('stroke-width', 1);

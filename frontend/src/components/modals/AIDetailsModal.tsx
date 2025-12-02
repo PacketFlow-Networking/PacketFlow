@@ -2,6 +2,7 @@ import { X, Bot, Calendar, Network, AlertTriangle, Activity, TrendingUp, Hash, T
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import type { AIMessage, NetworkEvent } from '../../types';
+import { useAdaptiveUI } from '../../hooks/useAdaptiveUI';
 
 dayjs.extend(relativeTime);
 
@@ -12,6 +13,7 @@ interface AIDetailsModalProps {
 }
 
 export default function AIDetailsModal({ message, relatedEvents = [], onClose }: AIDetailsModalProps) {
+  const { complexityLevel, isNovice, isExpert } = useAdaptiveUI();
   const getThreatColor = (level?: string) => {
     if (!level) return 'border-info/30 bg-info/10 text-info';
     switch (level) {
@@ -178,7 +180,7 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
                     </div>
                     <p className="text-sm text-text">{indicator.explanation}</p>
                     <p className="text-xs text-muted">Evidence: {indicator.evidence}</p>
-                    {(indicator.cwe_ids?.length || indicator.owasp_references?.length || indicator.mitre_techniques?.length) && (
+                    {!isNovice && (indicator.cwe_ids?.length || indicator.owasp_references?.length || indicator.mitre_techniques?.length) && (
                       <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
                         {indicator.cwe_ids?.map(cwe => (
                           <span key={cwe} className="text-xs px-2 py-1 rounded bg-accent/10 text-accent border border-accent/30">
@@ -203,8 +205,8 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
             </section>
           )}
 
-          {/* MITRE ATT&CK FRAMEWORK */}
-          {analysis.mitre_attack_stages && analysis.mitre_attack_stages.length > 0 && (
+          {/* MITRE ATT&CK FRAMEWORK - Hidden for Novice */}
+          {!isNovice && analysis.mitre_attack_stages && analysis.mitre_attack_stages.length > 0 && (
             <section className="space-y-3 border-t border-border pt-4">
               <h3 className="text-lg font-bold text-text flex items-center gap-2">
                 <Target className="w-5 h-5 text-info" />
@@ -256,7 +258,7 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
                     <p className="text-sm text-muted leading-relaxed">{rec.details}</p>
                     {(rec.affected_systems?.length || rec.compliance_impact?.length) && (
                       <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
-                        {rec.affected_systems && rec.affected_systems.length > 0 && (
+                        {!isNovice && rec.affected_systems && rec.affected_systems.length > 0 && (
                           <div>
                             <div className="text-xs font-semibold text-muted mb-1">Affected Systems</div>
                             <div className="flex flex-wrap gap-1">
@@ -268,7 +270,7 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
                             </div>
                           </div>
                         )}
-                        {rec.compliance_impact && rec.compliance_impact.length > 0 && (
+                        {!isNovice && rec.compliance_impact && rec.compliance_impact.length > 0 && (
                           <div>
                             <div className="text-xs font-semibold text-muted mb-1">Compliance Impact</div>
                             <div className="flex flex-wrap gap-1">
@@ -288,8 +290,8 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
             </section>
           )}
 
-          {/* COMPLIANCE IMPLICATIONS */}
-          {analysis.compliance_implications && analysis.compliance_implications.length > 0 && (
+          {/* COMPLIANCE IMPLICATIONS - Hidden for Novice */}
+          {!isNovice && analysis.compliance_implications && analysis.compliance_implications.length > 0 && (
             <section className="space-y-3 border-t border-border pt-4">
               <h3 className="text-lg font-bold text-text flex items-center gap-2">
                 <Lock className="w-5 h-5 text-info" />
@@ -307,8 +309,8 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
             </section>
           )}
 
-          {/* TECHNICAL DETAILS & FORENSIC EVIDENCE */}
-          {(analysis.technical_details || analysis.affected_assets) && (
+          {/* TECHNICAL DETAILS & FORENSIC EVIDENCE - Expert Only */}
+          {isExpert && (analysis.technical_details || analysis.affected_assets) && (
             <section className="space-y-3 border-t border-border pt-4">
               <h3 className="text-lg font-bold text-text flex items-center gap-2">
                 <Code2 className="w-5 h-5 text-info" />
@@ -344,8 +346,8 @@ export default function AIDetailsModal({ message, relatedEvents = [], onClose }:
             </section>
           )}
 
-          {/* SOC ANALYST SUPPORT: Investigation Checklist & False Positives */}
-          {(analysis.investigation_checklist?.length || analysis.false_positive_indicators?.length) && (
+          {/* SOC ANALYST SUPPORT: Investigation Checklist & False Positives - Hidden for Novice */}
+          {!isNovice && (analysis.investigation_checklist?.length || analysis.false_positive_indicators?.length) && (
             <section className="space-y-3 border-t border-border pt-4">
               <h3 className="text-lg font-bold text-text flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-info" />
