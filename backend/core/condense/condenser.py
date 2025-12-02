@@ -67,7 +67,7 @@ class FlowCondenser:
         window_size: int = 10, 
         anomaly_threshold: float = 3.0,
         min_flows_for_alert: int = 10,
-        warmup_windows: int = 10,
+        warmup_windows: int = 3,
         preserve_payloads: bool = True,
         max_sample_payloads: int = 5,
         use_adaptive_threshold: bool = True,

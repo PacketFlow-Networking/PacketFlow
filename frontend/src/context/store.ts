@@ -505,7 +505,23 @@ export const useStore = create<UIState>()(
   })),
 
   trackClickDepth: (depth: number) => set((state) => {
-    const samples = [...state.userProfile.adaptive_ui_metrics.click_depth_samples, depth];
+    const metrics = state.userProfile.adaptive_ui_metrics || {
+      click_depth_samples: [],
+      time_on_details_ms: [],
+      filter_complexity_scores: [],
+      terminology_searches: [],
+      advanced_feature_usage: {
+        raw_data_views: 0,
+        advanced_filters: 0,
+        technical_details_expansions: 0,
+        custom_alert_rules: 0,
+        manual_incident_creation: 0,
+      },
+      session_start: new Date().toISOString(),
+      last_evaluation: new Date().toISOString(),
+    };
+    
+    const samples = [...(metrics.click_depth_samples || []), depth];
     // Keep last 100 samples
     const trimmed = samples.slice(-100);
     
@@ -513,7 +529,7 @@ export const useStore = create<UIState>()(
       userProfile: {
         ...state.userProfile,
         adaptive_ui_metrics: {
-          ...state.userProfile.adaptive_ui_metrics,
+          ...metrics,
           click_depth_samples: trimmed
         }
       }
@@ -521,7 +537,8 @@ export const useStore = create<UIState>()(
   }),
 
   trackDetailViewTime: (durationMs: number) => set((state) => {
-    const samples = [...state.userProfile.adaptive_ui_metrics.time_on_details_ms, durationMs];
+    const metrics = state.userProfile.adaptive_ui_metrics || {};
+    const samples = [...(metrics.time_on_details_ms || []), durationMs];
     // Keep last 100 samples
     const trimmed = samples.slice(-100);
     
@@ -529,7 +546,7 @@ export const useStore = create<UIState>()(
       userProfile: {
         ...state.userProfile,
         adaptive_ui_metrics: {
-          ...state.userProfile.adaptive_ui_metrics,
+          ...metrics,
           time_on_details_ms: trimmed
         }
       }
@@ -537,7 +554,8 @@ export const useStore = create<UIState>()(
   }),
 
   trackFilterComplexity: (score: number) => set((state) => {
-    const scores = [...state.userProfile.adaptive_ui_metrics.filter_complexity_scores, score];
+    const metrics = state.userProfile.adaptive_ui_metrics || {};
+    const scores = [...(metrics.filter_complexity_scores || []), score];
     // Keep last 50 filter applications
     const trimmed = scores.slice(-50);
     
@@ -545,7 +563,7 @@ export const useStore = create<UIState>()(
       userProfile: {
         ...state.userProfile,
         adaptive_ui_metrics: {
-          ...state.userProfile.adaptive_ui_metrics,
+          ...metrics,
           filter_complexity_scores: trimmed
         }
       }
@@ -553,7 +571,8 @@ export const useStore = create<UIState>()(
   }),
 
   trackTerminologySearch: (term: string) => set((state) => {
-    const searches = [...state.userProfile.adaptive_ui_metrics.terminology_searches, term];
+    const metrics = state.userProfile.adaptive_ui_metrics || {};
+    const searches = [...(metrics.terminology_searches || []), term];
     // Keep last 50 searches
     const trimmed = searches.slice(-50);
     
@@ -561,7 +580,7 @@ export const useStore = create<UIState>()(
       userProfile: {
         ...state.userProfile,
         adaptive_ui_metrics: {
-          ...state.userProfile.adaptive_ui_metrics,
+          ...metrics,
           terminology_searches: trimmed
         }
       }

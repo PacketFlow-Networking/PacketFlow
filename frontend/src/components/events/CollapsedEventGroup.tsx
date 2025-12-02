@@ -1,4 +1,3 @@
-import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -58,14 +57,13 @@ export const CollapsedEventGroup: React.FC<CollapsedEventGroupProps> = ({
       >
         <div className="flex items-center gap-3 flex-1">
           {/* Expand icon */}
-          <motion.div
-            animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
+          <div
+            className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
           >
             <ChevronDown
               className={`h-5 w-5 ${severityBorderIcon[metrics.severity]}`}
             />
-          </motion.div>
+          </div>
 
           {/* Threat Icon */}
           <AlertTriangle className={`h-4 w-4 ${severityBorderIcon[metrics.severity]}`} />
@@ -123,25 +121,14 @@ export const CollapsedEventGroup: React.FC<CollapsedEventGroupProps> = ({
       </button>
 
       {/* Expanded Events List */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="p-3 space-y-2 border-t border-gray-200 dark:border-gray-700 bg-white/40 dark:bg-black/20">
-              {group.events.map((event, index) => (
-                <motion.button
-                  key={event.id}
-                  onClick={() => onSelectEvent(event.id)}
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all text-left"
-                >
+      {isExpanded && (
+        <div className="p-3 space-y-2 border-t border-gray-200 dark:border-gray-700 bg-white/40 dark:bg-black/20">
+          {group.events.map((event) => (
+            <button
+              key={event.id}
+              onClick={() => onSelectEvent(event.id)}
+              className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
+            >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate">
@@ -160,12 +147,10 @@ export const CollapsedEventGroup: React.FC<CollapsedEventGroupProps> = ({
                       </div>
                     </div>
                   </div>
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

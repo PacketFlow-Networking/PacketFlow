@@ -262,9 +262,16 @@ function App() {
             <GraphView onCollapseChange={setGraphCollapsed} />
           </div>
 
-          <div className="flex-1">
+          {/* Proactive Suggestions - IUI Feature */}
+          <div className="border-b border-border bg-panel/50 backdrop-blur-sm">
+            <div className="p-3">
+              <ProactiveSuggestions />
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col min-h-0">
             {/* Tab Header */}
-            <div className="flex items-center border-b border-border bg-panel">
+            <div className="flex items-center border-b border-border bg-panel flex-shrink-0">
               <button
                 onClick={() => setActiveTab('events')}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
@@ -309,13 +316,15 @@ function App() {
             </div>
             
             {/* Tab Content */}
-            {activeTab === 'events' ? (
-              <EventStream />
-            ) : activeTab === 'stats' ? (
-              <StatsDashboard />
-            ) : (
-              <TopologyView />
-            )}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {activeTab === 'events' ? (
+                <EventStream />
+              ) : activeTab === 'stats' ? (
+                <StatsDashboard />
+              ) : (
+                <TopologyView />
+              )}
+            </div>
           </div>
         </div>
       </div>

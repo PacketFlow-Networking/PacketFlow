@@ -102,11 +102,17 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in"
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
       />
 
       {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-4xl max-h-[90vh] overflow-hidden animate-scale-in">
+      <div 
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-4xl max-h-[90vh] overflow-hidden animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="panel shadow-2xl flex flex-col max-h-[90vh]">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
@@ -122,7 +128,10 @@ export const EventDetailsModal = ({ event, isOpen, onClose, relatedEvents = [] }
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               className="p-2 rounded-lg hover:bg-panel-hover transition-colors"
               aria-label="Close details"
             >
