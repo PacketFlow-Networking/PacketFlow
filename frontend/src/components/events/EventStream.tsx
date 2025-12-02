@@ -193,7 +193,7 @@ const EventStream = () => {
         />
 
         {/* Event List */}
-        <div className="flex-1 overflow-y-auto scrollbar">
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar">
           {filteredEvents.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <Info className="w-12 h-12 text-text-dim mb-3" />
@@ -208,7 +208,7 @@ const EventStream = () => {
             </div>
           ) : useGrouping ? (
             // Grouped View
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-3 will-change-auto">
               {groupedEvents.map((group) => (
                 <CollapsedEventGroup
                   key={group.id}

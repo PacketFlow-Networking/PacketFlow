@@ -412,16 +412,39 @@ export default function TopologyView() {
       simulationRef.current = d3.forceSimulation(graphData.nodes as any)
         .force('link', d3.forceLink(graphData.links)
           .id((d: any) => d.id)
-          .distance(100))
-        .force('charge', d3.forceManyBody().strength(-300))
-        .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('collision', d3.forceCollide().radius(30))
-        .alphaDecay(0.05)
+          .distance(50))
+        .force('charge', d3.forceManyBody().strength(-150))
+        .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
+        .force('collision', d3.forceCollide().radius(20))
+        .force('x', d3.forceX(width / 2).strength(0.02))
+        .force('y', d3.forceY(height / 2).strength(0.02))
+        .alphaDecay(0.02)
         .alphaMin(0.001)
-        .velocityDecay(0.4);
+        .velocityDecay(0.6);
 
-      // Lock nodes when simulation converges
+      // Lock nodes when simulation converges and constrain to rooms
       simulationRef.current.on('tick', () => {
+        // Constrain nodes to their physical room boundaries
+        const roomMap = new Map<string, { minX: number, maxX: number, minY: number, maxY: number }>();
+        physicalRooms.forEach(room => {
+          room.nodes.forEach(node => {
+            roomMap.set(node.id, {
+              minX: room.bounds.minX + 15,
+              maxX: room.bounds.maxX - 15,
+              minY: room.bounds.minY + 15,
+              maxY: room.bounds.maxY - 15
+            });
+          });
+        });
+        
+        graphData.nodes.forEach(node => {
+          const bounds = roomMap.get(node.id);
+          if (bounds && node.x && node.y) {
+            node.x = Math.max(bounds.minX, Math.min(bounds.maxX, node.x));
+            node.y = Math.max(bounds.minY, Math.min(bounds.maxY, node.y));
+          }
+        });
+        
         if (simulationRef.current!.alpha() < 0.01) {
           graphData.nodes.forEach(node => {
             node.fx = node.x;
@@ -436,12 +459,12 @@ export default function TopologyView() {
       if (linkForce) {
         linkForce.links(graphData.links);
       }
-      // Unlock nodes for next iteration
+      // Unlock nodes for next iteration with reduced alpha
       graphData.nodes.forEach(node => {
         node.fx = null;
         node.fy = null;
       });
-      simulationRef.current.alpha(0.02).restart();
+      simulationRef.current.alpha(0.01).restart();
     }
 
     const simulation = simulationRef.current;
