@@ -9,6 +9,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useStore } from '../../context/store';
+import { useAdaptiveDisplay } from '../../hooks/useAdaptiveUI';
 import type { SuggestionType } from '../../types';
 
 const ProactiveSuggestions = () => {
@@ -20,6 +21,7 @@ const ProactiveSuggestions = () => {
     addSuggestion,
     dismissedSuggestions
   } = useStore();
+  const adaptiveDisplay = useAdaptiveDisplay();
 
   // Auto-generate suggestions based on events
   useEffect(() => {
@@ -29,11 +31,11 @@ const ProactiveSuggestions = () => {
     }, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
-  }, []); // Run once on mount - avoid recreation on every event change
+  }, [events, clearExpiredSuggestions, suggestions, dismissedSuggestions]);
 
   const generateSmartSuggestions = () => {
     const recentEvents = events.slice(0, 20);
-    const anomalies = recentEvents.filter(e => e.anomaly_score > 0.7);
+    const anomalies = recentEvents.filter(e => e.anomaly_score > 0.3);
     
     // Suggestion 1: Multiple anomalies from same source
     const sourceGroups = anomalies.reduce((acc, e) => {
@@ -42,7 +44,7 @@ const ProactiveSuggestions = () => {
     }, {} as Record<string, number>);
     
     Object.entries(sourceGroups).forEach(([src, count]) => {
-      if (count >= 3) {
+      if (count >= 2) {
         const suggestionId = `multi-source-${src}`;
         if (!dismissedSuggestions.includes(suggestionId) && 
             !suggestions.find(s => s.id === suggestionId)) {
@@ -68,8 +70,8 @@ const ProactiveSuggestions = () => {
     });
 
     // Suggestion 2: High anomaly score spike
-    const criticalAnomalies = anomalies.filter(e => e.anomaly_score >= 0.9);
-    if (criticalAnomalies.length >= 2) {
+    const criticalAnomalies = anomalies.filter(e => e.anomaly_score >= 0.5);
+    if (criticalAnomalies.length >= 1) {
       const suggestionId = 'critical-spike';
       if (!dismissedSuggestions.includes(suggestionId) && 
           !suggestions.find(s => s.id === suggestionId)) {
@@ -93,8 +95,8 @@ const ProactiveSuggestions = () => {
     }
 
     // Suggestion 3: DNS traffic pattern
-    const dnsEvents = recentEvents.filter(e => e.proto === 'DNS');
-    if (dnsEvents.length > 10) {
+    const dnsEvents = recentEvents.filter(e => e.proto === 'DNS' || e.proto === 'UDP');
+    if (dnsEvents.length > 3) {
       const suggestionId = 'dns-pattern';
       if (!dismissedSuggestions.includes(suggestionId) && 
           !suggestions.find(s => s.id === suggestionId)) {
@@ -155,13 +157,16 @@ const ProactiveSuggestions = () => {
     }
   };
 
-  if (suggestions.length === 0) {
+  // Limit suggestions based on expertise level
+  const displayedSuggestions = suggestions.slice(0, adaptiveDisplay.maxSuggestions);
+  
+  if (displayedSuggestions.length === 0) {
     return null;
   }
 
   return (
     <div className="space-y-2">
-      {suggestions.map((suggestion) => (
+      {displayedSuggestions.map((suggestion) => (
         <div
           key={suggestion.id}
           className={`border rounded-lg p-3 transition-all ${getPriorityColor(suggestion.priority)}`}

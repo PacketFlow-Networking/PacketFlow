@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '../context/store';
 import { useToast } from '../context/ToastContext';
 import type { NetworkEvent, AIMessage } from '../types';
+import { evaluateRules, getActionsFromRules } from '../utils/ruleEvaluator';
 
 // Use environment variable or fallback to localhost
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/updates';
@@ -13,20 +14,21 @@ export const useWebSocket = () => {
   const reconnectTimeoutRef = useRef<number | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const messageQueueRef = useRef<any[]>([]); // Queue for pending messages
+  const hasConnectedOnceRef = useRef(false); // Track if we've connected before
   
   const { 
     addEvent, 
     addAIMessage, 
     setConnected,
     selectEvent,
-    mockMode 
+    alertConfig
   } = useStore();
   
   const { showError, showWarning, showSuccess, showInfo } = useToast();
 
   const connect = useCallback(() => {
-    // Always connect to backend, even in mock mode
-    // Backend will handle mock data generation
+    // Connect to backend WebSocket for real-time updates
+    // Backend captures from PCAP file or live network
 
     try {
       const ws = new WebSocket(WS_URL);
@@ -34,6 +36,8 @@ export const useWebSocket = () => {
       ws.onopen = () => {
         console.log('[WebSocket] Connected');
         setConnected(true);
+        const wasReconnect = hasConnectedOnceRef.current;
+        hasConnectedOnceRef.current = true;
         reconnectAttemptsRef.current = 0;
         
         // Flush queued messages
@@ -45,8 +49,8 @@ export const useWebSocket = () => {
           }
         }
         
-        // Show success toast on connection
-        if (reconnectAttemptsRef.current > 0) {
+        // Show success toast on reconnection
+        if (wasReconnect) {
           showSuccess('Connected', 'Successfully reconnected to backend', true);
         }
       };
@@ -83,18 +87,50 @@ export const useWebSocket = () => {
             
             addEvent(networkEvent);
             
-            // Show toast for critical anomalies and auto-select event
-            if (eventData.anomaly_score >= 0.8) {
+            // Evaluate alert rules
+            const matchedRules = evaluateRules(alertConfig.rules, networkEvent);
+            const actions = getActionsFromRules(matchedRules);
+            
+            // Handle notify action from rules
+            if (matchedRules.length > 0 && actions.includes('notify') && alertConfig.notifications.toast) {
+              const highestRule = matchedRules.reduce((highest, rule) => {
+                const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+                return severityOrder[rule.severity] > severityOrder[highest.severity] ? rule : highest;
+              }, matchedRules[0]);
+              
+              const shouldPlaySound = actions.includes('sound') && alertConfig.notifications.sound;
+              
+              if (highestRule.severity === 'critical') {
+                showWarning(
+                  `Rule Triggered: ${highestRule.name}`,
+                  `${networkEvent.src} → ${networkEvent.dst}: ${highestRule.description || networkEvent.summary}`,
+                  shouldPlaySound
+                );
+              } else {
+                showInfo(
+                  `Alert: ${highestRule.name}`,
+                  `${networkEvent.src} → ${networkEvent.dst}`,
+                  shouldPlaySound
+                );
+              }
+              
+              selectEvent(networkEvent.id);
+            }
+            // Fallback to default anomaly detection
+            else if (eventData.anomaly_score >= 0.8) {
               selectEvent(networkEvent.id); // Auto-select event for easy access
               showWarning(
                 'Critical Anomaly Detected',
-                `${eventData.src}  ${eventData.dst}: ${eventData.summary || 'High anomaly score'}`,
+                `${eventData.src} → ${eventData.dst}: ${eventData.summary || 'High anomaly score'}`,
                 true // Play sound
               );
             }
             
             // If there's AI explanation, add it as AI message
             if (eventData.ai_explanation && eventData.ai_processed) {
+              // Check if we have structured analysis from Instructor
+              const hasStructuredData = eventData.ai_analysis && typeof eventData.ai_analysis === 'object';
+              
               const aiMessage: AIMessage = {
                 id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 timestamp: new Date().toISOString(),
@@ -102,7 +138,12 @@ export const useWebSocket = () => {
                 event_ids: [networkEvent.id],
                 type: eventData.is_anomaly ? 'warning' : 'insight',
                 confidence: eventData.anomaly_score > 0.8 ? 'high' : 
-                           eventData.anomaly_score > 0.5 ? 'medium' : 'low'
+                           eventData.anomaly_score > 0.5 ? 'medium' : 'low',
+                brief_summary: eventData.summary,
+                // Add structured analysis if available from Instructor
+                ...(hasStructuredData && {
+                  structured_analysis: eventData.ai_analysis
+                })
               };
               addAIMessage(aiMessage);
             }
@@ -115,7 +156,7 @@ export const useWebSocket = () => {
               id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
               timestamp: responseData.timestamp || new Date().toISOString(),
               content: responseData.response || 'No response',
-              event_ids: responseData.event_ids || [],  // ← Now has linked events!
+              event_ids: responseData.event_ids || [],  //  Now has linked events!
               type: responseData.error ? 'warning' : 'insight',
               confidence: responseData.confidence || 'medium'
             };
@@ -138,26 +179,10 @@ export const useWebSocket = () => {
         setConnected(false);
         wsRef.current = null;
         
-        // Show disconnection toast
+        // Show disconnection toast only on first disconnect
         if (reconnectAttemptsRef.current === 0) {
-          showInfo('Disconnected', 'Lost connection to backend. Attempting to reconnect...');
+          showInfo('Disconnected', 'Connection lost. Click the reconnect button to retry.');
         }
-        
-        // Attempt reconnection with exponential backoff
-        // Keep retrying indefinitely with 30s interval after initial max attempts
-        const nextDelay = reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS 
-          ? RECONNECT_DELAY 
-          : 30000; // 30s retry after max attempts reached
-        
-        reconnectAttemptsRef.current++;
-        console.log(`[WebSocket] Reconnecting in ${nextDelay}ms (attempt ${reconnectAttemptsRef.current})`);
-        reconnectTimeoutRef.current = window.setTimeout(() => {
-          // Reset counter when reconnecting to allow next batch of exponential backoff
-          if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
-            reconnectAttemptsRef.current = MAX_RECONNECT_ATTEMPTS - 1;
-          }
-          connect();
-        }, nextDelay);
       };
       
       wsRef.current = ws;
@@ -165,7 +190,7 @@ export const useWebSocket = () => {
       console.error('[WebSocket] Connection error:', error);
       setConnected(false);
     }
-  }, [addEvent, addAIMessage, setConnected, mockMode]);
+  }, [addEvent, addAIMessage, setConnected]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -196,6 +221,26 @@ export const useWebSocket = () => {
     }
   }, []);
 
+  const manualReconnect = useCallback(() => {
+    // Clear any pending reconnect timeouts
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
+    // Reset reconnect attempts for manual reconnection
+    reconnectAttemptsRef.current = 0;
+    
+    // Close existing connection if any
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    
+    // Attempt new connection
+    connect();
+  }, [connect]);
+
   useEffect(() => {
     connect();
     
@@ -206,6 +251,6 @@ export const useWebSocket = () => {
 
   return {
     send,
-    reconnect: connect
+    reconnect: manualReconnect
   };
 };

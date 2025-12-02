@@ -51,7 +51,6 @@ class PacketFlowBackend:
         # Initialize components
         self.capture = PacketCapture(
             interface=config.capture.interface,
-            mock_mode=config.capture.mock_mode,
             pcap_file=config.capture.pcap_file,
             pcap_loop=config.capture.pcap_loop,
             pcap_speed=config.capture.pcap_speed,
@@ -127,7 +126,7 @@ class PacketFlowBackend:
         
         # Print configuration
         logger.info(f" Capture Interface: {config.capture.interface}")
-        logger.info(f" Mock Mode: {config.capture.mock_mode}")
+        logger.info(f" Data Source: {'PCAP file' if config.capture.pcap_file else 'Live network capture'}")
         logger.info(f" AI Mode: {config.ai.mode.upper()}")
         logger.info(f" AI Model: {config.ai.current_model}")
         logger.info(f" AI URL: {config.ai.current_url}")

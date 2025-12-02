@@ -9,3 +9,7 @@ pydantic>=2.5.0
 cachetools>=5.3.0
 slowapi>=0.1.9
 aiosqlite>=0.19.0
+instructor==1.13.0
+openai>=1.0.0
+httpx>=0.25.0
+scapy==2.6.1

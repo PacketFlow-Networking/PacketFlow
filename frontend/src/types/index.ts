@@ -10,6 +10,7 @@ export interface NetworkEvent {
   avg_size?: number;
   throughput?: number;
   anomaly_score: number;
+  is_anomaly?: boolean;
   summary: string;
   severity?: string;
   src_port?: number;
@@ -37,6 +38,132 @@ export interface AIMessage {
   event_ids: string[];
   confidence?: 'low' | 'medium' | 'high';
   type: 'insight' | 'warning' | 'summary' | 'response';
+  
+  // CHAT DISPLAY: Brief fields only
+  text?: string;                    // Brief summary for chat window (one-liner)
+  ai_explanation?: string;          // 2-3 sentence summary for tooltips
+  threat_level?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  cvss_score?: number;              // CVSS v4.0 score (0-10)
+  risk_score?: number;              // Business risk score (0-100)
+  quick_recommendations?: Array<{   // Max 2 recommendations for chat
+    action: string;
+    priority: 'critical' | 'high' | 'medium' | 'low';
+    timeframe?: 'immediate' | '1_hour' | '4_hours' | '24_hours' | 'asap';
+  }>;
+  
+  // LEGACY/BASIC FIELDS: For fallback compatibility
+  brief_summary?: string;           // Short summary for chat display
+  full_summary?: string;            // Full 2-3 sentence summary
+  what_happened?: string;           // Observable behavior
+  why_suspicious?: string;          // Why anomalous
+  detection_method?: string;        // How detected
+  attack_context?: string;          // Attack type & objectives
+  threat_indicators?: Array<{
+    type: string;
+    confidence: number;
+    evidence: string;
+    explanation: string;
+    cwe_ids?: string[];
+    owasp_references?: string[];
+    mitre_techniques?: string[];
+  }>;
+  recommendations?: Array<{
+    action: string;
+    priority: 'critical' | 'high' | 'medium' | 'low';
+    details: string;
+    timeframe?: 'immediate' | '1_hour' | '4_hours' | '24_hours' | 'asap';
+    affected_systems?: string[];
+    compliance_impact?: string[];
+  }>;
+  technical_details?: Record<string, any>;
+  
+  // FULL MODAL DISPLAY: Industry-standard structured analysis
+  structured_analysis?: {
+    // EXECUTIVE SUMMARIES
+    brief_summary?: string;
+    summary?: string;
+    threat_level?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+    cvss_score?: number;
+    risk_score?: number;
+    
+    // FORENSIC ANALYSIS
+    what_happened?: string;
+    why_suspicious?: string;
+    detection_method?: string;
+    
+    // THREAT CLASSIFICATION
+    threat_indicators?: Array<{
+      type: string;
+      confidence: number;
+      evidence: string;
+      explanation: string;
+      cwe_ids?: string[];
+      owasp_references?: string[];
+      mitre_techniques?: string[];
+    }>;
+    
+    // INCIDENT RESPONSE
+    recommendations?: Array<{
+      action: string;
+      priority: 'critical' | 'high' | 'medium' | 'low';
+      details: string;
+      timeframe?: 'immediate' | '1_hour' | '4_hours' | '24_hours' | 'asap';
+      affected_systems?: string[];
+      compliance_impact?: string[];
+    }>;
+    
+    // ATTACK CONTEXT & FRAMEWORK MAPPING
+    attack_context?: string;
+    mitre_attack_stages?: string[];
+    
+    // FORENSIC EVIDENCE
+    technical_details?: Record<string, any>;
+    affected_assets?: Array<{
+      ip?: string;
+      type?: string;
+      criticality?: string;
+      department?: string;
+    }>;
+    compliance_implications?: string[];
+    forensic_chain?: Record<string, any>;
+    
+    // SOC ANALYST SUPPORT
+    investigation_checklist?: string[];
+    false_positive_indicators?: string[];
+    
+    // CONFIDENCE & UNCERTAINTY
+    confidence?: number;
+    explanation_confidence?: {
+      confidence: number;
+      detection_methods: Array<{
+        name: string;
+        triggered: boolean;
+        confidence: number;
+      }>;
+      threat_distribution: Array<{
+        threat_type: string;
+        probability: number;
+      }>;
+    };
+  };
+}
+
+// IUI Feature: Explanation Confidence Display
+export interface DetectionMethod {
+  name: string;
+  triggered: boolean;
+  confidence: number; // 0-1
+}
+
+export interface ThreatProbability {
+  threat_type: string;
+  probability: number; // 0-1
+}
+
+export interface ExplanationConfidence {
+  confidence: number; // 0-1 (HIGH: 0.9+, MEDIUM: 0.7-0.9, LOW: <0.7)
+  detection_methods: DetectionMethod[];
+  threat_distribution: ThreatProbability[];
 }
 
 export interface UserMessage {
@@ -251,11 +378,46 @@ export interface ProactiveSuggestion {
 
 // 3. User Profile & Learning Types
 export type ExpertiseLevel = 'novice' | 'intermediate' | 'expert';
+export type PreferredView = 'auto' | 'events' | 'topology' | 'stats';
+export type CognitiveStyle = 'wholist' | 'analyst' | 'unknown';
+export type UIComplexityMode = 'novice' | 'intermediate' | 'expert' | 'auto';
+
+// Adaptive UI Tracking
+export interface AdaptiveUIMetrics {
+  click_depth_samples: number[]; // Track click depths for avg calculation
+  time_on_details_ms: number[]; // Time spent on event/incident details
+  filter_complexity_scores: number[]; // 0-10 scale based on filter combinations
+  terminology_searches: string[]; // Track glossary/help searches
+  advanced_feature_usage: {
+    raw_data_views: number;
+    advanced_filters: number;
+    technical_details_expansions: number;
+    custom_alert_rules: number;
+    manual_incident_creation: number;
+  };
+  session_start: string;
+  last_evaluation: string;
+}
+
+export interface InteractionHistory {
+  view_switches: string[];
+  event_clicks: number;
+  detail_expansions: number;
+  filter_applications: number;
+  topology_views: number;
+  list_views: number;
+  avg_click_depth: number;
+  session_start: string;
+}
 
 export interface UserProfile {
   expertise_level: ExpertiseLevel;
   interaction_count: number;
   preferred_views: string[];
+  preferred_default_view: PreferredView;
+  cognitive_style: CognitiveStyle;
+  interaction_history: InteractionHistory;
+  onboarding_completed: boolean;
   alert_history: {
     true_positives: number;
     false_positives: number;
@@ -266,14 +428,30 @@ export interface UserProfile {
     tooltips_dismissed: string[];
     tutorials_completed: string[];
   };
+  usability_metrics?: UsabilityMetrics;
+  // Adaptive UI Complexity
+  ui_complexity_mode: UIComplexityMode;
+  adaptive_ui_metrics: AdaptiveUIMetrics;
   created_at: string;
   last_interaction: string;
 }
-
 export const DEFAULT_USER_PROFILE: UserProfile = {
-  expertise_level: 'novice',
+  expertise_level: 'intermediate',
   interaction_count: 0,
   preferred_views: ['events'],
+  preferred_default_view: 'auto',
+  cognitive_style: 'unknown',
+  interaction_history: {
+    view_switches: [],
+    event_clicks: 0,
+    detail_expansions: 0,
+    filter_applications: 0,
+    topology_views: 0,
+    list_views: 0,
+    avg_click_depth: 0,
+    session_start: new Date().toISOString(),
+  },
+  onboarding_completed: false,
   alert_history: {
     true_positives: 0,
     false_positives: 0,
@@ -283,6 +461,28 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
     concepts_seen: [],
     tooltips_dismissed: [],
     tutorials_completed: [],
+  },
+  usability_metrics: {
+    task_timings: [],
+    error_log: [],
+    confusion_points: [],
+    sus_surveys: [],
+  },
+  ui_complexity_mode: 'auto',
+  adaptive_ui_metrics: {
+    click_depth_samples: [],
+    time_on_details_ms: [],
+    filter_complexity_scores: [],
+    terminology_searches: [],
+    advanced_feature_usage: {
+      raw_data_views: 0,
+      advanced_filters: 0,
+      technical_details_expansions: 0,
+      custom_alert_rules: 0,
+      manual_incident_creation: 0,
+    },
+    session_start: new Date().toISOString(),
+    last_evaluation: new Date().toISOString(),
   },
   created_at: new Date().toISOString(),
   last_interaction: new Date().toISOString(),
@@ -298,6 +498,49 @@ export interface EventFeedback {
   user_explanation?: string;
   timestamp: string;
   incorporated: boolean;
+}
+
+// SUS (System Usability Scale) Survey Types
+export interface SUSResponse {
+  q1: number; // 1-5 scale
+  q2: number;
+  q3: number;
+  q4: number;
+  q5: number;
+  q6: number;
+  q7: number;
+  q8: number;
+  q9: number;
+  q10: number;
+  score: number; // Calculated score (0-100)
+  timestamp: string;
+}
+
+export interface TaskTiming {
+  task_name: string;
+  duration_ms: number;
+  success: boolean;
+  timestamp: string;
+}
+
+export interface ErrorLogEntry {
+  error_type: string;
+  context: string;
+  timestamp: string;
+  resolved: boolean;
+}
+
+export interface ConfusionPoint {
+  feature: string;
+  description: string;
+  timestamp: string;
+}
+
+export interface UsabilityMetrics {
+  task_timings: TaskTiming[];
+  error_log: ErrorLogEntry[];
+  confusion_points: ConfusionPoint[];
+  sus_surveys: SUSResponse[];
 }
 
 // 5. Predictive Analytics Types

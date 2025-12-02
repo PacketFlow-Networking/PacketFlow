@@ -67,7 +67,7 @@ class FlowCondenser:
         window_size: int = 10, 
         anomaly_threshold: float = 3.0,
         min_flows_for_alert: int = 10,
-        warmup_windows: int = 10,
+        warmup_windows: int = 3,
         preserve_payloads: bool = True,
         max_sample_payloads: int = 5,
         use_adaptive_threshold: bool = True,
@@ -501,6 +501,9 @@ class FlowCondenser:
             # Prepare protocol stats
             protocol_stats = self._serialize_protocol_stats(flow_data["protocol_stats"])
             
+            # Determine if flow is still in warmup (needs 2 samples for detection)
+            flow_in_warmup = baseline["sample_count"] < 2
+            
             # Create event
             event = {
                 "timestamp": current_time.isoformat(),
@@ -522,7 +525,7 @@ class FlowCondenser:
                 "baseline_avg": baseline["avg_packets"],
                 "baseline_std": baseline["std_packets"],
                 "z_score": anomaly_results.get("z_score", 0),
-                "is_warmup": not self.is_warmed_up,
+                "is_warmup": flow_in_warmup,
             }
             
             # Add payload samples
@@ -578,8 +581,9 @@ class FlowCondenser:
         reason = ""
         z_score = 0.0
         
-        # Don't detect during warmup
-        if not self.is_warmed_up or baseline["sample_count"] < self.warmup_windows:
+        # Allow detection once flow has enough baseline (2 samples)
+        # No need to wait for global warmup - if a flow is spiking NOW, detect it NOW
+        if baseline["sample_count"] < 2:
             return {
                 "is_anomaly": False,
                 "score": 0.0,
@@ -599,6 +603,14 @@ class FlowCondenser:
                 score = min(abs(z_score) / (self.thresholds["z_score"] * 2), 1.0)
                 max_score = max(max_score, score)
                 reason = f"Statistical anomaly: Z={z_score:.2f}, {packet_count} pkts vs {baseline['avg_packets']:.0f}{baseline['std_packets']:.0f}"
+        # EARLY DETECTION: If std not yet available but spike is obvious (10x+)
+        elif baseline["avg_packets"] > 0 and packet_count >= self.min_flows_for_alert:
+            if packet_count > baseline["avg_packets"] * 10:
+                methods_triggered.append("Spike-Early")
+                ratio = packet_count / baseline["avg_packets"]
+                score = min((ratio - 5.0) / 5.0, 0.8)
+                max_score = max(max_score, score)
+                reason = f"Massive spike: {packet_count} pkts vs {baseline['avg_packets']:.0f} baseline ({ratio:.1f}x)"
         
         # Method 2: IQR
         if baseline["iqr"] > 0:

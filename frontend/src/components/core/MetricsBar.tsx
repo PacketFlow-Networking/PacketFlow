@@ -1,9 +1,16 @@
-import { Activity, Wifi, WifiOff, AlertTriangle, Bell } from 'lucide-react';
+import { Activity, Wifi, WifiOff, AlertTriangle, Bell, User, RefreshCw, Settings } from 'lucide-react';
 import { useStore } from '../../context/store';
-import { Logo } from '../shared';
+import { Logo, ComplexityModeIndicator } from '../shared';
 
-const MetricsBar = () => {
-  const { status, connected, mockMode } = useStore();
+interface MetricsBarProps {
+  onShowHelp?: () => void;
+  onOpenUserProfile?: () => void;
+  onReconnect?: () => void;
+  onOpenAlertConfig?: () => void;
+}
+
+const MetricsBar = ({ onShowHelp, onOpenUserProfile, onReconnect, onOpenAlertConfig }: MetricsBarProps) => {
+  const { status, connected, userProfile } = useStore();
 
   const getStatusColor = (value: number, thresholds: { warn: number; critical: number }) => {
     if (value >= thresholds.critical) return 'text-critical';
@@ -32,10 +39,17 @@ const MetricsBar = () => {
             <>
               <WifiOff className="w-4 h-4 text-critical" />
               <span className="text-sm text-critical">Disconnected</span>
+              {onReconnect && (
+                <button
+                  onClick={onReconnect}
+                  className="ml-2 px-3 py-1 bg-info hover:bg-info/80 text-white text-xs rounded-lg flex items-center gap-1.5 transition-colors"
+                  title="Reconnect to backend"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Reconnect
+                </button>
+              )}
             </>
-          )}
-          {mockMode && (
-            <span className="badge badge-warn ml-2">MOCK MODE</span>
           )}
         </div>
       </div>
@@ -85,12 +99,42 @@ const MetricsBar = () => {
         )}
         
         <button
+          onClick={onShowHelp}
           className="p-2 rounded hover:bg-panel-hover transition-colors"
-          aria-label="Notification settings"
-          title="Notification settings"
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts (?)"
         >
-          <Bell className="w-4 h-4 text-text-dim hover:text-text" />
+          <kbd className="px-1.5 py-0.5 bg-panel border border-border rounded text-text text-xs font-mono">?</kbd>
         </button>
+        
+        <button
+          onClick={onOpenAlertConfig}
+          className="p-2 rounded hover:bg-panel-hover transition-colors"
+          aria-label="Alert configuration"
+          title="Alert configuration (Ctrl+,)"
+        >
+          <Settings className="w-4 h-4 text-text-dim hover:text-text" />
+        </button>
+        
+        <div className="w-px h-6 bg-border" />
+        
+        <button
+          onClick={onOpenUserProfile}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-panel-hover transition-colors group"
+          aria-label="User profile"
+          title="User profile (Ctrl+P)"
+        >
+          <div className="p-1.5 rounded-full bg-info/10 border border-info/30 group-hover:bg-info/20 transition-colors">
+            <User className="w-4 h-4 text-info" />
+          </div>
+          <div className="text-left">
+            <div className="text-xs font-medium text-text">Profile</div>
+            <div className="text-[10px] text-text-dim capitalize">{userProfile.expertise_level}</div>
+          </div>
+        </button>
+        
+        {/* UI Complexity Mode Indicator - Below user button */}
+        <ComplexityModeIndicator compact />
       </div>
     </div>
   );

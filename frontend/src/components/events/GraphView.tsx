@@ -1,6 +1,6 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot } from 'recharts';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, ChevronUp, ChevronDown } from 'lucide-react';
 import dayjs from 'dayjs';
 import { useStore } from '../../context/store';
 import { GRAPH_CONFIG } from '../../config/graph.config';
@@ -12,8 +12,19 @@ interface DataPoint {
   maxAnomalyScore: number;
 }
 
-const GraphView = () => {
+interface GraphViewProps {
+  onCollapseChange?: (collapsed: boolean) => void;
+}
+
+const GraphView = ({ onCollapseChange }: GraphViewProps) => {
   const { events, focusMessage } = useStore();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const toggleCollapse = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    onCollapseChange?.(newState);
+  };
   
   // Use a ref to maintain history across renders without causing re-renders
   const historyRef = useRef<Map<number, DataPoint>>(new Map());
@@ -144,118 +155,155 @@ const GraphView = () => {
   }, [chartData]);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-info" />
-            <h2 className="text-lg font-semibold text-text">Network Activity Timeline</h2>
-          </div>
-          {stats && (
-            <div className="text-xs text-text-dim">
-              {stats.dataPoints} points  {stats.timeSpanMin.toFixed(1)} min
+    <div className="flex flex-col h-full relative">
+      {/* Mini Graph - Collapsed State */}
+      {isCollapsed ? (
+        <div className="h-16 p-2 relative">
+          {/* Expand button */}
+          <button
+            onClick={toggleCollapse}
+            className="absolute top-2 right-2 p-1.5 text-text-dim hover:text-text bg-panel/80 hover:bg-panel border border-border rounded transition-colors z-20"
+            title="Expand graph"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+
+          {/* Mini chart */}
+          {chartData.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-xs text-text-dim">Waiting for data...</p>
             </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 2, right: 25, left: 25, bottom: 15 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                <XAxis
+                  dataKey="timestamp"
+                  tickFormatter={formatXAxis}
+                  stroke="#9CA3AF"
+                  style={{ fontSize: '9px' }}
+                  tickCount={3}
+                  minTickGap={40}
+                  height={15}
+                />
+                <YAxis
+                  stroke="#9CA3AF"
+                  style={{ fontSize: '9px' }}
+                  tickCount={2}
+                  width={20}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#38BDF8"
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                {/* Anomaly markers - mini version */}
+                {anomalyMarkers.map((marker, idx) => (
+                  <ReferenceDot
+                    key={`${marker.eventId}-${idx}`}
+                    x={marker.timestamp}
+                    y={marker.yValue}
+                    r={4}
+                    fill={marker.severity === 'critical' ? '#EF4444' : '#F59E0B'}
+                    stroke={marker.severity === 'critical' ? '#DC2626' : '#D97706'}
+                    strokeWidth={1}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
           )}
         </div>
-        <p className="text-sm text-text-dim mt-1">
-          Flow rate over time ({GRAPH_CONFIG.BUCKET_SIZE_MS / 1000}s buckets)  Click anomaly markers for details
-        </p>
-      </div>
+      ) : (
+        /* Full Chart - Expanded State */
+        <>
+          <div className="flex-1 p-4 flex gap-4">
+            {/* Legend */}
+            <div className="flex flex-col gap-3 text-sm py-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-info rounded-full"></div>
+                <span className="text-text-dim whitespace-nowrap">Flow Rate</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-warn rounded-full"></div>
+                <span className="text-text-dim whitespace-nowrap">Warning Anomaly</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-critical rounded-full"></div>
+                <span className="text-text-dim whitespace-nowrap">Critical Anomaly</span>
+              </div>
+            </div>
 
-      {/* Chart */}
-      <div className="flex-1 p-4">
-        {chartData.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 border-4 border-border border-t-info rounded-full animate-spin"></div>
-              <p className="text-text-dim">Waiting for network data...</p>
-              <p className="text-xs text-text-dim mt-1">Capture must be running</p>
-            </div>
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis
-                dataKey="timestamp"
-                tickFormatter={formatXAxis}
-                stroke="#9CA3AF"
-                style={{ fontSize: '12px' }}
-                minTickGap={30}
-              />
-              <YAxis
-                stroke="#9CA3AF"
-                style={{ fontSize: '12px' }}
-                label={{ value: 'Flows', angle: -90, position: 'insideLeft', style: { fill: '#9CA3AF' } }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#38BDF8"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 6 }}
-                isAnimationActive={false} // Disable animation for performance
-              />
-              
-              {/* Anomaly markers */}
-              {anomalyMarkers.map((marker, idx) => (
-                <ReferenceDot
-                  key={`${marker.eventId}-${idx}`}
-                  x={marker.timestamp}
-                  y={marker.yValue}
-                  r={8}
-                  fill={marker.severity === 'critical' ? '#EF4444' : '#F59E0B'}
-                  stroke={marker.severity === 'critical' ? '#DC2626' : '#D97706'}
-                  strokeWidth={2}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => handleMarkerClick(marker)}
-                  className="animate-pulse-slow"
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+            {/* Chart */}
+            <div className="flex-1 relative">
+              {/* Collapse button overlay */}
+              <button
+                onClick={toggleCollapse}
+                className="absolute top-2 right-2 z-20 p-1.5 text-text-dim hover:text-text bg-panel/80 hover:bg-panel border border-border rounded transition-colors"
+                title="Minimize graph"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
 
-      {/* Stats & Legend */}
-      <div className="p-4 border-t border-border space-y-3">
-        {/* Stats bar */}
-        {stats && (
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-text-dim text-xs">Total Flows</p>
-              <p className="text-text font-semibold">{stats.totalFlows.toLocaleString()}</p>
+              {chartData.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 border-4 border-border border-t-info rounded-full animate-spin"></div>
+                    <p className="text-text-dim">Waiting for network data...</p>
+                    <p className="text-xs text-text-dim mt-1">Capture must be running</p>
+                  </div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis
+                      dataKey="timestamp"
+                      tickFormatter={formatXAxis}
+                      stroke="#9CA3AF"
+                      style={{ fontSize: '12px' }}
+                      minTickGap={30}
+                    />
+                    <YAxis
+                      stroke="#9CA3AF"
+                      style={{ fontSize: '12px' }}
+                      label={{ value: 'Flows', angle: -90, position: 'insideLeft', style: { fill: '#9CA3AF' } }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#38BDF8"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 6 }}
+                      isAnimationActive={false} // Disable animation for performance
+                    />
+                    
+                    {/* Anomaly markers */}
+                    {anomalyMarkers.map((marker, idx) => (
+                      <ReferenceDot
+                        key={`${marker.eventId}-${idx}`}
+                        x={marker.timestamp}
+                        y={marker.yValue}
+                        r={8}
+                        fill={marker.severity === 'critical' ? '#EF4444' : '#F59E0B'}
+                        stroke={marker.severity === 'critical' ? '#DC2626' : '#D97706'}
+                        strokeWidth={2}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => handleMarkerClick(marker)}
+                        className="animate-pulse-slow"
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
-            <div>
-              <p className="text-text-dim text-xs">Average</p>
-              <p className="text-text font-semibold">{Math.round(stats.avgFlows).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-text-dim text-xs">Peak</p>
-              <p className="text-text font-semibold">{stats.maxFlows.toLocaleString()}</p>
-            </div>
           </div>
-        )}
-        
-        {/* Legend */}
-        <div className="flex items-center gap-6 text-sm pt-2 border-t border-border">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-info rounded-full"></div>
-            <span className="text-text-dim">Flow Rate</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-warn rounded-full"></div>
-            <span className="text-text-dim">Warning Anomaly</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-critical rounded-full"></div>
-            <span className="text-text-dim">Critical Anomaly</span>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

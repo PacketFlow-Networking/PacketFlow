@@ -135,7 +135,7 @@ class AIConfig:
         
         # Remote UCY server settings
         self.remote_url = os.getenv('REMOTE_AI_URL', 'https://chatucy.cs.ucy.ac.cy/api/send_message')
-        self.remote_model = os.getenv('REMOTE_AI_MODEL', 'llama3.1:latest')
+        self.remote_model = os.getenv('REMOTE_AI_MODEL', 'gemma3')
         self.remote_websearch = os.getenv('REMOTE_WEBSEARCH', 'false').lower() == 'true'
         self.remote_client_rag = os.getenv('REMOTE_CLIENT_RAG', 'false').lower() == 'true'
         

@@ -12,6 +12,7 @@ const shortcuts: Shortcut[] = [
   { key: '?', description: 'Show keyboard shortcuts', category: 'General' },
   { key: 'Esc', description: 'Close modal or dialog', category: 'General' },
   { key: 'Ctrl+,', description: 'Open alert configuration', category: 'General' },
+  { key: 'Ctrl+P', description: 'Open user profile', category: 'General' },
   { key: '/', description: 'Focus search bar', category: 'Navigation' },
   { key: 'f', description: 'Focus search bar', category: 'Navigation' },
   
@@ -22,6 +23,7 @@ const shortcuts: Shortcut[] = [
   { key: 't', description: 'Cycle through tabs (Events/Stats/Topology)', category: 'Navigation' },
   { key: 'n', description: 'Show network topology view', category: 'Navigation' },
   { key: 'i', description: 'Toggle Chat/Incidents panel', category: 'Navigation' },
+  { key: 'Ctrl+Shift+3', description: 'Open 3D topology view', category: 'Navigation' },
   
   // Event Navigation
   { key: 'j', description: 'Next event', category: 'Events' },
@@ -128,12 +130,13 @@ interface UseKeyboardShortcutsOptions {
   onPreviousEvent: () => void;
   onOpenEvent: () => void;
   onExport: () => void;
-  onToggleMockMode: () => void;
   onOpenSettings: () => void;
   onToggleTab?: () => void;
   onToggleLeftPanel?: () => void;
   onOpenAlertConfig?: () => void;
   onShowTopology?: () => void;
+  onShow3DTopology?: () => void;
+  onOpenUserProfile?: () => void;
   isModalOpen?: boolean;
 }
 
@@ -148,12 +151,13 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
     onPreviousEvent,
     onOpenEvent,
     onExport,
-    onToggleMockMode,
     onOpenSettings,
     onToggleTab,
     onToggleLeftPanel,
     onOpenAlertConfig,
     onShowTopology,
+    onShow3DTopology,
+    onOpenUserProfile,
     isModalOpen = false,
   } = options;
 
@@ -187,6 +191,20 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
       if (e.key === ',' && (e.ctrlKey || e.metaKey) && !isInput) {
         e.preventDefault();
         if (onOpenAlertConfig) onOpenAlertConfig();
+        return;
+      }
+
+      // Special case: 'Ctrl+Shift+3' for 3D topology
+      if (e.key === '#' && e.ctrlKey && e.shiftKey && !isInput) {
+        e.preventDefault();
+        if (onShow3DTopology) onShow3DTopology();
+        return;
+      }
+
+      // Special case: 'Ctrl+P' for user profile
+      if (e.key === 'p' && (e.ctrlKey || e.metaKey) && !isInput) {
+        e.preventDefault();
+        if (onOpenUserProfile) onOpenUserProfile();
         return;
       }
 
@@ -227,10 +245,6 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
           e.preventDefault();
           onExport();
           break;
-        case 'm':
-          e.preventDefault();
-          onToggleMockMode();
-          break;
         case 's':
           e.preventDefault();
           onOpenSettings();
@@ -262,7 +276,6 @@ export const useKeyboardShortcuts = (options: UseKeyboardShortcutsOptions) => {
     onPreviousEvent,
     onOpenEvent,
     onExport,
-    onToggleMockMode,
     onOpenSettings,
     isModalOpen,
   ]);

@@ -31,7 +31,7 @@ class AIAgent:
         local_model: str = "mistral:7b",
         # Remote settings
         remote_url: str = "https://chatucy.cs.ucy.ac.cy/api/send_message",
-        remote_model: str = "llama3.1:latest",
+        remote_model: str = "gemma3",
         remote_websearch: bool = False,
         remote_client_rag: bool = False,
         # Common settings
@@ -721,7 +721,7 @@ Keep it concise and actionable. Focus on the most important findings."""
                     threats = ', '.join(event.get('threat_indicators', [])) or 'None'
                     
                     context_parts.append(
-                        f"  [{time_only}] {src} → {dst} ({proto}) "
+                        f"  [{time_only}] {src}  {dst} ({proto}) "
                         f"Score: {score:.2f} | Threats: {threats}"
                     )
             else:

@@ -1,4 +1,4 @@
-# 📦 ARCHIVED: Project Description (Consolidated into README.md)
+#  ARCHIVED: Project Description (Consolidated into README.md)
 
 **Consolidated**: November 2025  
 **Status**: Archived for reference only - all content merged into main README.md
@@ -8,13 +8,13 @@
 # PacketFlow - AI-Powered Network Security Monitoring
 
 ## Project Overview
-**PacketFlow** is a privacy-first, real-time network security monitoring interface that combines packet capture with local LLM reasoning. It transforms raw network telemetry into actionable intelligence through automated anomaly detection and natural language explanations—entirely offline with zero cloud dependencies.
+**PacketFlow** is a privacy-first, real-time network security monitoring interface that combines packet capture with local LLM reasoning. It transforms raw network telemetry into actionable intelligence through automated anomaly detection and natural language explanationsentirely offline with zero cloud dependencies.
 
 **Concept**: "Wireshark meets ChatGPT, but privacy-first"
 
 ## Core Architecture
 ```
-TShark Capture → Flow Condenser → AI Agent (Ollama) → WebSocket (FastAPI) → React UI (Zustand)
+TShark Capture  Flow Condenser  AI Agent (Ollama)  WebSocket (FastAPI)  React UI (Zustand)
 ```
 
 **Backend (Python)**: Async pipeline with packet capture, 8-method anomaly detection, local LLM reasoning
@@ -24,7 +24,7 @@ TShark Capture → Flow Condenser → AI Agent (Ollama) → WebSocket (FastAPI) 
 
 ### 1. Security Monitoring
 - **8 Anomaly Detection Methods**: Z-Score, IQR, EWMA, Rate-Based, Behavioral, Port Scan, Protocol-Specific, Payload Analysis
-- **Severity Scoring**: CRITICAL (0.9+) → HIGH (0.7-0.9) → MEDIUM (0.5-0.7) → LOW (0.3-0.5)
+- **Severity Scoring**: CRITICAL (0.9+)  HIGH (0.7-0.9)  MEDIUM (0.5-0.7)  LOW (0.3-0.5)
 - **Real-Time Events**: Live packet stream condensed into meaningful flow events
 - **Network Topology**: Interactive D3.js graph showing host communication patterns
 
@@ -51,7 +51,7 @@ TShark Capture → Flow Condenser → AI Agent (Ollama) → WebSocket (FastAPI) 
 - **Educational**: Every interaction teaches security concepts
 
 ### 4. Incident Management
-- **Lifecycle Tracking**: open → investigating → resolved/false_positive
+- **Lifecycle Tracking**: open  investigating  resolved/false_positive
 - **Event Linking**: Associate multiple events with single incident
 - **Collaboration**: Notes, assignments, tags
 - **State Management**: Zustand store with `selectedIncidentId` for immediate UI updates
@@ -61,7 +61,7 @@ TShark Capture → Flow Condenser → AI Agent (Ollama) → WebSocket (FastAPI) 
 - **Sensitivity Slider**: Global anomaly threshold (0-100)
 - **Custom Thresholds**: anomaly_score, flow_rate, packet_rate, byte_rate
 - **IP Lists**: Whitelist/blacklist with comments
-- **Custom Rules**: Field-based conditions → actions (notify, create_incident, log, sound)
+- **Custom Rules**: Field-based conditions  actions (notify, create_incident, log, sound)
 
 ## Technology Stack
 
@@ -95,7 +95,7 @@ TShark Capture → Flow Condenser → AI Agent (Ollama) → WebSocket (FastAPI) 
 - **User Engagement**: Track suggestions clicked, glossary searches, shortcuts used
 - **Detection Accuracy**: Monitor false positive rate reduction via feedback
 - **Learning Progress**: Measure concepts learned, expertise progression
-- **Time to Resolution**: Incident creation → resolution duration
+- **Time to Resolution**: Incident creation  resolution duration
 - **User Satisfaction**: Self-reported confidence increase
 
 ## Use Cases
@@ -105,11 +105,11 @@ TShark Capture → Flow Condenser → AI Agent (Ollama) → WebSocket (FastAPI) 
 4. **Research**: Algorithm testing, ML experimentation, privacy-preserving analytics
 
 ## Current State
-- ✅ **Backend Pipeline**: Capture, condenser, AI agent, WebSocket server
-- ✅ **Frontend Core**: Event stream, topology, chat, stats dashboard
-- ✅ **IUI Phase 1**: All 5 features complete (suggestions, feedback, learning, glossary, shortcuts)
-- ✅ **Incident Management**: Full lifecycle with state management
-- ✅ **Alert System**: Sensitivity, thresholds, IP lists, custom rules
+-  **Backend Pipeline**: Capture, condenser, AI agent, WebSocket server
+-  **Frontend Core**: Event stream, topology, chat, stats dashboard
+-  **IUI Phase 1**: All 5 features complete (suggestions, feedback, learning, glossary, shortcuts)
+-  **Incident Management**: Full lifecycle with state management
+-  **Alert System**: Sensitivity, thresholds, IP lists, custom rules
 
 ## Quick Start
 ```bash
@@ -126,19 +126,19 @@ ollama serve && ollama pull mistral:7b
 ## Project Structure
 ```
 PacketFlow/
-├── backend/           # Python: capture, condenser, AI agent, WebSocket
-├── frontend/src/      # React: components, context (store.ts), hooks, types
-├── .github/           # copilot-instructions.md (developer guidelines)
-├── docs/archived/     # Historical documentation
-└── README.md          # Main documentation (consolidated)
+ backend/           # Python: capture, condenser, AI agent, WebSocket
+ frontend/src/      # React: components, context (store.ts), hooks, types
+ .github/           # copilot-instructions.md (developer guidelines)
+ docs/archived/     # Historical documentation
+ README.md          # Main documentation (consolidated)
 ```
 
 ## Key Innovation
-**Intelligent Interfaces for Cybersecurity**: PacketFlow demonstrates how local LLMs + adaptive UIs can transform complex security data into accessible, conversational intelligence without compromising privacy. The IUI research focuses on guiding analysts through investigation workflows, teaching security concepts contextually, and adapting to user expertise—creating a collaborative human-AI partnership for network defense.
+**Intelligent Interfaces for Cybersecurity**: PacketFlow demonstrates how local LLMs + adaptive UIs can transform complex security data into accessible, conversational intelligence without compromising privacy. The IUI research focuses on guiding analysts through investigation workflows, teaching security concepts contextually, and adapting to user expertisecreating a collaborative human-AI partnership for network defense.
 
 ---
 
-## 📍 See Also
+##  See Also
 - **Main Documentation**: [README.md](../../README.md)
 - **Backend Guide**: [backend/README.md](../../backend/README.md)
 - **Frontend Guide**: [frontend/README.md](../../frontend/README.md)
